@@ -108,11 +108,7 @@ export default function StudentForm({ onSuccess }) {
 
           {/* Subtitle */}
           <p className="text-teal-100 text-sm leading-relaxed font-semibold">
-            يسر إدارة <span className="text-amber-300 font-black">الكُتّاب</span> أن تتقدم بأجمل التهاني لأولياء أمور ابننا الفاضل{' '}
-            <span className="inline-block px-2.5 py-1 rounded-xl text-amber-200 font-black bg-amber-400/15 border border-amber-400/30 shadow-inner">
-              {formData.studentName.trim() !== '' ? formData.studentName : '[اسم الطالب]'}
-            </span>{' '}
-            لتفوقه واجتهاده في الدورة الصيفية لحفظ كتاب الله.
+            يسر إدارة <span className="text-amber-300 font-black">الكُتّاب</span> أن تتقدم بأجمل التهاني لأولياء أمور أبنائنا الفضلاء لتفوقهم واجتهادهم في الدورة الصيفية لحفظ كتاب الله.
           </p>
         </div>
 
