@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الكُتّاب | استكمال بيانات ابننا الفاضل المكرم</title>
+  <meta name="description" content="نموذج استكمال بيانات الطلاب المتفوقين في الدورة الصيفية لحفظ كتاب الله - الكُتّاب النظام الذكي لتحفيظ القرآن الكريم">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --font-cairo: 'Cairo', system-ui, -apple-system, sans-serif;
+      --color-primary-50: #f0fdfa;
+      --color-primary-100: #ccfbf1;
+      --color-primary-200: #99f6e4;
+      --color-primary-300: #5eead4;
+      --color-primary-400: #2dd4bf;
+      --color-primary-500: #14b8a6;
+      --color-primary-600: #0d9488;
+      --color-primary-700: #0f766e;
+      --color-primary-800: #115e59;
+      --color-primary-900: #134e4a;
+      --color-gold-400: #fbbf24;
+      --color-gold-500: #f59e0b;
+      --color-gold-600: #d97706;
+      --color-gold-700: #b45309;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      25% { transform: translateY(-12px) rotate(3deg); }
+      75% { transform: translateY(8px) rotate(-2deg); }
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0) rotate(-12deg); }
+      50% { transform: scale(1.15) rotate(3deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(14, 165, 150, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(14, 165, 150, 0.6); }
+    }
+
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes particle {
+      0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.7; }
+      50% { opacity: 1; }
+      100% { transform: translateY(-120px) translateX(30px) scale(0); opacity: 0; }
+    }
+
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes borderGlow {
+      0%, 100% { border-color: rgba(14, 165, 150, 0.2); }
+      50% { border-color: rgba(14, 165, 150, 0.5); }
+    }
+
+    @keyframes spinSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+  <style>
+    * { font-family: 'Cairo', system-ui, -apple-system, sans-serif; }
+    .animate-float { animation: float 6s ease-in-out infinite; }
+    .animate-shimmer { animation: shimmer 3s linear infinite; }
+    .animate-fadeInUp { animation: fadeInUp 0.7s ease-out forwards; }
+    .animate-scaleIn { animation: scaleIn 0.5s ease-out forwards; }
+    .animate-popIn { animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    .animate-pulseGlow { animation: pulseGlow 3s ease-in-out infinite; }
+    .animate-gradientMove { animation: gradientMove 8s ease infinite; background-size: 200% 200%; }
+    .animate-particle { animation: particle 3s ease-out infinite; }
+    .animate-slideInRight { animation: slideInRight 0.6s ease-out forwards; }
+    .animate-borderGlow { animation: borderGlow 2s ease-in-out infinite; }
+    .animate-spinSlow { animation: spinSlow 20s linear infinite; }
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+    .delay-400 { animation-delay: 0.4s; }
+    .delay-500 { animation-delay: 0.5s; }
+    .delay-600 { animation-delay: 0.6s; }
+    .delay-700 { animation-delay: 0.7s; }
+    .delay-1000 { animation-delay: 1s; }
+    .delay-1500 { animation-delay: 1.5s; }
+    .delay-2000 { animation-delay: 2s; }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(14, 165, 150, 0.3); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(14, 165, 150, 0.5); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-3 sm:p-5 relative overflow-x-hidden"
+      style="background: linear-gradient(135deg, #0f172a 0%, #134e4a 30%, #115e59 50%, #0f172a 100%); background-size: 400% 400%; animation: gradientMove 15s ease infinite;">
+
+  <!-- Background Decorative Elements -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <!-- Glowing Orbs -->
+    <div class="absolute top-[10%] right-[15%] w-72 h-72 rounded-full opacity-10 animate-float"
+         style="background: radial-gradient(circle, #14b8a6, transparent 70%); filter: blur(60px);"></div>
+    <div class="absolute bottom-[20%] left-[10%] w-96 h-96 rounded-full opacity-8 animate-float delay-2000"
+         style="background: radial-gradient(circle, #f59e0b, transparent 70%); filter: blur(80px);"></div>
+    <div class="absolute top-[50%] left-[50%] w-64 h-64 rounded-full opacity-5 animate-float delay-1000"
+         style="background: radial-gradient(circle, #6366f1, transparent 70%); filter: blur(60px);"></div>
+
+    <!-- Floating Particles -->
+    <div class="absolute top-[20%] right-[30%] w-1.5 h-1.5 bg-teal-400 rounded-full animate-particle opacity-60"></div>
+    <div class="absolute top-[40%] right-[60%] w-1 h-1 bg-amber-400 rounded-full animate-particle delay-1000 opacity-40"></div>
+    <div class="absolute top-[60%] right-[20%] w-2 h-2 bg-teal-300 rounded-full animate-particle delay-2000 opacity-50"></div>
+    <div class="absolute top-[30%] left-[20%] w-1.5 h-1.5 bg-amber-300 rounded-full animate-particle delay-500 opacity-40"></div>
+    <div class="absolute top-[70%] left-[40%] w-1 h-1 bg-teal-400 rounded-full animate-particle delay-1500 opacity-30"></div>
+
+    <!-- Geometric Pattern -->
+    <div class="absolute top-8 left-8 w-20 h-20 border border-teal-500/10 rounded-2xl animate-spinSlow"></div>
+    <div class="absolute bottom-16 right-12 w-16 h-16 border border-amber-500/10 rounded-full animate-spinSlow" style="animation-direction: reverse;"></div>
+  </div>
+
+  <!-- Main App Container -->
+  <div class="relative z-10 w-full max-w-lg animate-fadeInUp">
+
+    <!-- Glassmorphism Card -->
+    <div class="rounded-3xl overflow-hidden border border-white/10 shadow-2xl"
+         style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 25px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.1);">
+
+      <!-- Header Banner -->
+      <div class="relative overflow-hidden" style="background: linear-gradient(135deg, rgba(15, 118, 110, 0.9) 0%, rgba(13, 148, 136, 0.8) 50%, rgba(17, 94, 89, 0.95) 100%);">
+        <!-- Header Decorative -->
+        <div class="absolute inset-0 pointer-events-none">
+          <div class="absolute -top-8 -right-8 w-32 h-32 rounded-full" style="background: radial-gradient(circle, rgba(251,191,36,0.15), transparent 70%);"></div>
+          <div class="absolute -bottom-10 -left-10 w-40 h-40 rounded-full" style="background: radial-gradient(circle, rgba(20,184,166,0.2), transparent 70%);"></div>
+        </div>
+
+        <div class="relative px-6 pt-8 pb-10 text-center">
+          <!-- Badge -->
+          <div class="mx-auto mb-4 w-20 h-20 rounded-full flex items-center justify-center animate-popIn animate-pulseGlow"
+               style="background: linear-gradient(135deg, rgba(251,191,36,0.25), rgba(245,158,11,0.15)); border: 2px solid rgba(251,191,36,0.4); backdrop-filter: blur(10px);">
+            <span class="text-4xl animate-float">🏆</span>
+          </div>
+
+          <!-- Title -->
+          <h1 class="text-white text-xl sm:text-2xl font-black mb-3 leading-tight animate-fadeInUp delay-200" style="opacity: 0; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+            نبارك لكم هذا الشرف العظيم! 🎉
+          </h1>
+
+          <!-- Subtitle -->
+          <p class="text-teal-100 text-sm sm:text-base leading-relaxed font-semibold animate-fadeInUp delay-300" style="opacity: 0;">
+            يسر إدارة <span class="text-amber-300 font-black">الكُتّاب</span> أن تتقدم بأجمل التهاني لأولياء أمور ابننا الفاضل
+            <span class="inline-block px-2 py-0.5 rounded-lg text-amber-200 font-black underline underline-offset-4 decoration-amber-400/50 decoration-2" 
+                  id="displayStudentName" 
+                  style="background: rgba(251,191,36,0.15);">
+              [اسم الطالب]
+            </span>
+            لتفوقه واجتهاده في الدورة الصيفية لحفظ كتاب الله.
+          </p>
+        </div>
+
+        <!-- Wave Divider -->
+        <div class="relative h-6">
+          <svg class="absolute bottom-0 w-full" viewBox="0 0 1440 40" fill="none" preserveAspectRatio="none" style="height: 24px;">
+            <path d="M0,20 C360,40 720,0 1080,20 C1260,30 1380,25 1440,20 L1440,40 L0,40 Z" fill="rgba(15, 23, 42, 0.6)"/>
+            <path d="M0,24 C360,44 720,4 1080,24 C1260,34 1380,29 1440,24 L1440,40 L0,40 Z" fill="rgba(15, 23, 42, 0.85)"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Form Section -->
+      <div class="px-5 sm:px-7 pb-7 pt-2" id="formSection" style="background: rgba(15, 23, 42, 0.85);">
+
+        <form id="studentDataForm" onsubmit="handleFormSubmit(event)">
+
+          <!-- Section 1: Student Data -->
+          <div class="flex items-center gap-2.5 mb-4 mt-3 animate-fadeInUp delay-400" style="opacity: 0;">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
+                 style="background: linear-gradient(135deg, rgba(14,165,150,0.2), rgba(14,165,150,0.1)); border: 1px solid rgba(14,165,150,0.2);">
+              👦
+            </div>
+            <div>
+              <h2 class="text-teal-300 text-sm font-bold">البيانات الأساسية للطالب</h2>
+              <div class="h-0.5 w-full mt-1 rounded-full" style="background: linear-gradient(to left, transparent, rgba(14,165,150,0.4), transparent);"></div>
+            </div>
+          </div>
+
+          <!-- Student Name -->
+          <div class="mb-4 animate-fadeInUp delay-500" style="opacity: 0;">
+            <label for="studentName" class="block text-xs font-bold text-slate-300 mb-1.5">
+              اسم الطالب ثلاثي / رباعي <span class="text-rose-400">*</span>
+            </label>
+            <div class="relative group">
+              <input type="text" id="studentName"
+                     class="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all duration-300 focus:ring-2 focus:ring-teal-500/50"
+                     style="background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);"
+                     onfocus="this.style.borderColor='rgba(14,165,150,0.5)'; this.style.background='rgba(255,255,255,0.1)'"
+                     onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.06)'"
+                     placeholder="مثال: أحمد محمد علي محمود" required
+                     oninput="updateDisplayName(this.value)">
+            </div>
+          </div>
+
+          <!-- Age & Stage Grid -->
+          <div class="grid grid-cols-2 gap-3 mb-4 animate-fadeInUp delay-500" style="opacity: 0;">
+            <div>
+              <label for="studentAge" class="block text-xs font-bold text-slate-300 mb-1.5">
+                السن (بالسنوات) <span class="text-rose-400">*</span>
+              </label>
+              <input type="number" id="studentAge"
+                     class="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all duration-300 focus:ring-2 focus:ring-teal-500/50"
+                     style="background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);"
+                     onfocus="this.style.borderColor='rgba(14,165,150,0.5)'; this.style.background='rgba(255,255,255,0.1)'"
+                     onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.06)'"
+                     placeholder="مثال: 9" min="3" max="25" required>
+            </div>
+            <div>
+              <label for="studyStage" class="block text-xs font-bold text-slate-300 mb-1.5">
+                المرحلة الدراسية <span class="text-rose-400">*</span>
+              </label>
+              <select id="studyStage"
+                      class="w-full px-4 py-3 rounded-xl text-sm text-white outline-none transition-all duration-300 cursor-pointer focus:ring-2 focus:ring-teal-500/50"
+                      style="background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);"
+                      onfocus="this.style.borderColor='rgba(14,165,150,0.5)'; this.style.background='rgba(255,255,255,0.1)'"
+                      onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.06)'"
+                      required>
+                <option value="" class="bg-slate-800">اختر المرحلة...</option>
+                <option value="حضانة" class="bg-slate-800">روضة / حضانة</option>
+                <option value="ابتدائي" class="bg-slate-800">ابتدائي</option>
+                <option value="إعدادي" class="bg-slate-800">إعدادي</option>
+                <option value="ثانوي" class="bg-slate-800">ثانوي</option>
+                <option value="معهد أزهري" class="bg-slate-800">معهد أزهري</option>
+                <option value="جامعي" class="bg-slate-800">جامعي</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- School Name -->
+          <div class="mb-5 animate-fadeInUp delay-600" style="opacity: 0;">
+            <label for="schoolName" class="block text-xs font-bold text-slate-300 mb-1.5">
+              اسم المدرسة / المعهد / الروضة <span class="text-rose-400">*</span>
+            </label>
+            <input type="text" id="schoolName"
+                   class="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all duration-300 focus:ring-2 focus:ring-teal-500/50"
+                   style="background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);"
+                   onfocus="this.style.borderColor='rgba(14,165,150,0.5)'; this.style.background='rgba(255,255,255,0.1)'"
+                   onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.06)'"
+                   placeholder="مثال: مدرسة الفاروق / معهد الأزهر" required>
+          </div>
+
+          <!-- Section 2: Contact Info -->
+          <div class="flex items-center gap-2.5 mb-4 animate-fadeInUp delay-600" style="opacity: 0;">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
+                 style="background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(251,191,36,0.1)); border: 1px solid rgba(251,191,36,0.2);">
+              📞
+            </div>
+            <div>
+              <h2 class="text-amber-300 text-sm font-bold">بيانات تواصل أولياء الأمور</h2>
+              <div class="h-0.5 w-full mt-1 rounded-full" style="background: linear-gradient(to left, transparent, rgba(251,191,36,0.4), transparent);"></div>
+            </div>
+          </div>
+
+          <!-- Father Phone -->
+          <div class="mb-4 animate-fadeInUp delay-700" style="opacity: 0;">
+            <label for="fatherPhone" class="block text-xs font-bold text-slate-300 mb-1.5">
+              رقم تليفون ولي الأمر / الأب (الواتساب) <span class="text-rose-400">*</span>
+            </label>
+            <input type="tel" id="fatherPhone"
+                   class="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all duration-300 focus:ring-2 focus:ring-teal-500/50"
+                   style="background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);"
+                   onfocus="this.style.borderColor='rgba(14,165,150,0.5)'; this.style.background='rgba(255,255,255,0.1)'"
+                   onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.06)'"
+                   placeholder="01xxxxxxxx" required pattern="[0-9]{11}">
+          </div>
+
+          <!-- Mother Phone -->
+          <div class="mb-4 animate-fadeInUp delay-700" style="opacity: 0;">
+            <label for="motherPhone" class="block text-xs font-bold text-slate-300 mb-1.5">
+              رقم تليفون الأم <span class="text-slate-500 text-[11px] font-normal">(اختياري)</span>
+            </label>
+            <input type="tel" id="motherPhone"
+                   class="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-slate-500 outline-none transition-all duration-300 focus:ring-2 focus:ring-teal-500/50"
+                   style="background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);"
+                   onfocus="this.style.borderColor='rgba(14,165,150,0.5)'; this.style.background='rgba(255,255,255,0.1)'"
+                   onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.06)'"
+                   placeholder="01xxxxxxxx">
+          </div>
+
+          <!-- Father Status -->
+          <div class="mb-5 animate-fadeInUp delay-700" style="opacity: 0;">
+            <label for="fatherStatus" class="block text-xs font-bold text-slate-300 mb-1.5">
+              حالة الأب <span class="text-slate-500 text-[11px] font-normal">(مراعاة لكفالة ورعاية طلابنا الكرام)</span> <span class="text-rose-400">*</span>
+            </label>
+            <select id="fatherStatus"
+                    class="w-full px-4 py-3 rounded-xl text-sm text-white outline-none transition-all duration-300 cursor-pointer focus:ring-2 focus:ring-teal-500/50"
+                    style="background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);"
+                    onfocus="this.style.borderColor='rgba(14,165,150,0.5)'; this.style.background='rgba(255,255,255,0.1)'"
+                    onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.06)'"
+                    required>
+              <option value="" class="bg-slate-800">اختر الحالة...</option>
+              <option value="الأب على قيد الحياة" class="bg-slate-800">الأب على قيد الحياة (حفظه الله)</option>
+              <option value="يتيم الأب" class="bg-slate-800">يتيم الأب (رحمه الله وأسكنه الفردوس)</option>
+              <option value="يتيم الأبوين" class="bg-slate-800">يتيم الأبوين (رحمهما الله رحمة واسعة)</option>
+            </select>
+          </div>
+
+          <!-- Section 3: Photo -->
+          <div class="flex items-center gap-2.5 mb-4 animate-fadeInUp delay-700" style="opacity: 0;">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
+                 style="background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(99,102,241,0.1)); border: 1px solid rgba(99,102,241,0.2);">
+              🖼️
+            </div>
+            <div>
+              <h2 class="text-indigo-300 text-sm font-bold">صورة الطالب الشخصية <span class="text-slate-500 text-[11px] font-normal">(اختياري)</span></h2>
+              <div class="h-0.5 w-full mt-1 rounded-full" style="background: linear-gradient(to left, transparent, rgba(99,102,241,0.4), transparent);"></div>
+            </div>
+          </div>
+
+          <!-- Photo Upload Zone -->
+          <div class="mb-6 animate-fadeInUp delay-700" style="opacity: 0;">
+            <div class="rounded-2xl p-6 text-center cursor-pointer transition-all duration-300 group relative overflow-hidden"
+                 style="background: rgba(255,255,255,0.03); border: 2px dashed rgba(255,255,255,0.12);"
+                 onclick="document.getElementById('photoInput').click()"
+                 onmouseenter="this.style.borderColor='rgba(14,165,150,0.4)'; this.style.background='rgba(14,165,150,0.05)'"
+                 onmouseleave="this.style.borderColor='rgba(255,255,255,0.12)'; this.style.background='rgba(255,255,255,0.03)'">
+              <input type="file" id="photoInput" accept="image/*" class="hidden" onchange="previewImage(event)">
+              
+              <!-- Upload Icon -->
+              <div class="mx-auto mb-3 w-14 h-14 rounded-2xl flex items-center justify-center transition-transform duration-300"
+                   style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(14,165,150,0.15));">
+                <span class="text-3xl">📸</span>
+              </div>
+              <p class="text-xs font-semibold text-slate-400 leading-relaxed">
+                اضغط هنا لتحميل صورة الطالب<br>
+                <span class="text-[10px] text-slate-500">(اختياري - لتحديث ملف الطالب في الكُتّاب)</span>
+              </p>
+              
+              <!-- Preview -->
+              <img id="imagePreview" alt="معاينة الصورة"
+                   class="w-20 h-20 rounded-full object-cover mx-auto mt-4 hidden border-3"
+                   style="border: 3px solid rgba(14,165,150,0.5); box-shadow: 0 0 20px rgba(14,165,150,0.2);">
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="submitBtn"
+                  class="w-full py-3.5 rounded-2xl border-none text-white text-base font-extrabold cursor-pointer flex items-center justify-center gap-3 transition-all duration-300 relative overflow-hidden group"
+                  style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%); box-shadow: 0 8px 30px rgba(245,158,11,0.3), inset 0 1px 0 rgba(255,255,255,0.2);"
+                  onmouseenter="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 40px rgba(245,158,11,0.4), inset 0 1px 0 rgba(255,255,255,0.2)'"
+                  onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 30px rgba(245,158,11,0.3), inset 0 1px 0 rgba(255,255,255,0.2)'"
+                  onmousedown="this.style.transform='translateY(-1px)'"
+                  onmouseup="this.style.transform='translateY(-3px)'">
+            <!-- Shimmer Effect -->
+            <div class="absolute inset-0 opacity-30"
+                 style="background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); background-size: 200% 100%; animation: shimmer 2.5s linear infinite;"></div>
+            <span class="relative z-10">حفظ وتأكيد البيانات</span>
+            <span class="relative z-10 text-xl">🌟</span>
+          </button>
+
+        </form>
+      </div>
+
+      <!-- Success Screen -->
+      <div class="hidden px-6 py-12 text-center" id="successSection" style="background: rgba(15, 23, 42, 0.85);">
+        <!-- Success Icon -->
+        <div class="mx-auto mb-5 w-24 h-24 rounded-full flex items-center justify-center animate-popIn"
+             style="background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(22,163,74,0.15)); border: 2px solid rgba(34,197,94,0.3); box-shadow: 0 0 40px rgba(34,197,94,0.2);">
+          <span class="text-5xl">✓</span>
+        </div>
+
+        <!-- Confetti -->
+        <div class="flex justify-center gap-3 mb-5">
+          <span class="text-2xl animate-float delay-100">🎉</span>
+          <span class="text-2xl animate-float delay-300">🏆</span>
+          <span class="text-2xl animate-float delay-500">⭐</span>
+        </div>
+
+        <h2 class="text-xl font-black text-emerald-400 mb-3 animate-fadeInUp delay-200" style="opacity: 0; text-shadow: 0 0 20px rgba(34,197,94,0.3);">
+          تم حفظ البيانات بنجاح! 🏆
+        </h2>
+        <p class="text-sm text-slate-400 leading-relaxed mb-7 animate-fadeInUp delay-300" style="opacity: 0;">
+          شكراً لكم ولي أمر ابننا الفاضل <strong class="text-teal-300" id="successStudentName"></strong>.<br>
+          سعداء بانضمامكم لمسيرة كُتّاب الذكية. تم تسجيل كافة البيانات وسيتم التواصل معكم لتأكيد تفاصيل الحفل.
+        </p>
+
+        <a id="whatsappBtn" href="#" target="_blank"
+           class="w-full py-3.5 rounded-2xl border-none text-white text-sm font-bold cursor-pointer inline-flex items-center justify-center gap-3 no-underline transition-all duration-300"
+           style="background: linear-gradient(135deg, #25d366 0%, #128C7E 100%); box-shadow: 0 8px 30px rgba(37,211,102,0.3);"
+           onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 40px rgba(37,211,102,0.4)'"
+           onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 30px rgba(37,211,102,0.3)'">
+          <span class="text-xl">💬</span>
+          <span>تواصل مباشر عبر الواتساب</span>
+        </a>
+      </div>
+
+      <!-- Footer -->
+      <div class="text-center py-4 px-5 border-t border-white/5" style="background: rgba(15, 23, 42, 0.9);">
+        <div class="text-xs text-slate-400 font-semibold mb-2">
+          الكُتّاب - النظام الذكي لتحفيظ القرآن الكريم والتكريم
+        </div>
+        <div class="flex items-center justify-center gap-1.5">
+          <span class="text-[10px] text-slate-500">Powered by</span>
+          <div class="flex items-center gap-1 px-2.5 py-1 rounded-full"
+               style="background: rgba(14,165,150,0.1); border: 1px solid rgba(14,165,150,0.15);">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <strong class="text-teal-400 text-[11px] font-extrabold tracking-wide">وثبـة | Wathba</strong>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Glow -->
+    <div class="h-1 mt-0 rounded-b-full mx-8 opacity-50"
+         style="background: linear-gradient(to left, transparent, rgba(14,165,150,0.5), rgba(251,191,36,0.3), transparent);"></div>
+
+  </div>
+
+  <script>
+    function updateDisplayName(val) {
+      const display = document.getElementById('displayStudentName');
+      display.textContent = val.trim() !== '' ? val : '[اسم الطالب]';
+    }
+
+    function previewImage(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const preview = document.getElementById('imagePreview');
+          preview.src = e.target.result;
+          preview.classList.remove('hidden');
+        }
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function handleFormSubmit(event) {
+      event.preventDefault();
+
+      const studentName = document.getElementById('studentName').value;
+      const phone = document.getElementById('fatherPhone').value;
+
+      document.getElementById('successStudentName').textContent = studentName;
+
+      // Configure WhatsApp link
+      const waText = encodeURIComponent(`السلام عليكم، تم استكمال بيانات الطالب (${studentName}) لحضور حفلة تكريم الدورة الصيفية 2026 بنجاح.`);
+      document.getElementById('whatsappBtn').href = `https://wa.me/2${phone}?text=${waText}`;
+
+      // Transition screen with animation
+      const formSection = document.getElementById('formSection');
+      const successSection = document.getElementById('successSection');
+
+      formSection.style.opacity = '0';
+      formSection.style.transform = 'translateY(-20px)';
+      formSection.style.transition = 'all 0.4s ease';
+
+      setTimeout(() => {
+        formSection.style.display = 'none';
+        successSection.classList.remove('hidden');
+        successSection.style.display = 'block';
+        successSection.style.opacity = '0';
+        successSection.style.transform = 'translateY(20px)';
+
+        requestAnimationFrame(() => {
+          successSection.style.transition = 'all 0.5s ease';
+          successSection.style.opacity = '1';
+          successSection.style.transform = 'translateY(0)';
+        });
+      }, 400);
+    }
+
+    // Intersection Observer for scroll animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.animate-fadeInUp, .animate-slideInRight').forEach(el => {
+      observer.observe(el);
+    });
+  </script>
+</body>
+</html>
