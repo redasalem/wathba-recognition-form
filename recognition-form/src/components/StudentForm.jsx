@@ -37,6 +37,26 @@ export default function StudentForm({ onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
+
+    // Validate student name (at least 3 words for ثلاثي)
+    const nameWords = formData.studentName.trim().split(/\s+/);
+    if (nameWords.length < 3) {
+      setErrorMessage('يرجى كتابة اسم الطالب ثلاثي على الأقل (مثال: أحمد محمد علي).');
+      return;
+    }
+
+    // Validate Egyptian phone number (starts with 01, exactly 11 digits)
+    const phoneRegex = /^01[0-9]{9}$/;
+    if (!phoneRegex.test(formData.fatherPhone)) {
+      setErrorMessage('رقم تليفون ولي الأمر يجب أن يبدأ بـ 01 ويتكون من 11 رقم.');
+      return;
+    }
+
+    if (formData.motherPhone && !phoneRegex.test(formData.motherPhone)) {
+      setErrorMessage('رقم تليفون الأم يجب أن يبدأ بـ 01 ويتكون من 11 رقم.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -230,7 +250,7 @@ export default function StudentForm({ onSuccess }) {
             {/* Father Status */}
             <div>
               <label htmlFor="fatherStatus" className="block text-xs font-bold text-slate-300 mb-1.5">
-                حالة الأب <span className="text-slate-500 text-[11px] font-normal">(لمراعاة وتكريم طلابنا الكرام)</span> <span class="text-rose-400">*</span>
+                حالة الأب <span className="text-slate-500 text-[11px] font-normal">(لمراعاة وتكريم طلابنا الكرام)</span> <span className="text-rose-400">*</span>
               </label>
               <select
                 id="fatherStatus"

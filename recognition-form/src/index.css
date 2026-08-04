@@ -55,6 +55,16 @@
   to { transform: rotate(360deg); }
 }
 
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .animate-float { animation: float 6s ease-in-out infinite; }
 .animate-shimmer { animation: shimmer 3s linear infinite; }
 .animate-fadeInUp { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
@@ -64,6 +74,8 @@
 .animate-gradientMove { animation: gradientMove 15s ease infinite; background-size: 400% 400%; }
 .animate-particle { animation: particle 3s ease-out infinite; }
 .animate-spinSlow { animation: spinSlow 20s linear infinite; }
+.animate-slideInRight { animation: slideInRight 0.4s ease-out forwards; }
+.animate-countUp { animation: countUp 0.5s ease-out forwards; }
 
 .delay-100 { animation-delay: 0.1s; }
 .delay-200 { animation-delay: 0.2s; }
@@ -85,4 +97,43 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(20, 184, 166, 0.7);
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:block {
+    display: block !important;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    text-align: right;
+    font-size: 11px;
+  }
+
+  th {
+    background-color: #f3f4f6 !important;
+    font-weight: bold;
+  }
+
+  tr:nth-child(even) {
+    background-color: #f9fafb !important;
+  }
 }

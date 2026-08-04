@@ -117,7 +117,8 @@ const getLocalStudents = () => {
 
 const saveLocalStudents = (students) => {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(students));
-  window.dispatchEvent(new Event('storage'));
+  // Use a custom event so same-tab listeners are notified
+  window.dispatchEvent(new CustomEvent('kuttab_storage_update'));
 };
 
 /**
@@ -141,8 +142,8 @@ export const subscribeToStudents = (callback) => {
     // LocalStorage fallback with listener
     callback(getLocalStudents());
     const handleStorageChange = () => callback(getLocalStudents());
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('kuttab_storage_update', handleStorageChange);
+    return () => window.removeEventListener('kuttab_storage_update', handleStorageChange);
   }
 };
 
@@ -191,6 +192,27 @@ export const deleteStudentRecord = async (id) => {
   // Fallback local delete
   const current = getLocalStudents();
   const updated = current.filter(s => s.id !== id);
+  saveLocalStudents(updated);
+  return true;
+};
+
+/**
+ * Update a student record
+ */
+export const updateStudentRecord = async (id, updatedData) => {
+  if (db && !id.startsWith('local-') && !id.startsWith('seed-')) {
+    try {
+      const { id: _id, createdAt, ...dataToUpdate } = updatedData;
+      await updateDoc(doc(db, 'students', id), dataToUpdate);
+      return true;
+    } catch (e) {
+      console.error('Firestore update failed:', e);
+    }
+  }
+
+  // Fallback local update
+  const current = getLocalStudents();
+  const updated = current.map(s => s.id === id ? { ...s, ...updatedData } : s);
   saveLocalStudents(updated);
   return true;
 };

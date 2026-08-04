@@ -20,7 +20,7 @@ export default function SuccessView({ studentData, onReset, onViewDashboard, isA
   const studentName = studentData?.studentName || '';
   const fatherPhone = studentData?.fatherPhone || '';
   const waMessage = encodeURIComponent(`السلام عليكم، تم استكمال بيانات الطالب (${studentName}) لحضور حفلة تكريم الدورة الصيفية 2026 بنجاح في الكُتّاب.`);
-  const waUrl = `https://wa.me/2${fatherPhone}?text=${waMessage}`;
+  const waUrl = `https://wa.me/20${fatherPhone}?text=${waMessage}`;
 
   return (
     <div className="w-full max-w-md mx-auto my-6 p-4 animate-scaleIn">

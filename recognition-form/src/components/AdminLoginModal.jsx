@@ -14,7 +14,7 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
     e.preventDefault();
     setError('');
 
-    if (password === targetPassword || password === 'admin' || password === 'kuttab2026') {
+    if (password === targetPassword) {
       onLoginSuccess();
       setPassword('');
       onClose();
@@ -61,7 +61,6 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
           <div>
             <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
               <span>كلمة المرور</span>
-              <span className="text-[10px] text-amber-300 font-mono">الافتراضي: kuttab2026</span>
             </label>
             <div className="relative">
               <input

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import StudentForm from './components/StudentForm';
 import SuccessView from './components/SuccessView';
@@ -6,12 +6,55 @@ import AdminDashboard from './components/AdminDashboard';
 import AdminLoginModal from './components/AdminLoginModal';
 import { subscribeToStudents } from './firebase';
 
+// Toast Notification Component
+function ToastNotification({ toast, onDismiss }) {
+  if (!toast) return null;
+
+  const typeStyles = {
+    success: 'border-emerald-500/40 bg-emerald-950/90 text-emerald-200',
+    error: 'border-rose-500/40 bg-rose-950/90 text-rose-200',
+    info: 'border-sky-500/40 bg-sky-950/90 text-sky-200',
+    warning: 'border-amber-500/40 bg-amber-950/90 text-amber-200',
+  };
+
+  const icons = {
+    success: '✅',
+    error: '❌',
+    info: 'ℹ️',
+    warning: '⚠️',
+  };
+
+  return (
+    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] animate-fadeInUp">
+      <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl border backdrop-blur-xl shadow-2xl ${typeStyles[toast.type] || typeStyles.info}`}>
+        <span className="text-lg">{icons[toast.type] || icons.info}</span>
+        <span className="text-sm font-bold">{toast.message}</span>
+        <button
+          onClick={onDismiss}
+          className="mr-2 p-1 rounded-full hover:bg-white/10 text-current opacity-60 hover:opacity-100 transition-all cursor-pointer"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [students, setStudents] = useState([]);
   const [activeView, setActiveView] = useState('form'); // 'form' | 'success' | 'dashboard'
   const [submittedData, setSubmittedData] = useState(null);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
+    return sessionStorage.getItem('kuttab_admin_logged_in') === 'true';
+  });
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  // Toast helper
+  const showToast = useCallback((message, type = 'info', duration = 3500) => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), duration);
+  }, []);
 
   // Subscribe to student registrations in real-time
   useEffect(() => {
@@ -26,6 +69,15 @@ export default function App() {
     };
   }, []);
 
+  // Persist admin state
+  useEffect(() => {
+    if (isAdminLoggedIn) {
+      sessionStorage.setItem('kuttab_admin_logged_in', 'true');
+    } else {
+      sessionStorage.removeItem('kuttab_admin_logged_in');
+    }
+  }, [isAdminLoggedIn]);
+
   const handleOpenAdmin = () => {
     if (isAdminLoggedIn) {
       setActiveView('dashboard');
@@ -34,9 +86,16 @@ export default function App() {
     }
   };
 
+  const handleLogout = () => {
+    setIsAdminLoggedIn(false);
+    setActiveView('form');
+    showToast('تم تسجيل الخروج بنجاح', 'info');
+  };
+
   const handleFormSuccess = (studentRecord) => {
     setSubmittedData(studentRecord);
     setActiveView('success');
+    showToast('تم حفظ بيانات الطالب بنجاح! 🎉', 'success');
   };
 
   const handleResetForm = () => {
@@ -59,12 +118,17 @@ export default function App() {
         <div className="absolute top-[60%] right-[20%] w-2 h-2 bg-teal-300 rounded-full animate-particle delay-500 opacity-50"></div>
       </div>
 
+      {/* Toast Notifications */}
+      <ToastNotification toast={toast} onDismiss={() => setToast(null)} />
+
       {/* Header */}
       <Header
         onOpenAdmin={handleOpenAdmin}
+        onLogout={handleLogout}
         isAdminLoggedIn={isAdminLoggedIn}
         activeView={activeView}
         setActiveView={setActiveView}
+        studentCount={students.length}
       />
 
       {/* Main Views Container */}
@@ -85,7 +149,7 @@ export default function App() {
         {activeView === 'dashboard' && (
           <AdminDashboard
             students={students}
-            onRefresh={() => {}}
+            showToast={showToast}
           />
         )}
       </main>
@@ -110,6 +174,7 @@ export default function App() {
         onLoginSuccess={() => {
           setIsAdminLoggedIn(true);
           setActiveView('dashboard');
+          showToast('مرحباً بك في لوحة الإدارة! 🔓', 'success');
         }}
       />
     </div>
