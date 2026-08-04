@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm --prefix recognition-form install && npm --prefix recognition-form run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "recognition-form/dist",
   "rewrites": [
     {

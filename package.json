@@ -2,9 +2,8 @@
   "name": "wathba-kuttab-root",
   "private": true,
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
-    "install-app": "npm --prefix recognition-form install",
-    "build": "npm --prefix recognition-form install && npm --prefix recognition-form run build"
+    "install": "npm --prefix recognition-form install",
+    "build": "npm --prefix recognition-form run build"
   }
 }
