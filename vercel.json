@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd recognition-form && pnpm install && pnpm run build",
+  "buildCommand": "npm --prefix recognition-form install && npm --prefix recognition-form run build",
   "outputDirectory": "recognition-form/dist",
   "rewrites": [
     {
