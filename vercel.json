@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd recognition-form && pnpm install && pnpm run build",
+  "outputDirectory": "recognition-form/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
