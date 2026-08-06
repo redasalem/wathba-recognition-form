@@ -27,7 +27,7 @@ function FieldHint({ show, type = 'error', message }) {
   );
 }
 
-export default function StudentForm({ onSuccess }) {
+export default function StudentForm({ onSuccess, showToast }) {
   const [formData, setFormData] = useState({
     studentName: '',
     studentAge: '',
@@ -47,7 +47,6 @@ export default function StudentForm({ onSuccess }) {
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
-    // Mark field as touched on first change
     if (!touched[id]) {
       setTouched(prev => ({ ...prev, [id]: true }));
     }
@@ -68,7 +67,7 @@ export default function StudentForm({ onSuccess }) {
     }
   };
 
-  // ─── Real-time Validation ─────────────────────────────────
+  // ─── Real-time Arabic Validation ───────────────────────────
   const phoneRegex = /^01[0-9]{9}$/;
 
   const validation = useMemo(() => {
@@ -80,48 +79,56 @@ export default function StudentForm({ onSuccess }) {
       studentName: {
         valid: nameWords.length >= 3,
         message: nameVal.length === 0
-          ? null
+          ? '⚠️ يرجى إدخال اسم الطالب كاملاً ثلاثياً أو رباعياً بالعربية'
           : nameWords.length < 3
-            ? `📝 الاسم يجب أن يكون ثلاثي على الأقل — كتبت ${nameWords.length} ${nameWords.length === 1 ? 'كلمة' : 'كلمات'} فقط`
-            : '✅ تمام! الاسم مكتمل',
+            ? `📝 الاسم ناقص — يرجى كتابة الاسم ثلاثي على الأقل (كتبت ${nameWords.length} كلمة)`
+            : '✅ الاسم مكتمل وصحيح',
         type: nameWords.length >= 3 ? 'success' : 'error',
       },
 
       studentAge: {
         valid: age >= 3 && age <= 25,
         message: formData.studentAge === ''
-          ? null
+          ? '⚠️ يرجى إدخال سن الطالب بالسنوات'
           : age < 3
-            ? '⚠️ السن لازم يكون 3 سنوات على الأقل'
+            ? '⚠️ السن يجب أن يكون 3 سنوات على الأقل'
             : age > 25
-              ? '⚠️ السن لازم يكون 25 سنة أو أقل'
-              : `✅ تمام! العمر ${age} سنة`,
+              ? '⚠️ السن يجب أن يكون 25 سنة أو أقل'
+              : `✅ السن صحيح (${age} سنة)`,
         type: (age >= 3 && age <= 25) ? 'success' : 'error',
+      },
+
+      studyStage: {
+        valid: formData.studyStage !== '',
+        message: formData.studyStage === ''
+          ? '⚠️ يرجى اختيار المرحلة الدراسية من القائمة'
+          : '✅ تم اختيار المرحلة الدراسية',
+        type: formData.studyStage !== '' ? 'success' : 'error',
       },
 
       schoolName: {
         valid: formData.schoolName.trim().length >= 3,
         message: formData.schoolName.trim().length === 0
-          ? null
+          ? '⚠️ يرجى إدخال اسم المدرسة أو المعهد بالكامل'
           : formData.schoolName.trim().length < 3
-            ? '📝 من فضلك اكتب اسم المدرسة أو المعهد بالكامل'
-            : '✅ تمام!',
+            ? '📝 يرجى التوضيح واكتفاء الاسم بالكامل (3 أحرف على الأقل)'
+            : '✅ تم كتابة اسم المدرسة بالكامل',
         type: formData.schoolName.trim().length >= 3 ? 'success' : 'error',
       },
 
       fatherPhone: {
         valid: phoneRegex.test(formData.fatherPhone),
         message: formData.fatherPhone.length === 0
-          ? null
+          ? '⚠️ يرجى إدخال رقم تليفون ولي الأمر المكون من 11 رقماً'
           : !formData.fatherPhone.startsWith('01')
-            ? '📱 الرقم لازم يبدأ بـ 01 (مثل: 010 أو 011 أو 012 أو 015)'
+            ? '📱 رقم التليفون يجب أن يبدأ بـ 01 (مثل: 010 أو 011 أو 012 أو 015)'
             : formData.fatherPhone.length < 11
               ? `📱 الرقم ناقص — كتبت ${formData.fatherPhone.length} أرقام من أصل 11`
               : formData.fatherPhone.length > 11
-                ? `📱 الرقم زيادة — كتبت ${formData.fatherPhone.length} أرقام بدل 11`
+                ? `📱 الرقم زائد — كتبت ${formData.fatherPhone.length} أرقام بدلاً من 11`
                 : phoneRegex.test(formData.fatherPhone)
-                  ? '✅ رقم صحيح!'
-                  : '📱 الرقم لازم يكون أرقام فقط',
+                  ? '✅ رقم التليفون صحيح'
+                  : '📱 الرقم يجب أن يتكون من أرقام فقط',
         type: phoneRegex.test(formData.fatherPhone) ? 'success' : 'error',
       },
 
@@ -130,35 +137,29 @@ export default function StudentForm({ onSuccess }) {
         message: formData.motherPhone.length === 0
           ? null
           : !formData.motherPhone.startsWith('01')
-            ? '📱 الرقم لازم يبدأ بـ 01 (مثل: 010 أو 011 أو 012 أو 015)'
+            ? '📱 رقم التليفون يجب أن يبدأ بـ 01 (مثل: 010 أو 011 أو 012 أو 015)'
             : formData.motherPhone.length < 11
               ? `📱 الرقم ناقص — كتبت ${formData.motherPhone.length} أرقام من أصل 11`
               : formData.motherPhone.length > 11
-                ? `📱 الرقم زيادة — كتبت ${formData.motherPhone.length} أرقام بدل 11`
+                ? `📱 الرقم زائد — كتبت ${formData.motherPhone.length} أرقام بدلاً من 11`
                 : phoneRegex.test(formData.motherPhone)
-                  ? '✅ رقم صحيح!'
-                  : '📱 الرقم لازم يكون أرقام فقط',
+                  ? '✅ رقم التليفون صحيح'
+                  : '📱 الرقم يجب أن يتكون من أرقام فقط',
         type: (formData.motherPhone === '' || phoneRegex.test(formData.motherPhone)) ? 'success' : 'error',
-      },
-
-      studyStage: {
-        valid: formData.studyStage !== '',
-        message: null,
-        type: 'success',
       },
     };
   }, [formData]);
 
-  // ─── Dynamic border color based on validation ─────────────
+  // ─── Dynamic input border styling ────────────────────────
   const getInputClass = (field) => {
-    const base = 'w-full px-4 py-3 rounded-xl text-sm bg-white/5 border text-white placeholder-slate-500 focus:outline-none transition-all';
-    if (!touched[field] || validation[field].message === null) {
-      return `${base} border-white/10 focus:border-teal-500 focus:bg-white/10`;
+    const base = 'w-full px-4 py-3 rounded-xl text-sm bg-[#062b24]/90 border text-white placeholder-slate-500 focus:outline-none transition-all';
+    if (!touched[field]) {
+      return `${base} border-emerald-700/50 focus:border-[#fbbf24] focus:bg-[#062b24]`;
     }
     if (validation[field].valid) {
-      return `${base} border-emerald-500/40 bg-emerald-500/5 focus:border-emerald-400`;
+      return `${base} border-emerald-500/60 bg-emerald-500/10 focus:border-emerald-400`;
     }
-    return `${base} border-rose-500/40 bg-rose-500/5 focus:border-rose-400`;
+    return `${base} border-rose-500 bg-rose-500/15 focus:border-rose-400`;
   };
 
   // ─── Submit Handler ───────────────────────────────────────
@@ -166,7 +167,7 @@ export default function StudentForm({ onSuccess }) {
     e.preventDefault();
     setErrorMessage('');
 
-    // Mark all as touched
+    // Mark all required fields as touched
     setTouched({
       studentName: true,
       studentAge: true,
@@ -176,29 +177,34 @@ export default function StudentForm({ onSuccess }) {
       motherPhone: true,
     });
 
-    // Check all validations
     if (!validation.studentName.valid) {
-      setErrorMessage('يرجى كتابة اسم الطالب ثلاثي على الأقل (الاسم الأول + الأب + الجد)');
+      setErrorMessage('يرجى كتابة اسم الطالب ثلاثياً أو رباعياً بالعربية');
+      showToast?.('يرجى استكمال الحقول المطلوبة المحددة باللون الأحمر بالعربية', 'error');
       return;
     }
     if (!validation.studentAge.valid) {
-      setErrorMessage('السن يجب أن يكون بين 3 و 25 سنة');
+      setErrorMessage('يرجى تحديد سن الطالب بين 3 و 25 سنة بالسنوات');
+      showToast?.('يرجى تحديد سن الطالب بالسنوات', 'error');
       return;
     }
     if (!validation.studyStage.valid) {
-      setErrorMessage('يرجى اختيار المرحلة الدراسية');
+      setErrorMessage('يرجى اختيار المرحلة الدراسية من القائمة بالعربية');
+      showToast?.('يرجى اختيار المرحلة الدراسية', 'error');
       return;
     }
     if (!validation.schoolName.valid) {
-      setErrorMessage('يرجى كتابة اسم المدرسة أو المعهد');
+      setErrorMessage('يرجى كتابة اسم المدرسة أو المعهد بالكامل بالعربية');
+      showToast?.('يرجى كتابة اسم المدرسة أو المعهد', 'error');
       return;
     }
     if (!validation.fatherPhone.valid) {
-      setErrorMessage('رقم تليفون ولي الأمر يجب أن يبدأ بـ 01 ويتكون من 11 رقم');
+      setErrorMessage('يرجى إدخال رقم تليفون ولي الأمر المكون من 11 رقماً يبدأ بـ 01');
+      showToast?.('يرجى كتابة رقم تليفون صحيح مكون من 11 رقماً', 'error');
       return;
     }
     if (!validation.motherPhone.valid) {
-      setErrorMessage('رقم تليفون الأم يجب أن يبدأ بـ 01 ويتكون من 11 رقم');
+      setErrorMessage('رقم تليفون الأم يجب أن يكون مكوناً من 11 رقماً ويبدأ بـ 01');
+      showToast?.('يرجى تصحيح رقم تليفون الأم', 'error');
       return;
     }
 
@@ -221,6 +227,7 @@ export default function StudentForm({ onSuccess }) {
     } catch (err) {
       console.error('Submission error:', err);
       setErrorMessage('حدث خطأ أثناء حفظ البيانات. يرجى المحاولة مرة أخرى.');
+      showToast?.('حدث خطأ أثناء حفظ البيانات، يرجى المحاولة لاحقاً', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -228,52 +235,44 @@ export default function StudentForm({ onSuccess }) {
 
   return (
     <div className="w-full max-w-lg mx-auto my-4 animate-fadeInUp">
-      {/* Glassmorphism Outer Card */}
-      <div className="rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900/60 backdrop-blur-xl">
+      {/* Outer Card */}
+      <div className="rounded-3xl overflow-hidden border border-[#fbbf24]/30 shadow-2xl bg-[#062b24]/90 backdrop-blur-xl">
 
         {/* Header Banner */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-teal-900/90 via-teal-800/80 to-teal-950/95 px-6 pt-8 pb-10 text-center">
-          {/* Header Glows */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-40 h-40 bg-teal-400/15 rounded-full blur-3xl pointer-events-none"></div>
-
-          {/* Trophy Badge */}
-          <div className="mx-auto mb-4 w-20 h-20 rounded-full flex items-center justify-center bg-gradient-to-br from-amber-500/30 to-amber-600/10 border-2 border-amber-400/40 backdrop-blur-md shadow-xl animate-popIn animate-pulseGlow">
-            <span className="text-4xl animate-float">🏆</span>
+        <div className="relative overflow-hidden bg-gradient-to-r from-[#0c3d34] via-[#062b24] to-[#041915] px-6 pt-8 pb-10 text-center border-b border-emerald-800/40">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbbf24]/10 rounded-full blur-2xl pointer-events-none"></div>
+          
+          <div className="mx-auto mb-4 w-20 h-20 rounded-full flex items-center justify-center bg-amber-500/20 border-2 border-[#fbbf24] shadow-xl">
+            <span className="text-4xl">🏆</span>
           </div>
 
-          {/* Title */}
-          <h2 className="text-white text-xl sm:text-2xl font-black mb-3 leading-tight drop-shadow-md">
-            نبارك لكم هذا الشرف العظيم! 🎉
+          <h2 className="text-white text-xl sm:text-2xl font-black mb-3 leading-tight">
+            استكمال بيانات طالب مكرم 🎉
           </h2>
 
-          {/* Subtitle */}
-          <p className="text-teal-100 text-sm leading-relaxed font-semibold">
-            يسر إدارة <span className="text-amber-300 font-black">الكُتّاب</span> أن تتقدم بأجمل التهاني لأولياء أمور أبنائنا الفضلاء لتفوقهم واجتهادهم في الدورة الصيفية لحفظ كتاب الله.
+          <p className="text-emerald-100 text-xs sm:text-sm leading-relaxed font-semibold">
+            يسر إدارة <span className="text-[#fbbf24] font-black">كُتّاب</span> أن تتقدم بأجمل التهاني لأولياء أمور أبنائنا الفضلاء لتفوقهم في الدورة الصيفية.
           </p>
         </div>
 
         {/* Form Container */}
-        <div className="px-5 sm:px-7 pb-7 pt-4 bg-slate-950/80">
+        <div className="px-5 sm:px-7 pb-7 pt-4 bg-[#041915]/90">
 
-          {/* Global Error Banner */}
+          {/* Global Arabic Error Banner */}
           {errorMessage && (
-            <div className="mb-4 p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-200 text-xs font-bold flex items-center gap-2.5 animate-fadeInUp">
-              <div className="w-8 h-8 rounded-xl bg-rose-500/20 flex items-center justify-center shrink-0">
-                <AlertCircle className="w-4 h-4 text-rose-300" />
-              </div>
+            <div className="mb-4 p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-bold flex items-center gap-2.5 animate-fadeInUp">
+              <AlertCircle className="w-5 h-5 text-rose-300 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* ⚠️ FORM WITH noValidate TO PREVENT ENGLISH BROWSER TOOLTIPS */}
+          <form noValidate onSubmit={handleSubmit} className="space-y-4">
 
             {/* Section 1: Basic Info */}
-            <div className="flex items-center gap-2.5 pb-2 border-b border-teal-500/20">
-              <div className="w-8 h-8 rounded-lg bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-300 text-sm">
-                <User className="w-4 h-4" />
-              </div>
-              <h3 className="text-teal-300 text-xs sm:text-sm font-bold">البيانات الأساسية للطالب</h3>
+            <div className="flex items-center gap-2.5 pb-2 border-b border-emerald-800/40">
+              <User className="w-4 h-4 text-[#fbbf24]" />
+              <h3 className="text-[#fbbf24] text-xs sm:text-sm font-bold">البيانات الأساسية للطالب</h3>
             </div>
 
             {/* Student Name */}
@@ -289,10 +288,9 @@ export default function StudentForm({ onSuccess }) {
                 onBlur={handleBlur}
                 className={getInputClass('studentName')}
                 placeholder="مثال: أحمد محمد علي محمود"
-                required
               />
               <FieldHint
-                show={touched.studentName && validation.studentName.message}
+                show={touched.studentName}
                 type={validation.studentName.type}
                 message={validation.studentName.message}
               />
@@ -314,10 +312,9 @@ export default function StudentForm({ onSuccess }) {
                   max="25"
                   className={getInputClass('studentAge')}
                   placeholder="مثال: 9"
-                  required
                 />
                 <FieldHint
-                  show={touched.studentAge && validation.studentAge.message}
+                  show={touched.studentAge}
                   type={validation.studentAge.type}
                   message={validation.studentAge.message}
                 />
@@ -332,10 +329,9 @@ export default function StudentForm({ onSuccess }) {
                   value={formData.studyStage}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className="w-full px-4 py-3 rounded-xl text-sm bg-slate-900 border border-white/10 text-white focus:outline-none focus:border-teal-500 transition-all cursor-pointer"
-                  required
+                  className={getInputClass('studyStage')}
                 >
-                  <option value="">اختر المرحلة...</option>
+                  <option value="">اختر المرحلة الدراسية...</option>
                   <option value="حضانة">روضة / حضانة</option>
                   <option value="ابتدائي">ابتدائي</option>
                   <option value="إعدادي">إعدادي</option>
@@ -343,6 +339,11 @@ export default function StudentForm({ onSuccess }) {
                   <option value="معهد أزهري">معهد أزهري</option>
                   <option value="جامعي">جامعي</option>
                 </select>
+                <FieldHint
+                  show={touched.studyStage}
+                  type={validation.studyStage.type}
+                  message={validation.studyStage.message}
+                />
               </div>
             </div>
 
@@ -359,21 +360,18 @@ export default function StudentForm({ onSuccess }) {
                 onBlur={handleBlur}
                 className={getInputClass('schoolName')}
                 placeholder="مثال: مدرسة الفاروق / معهد الأزهر النموذجي"
-                required
               />
               <FieldHint
-                show={touched.schoolName && validation.schoolName.message}
+                show={touched.schoolName}
                 type={validation.schoolName.type}
                 message={validation.schoolName.message}
               />
             </div>
 
             {/* Section 2: Contact Info */}
-            <div className="flex items-center gap-2.5 pb-2 border-b border-amber-500/20 pt-2">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300 text-sm">
-                <Phone className="w-4 h-4" />
-              </div>
-              <h3 className="text-amber-300 text-xs sm:text-sm font-bold">بيانات تواصل أولياء الأمور</h3>
+            <div className="flex items-center gap-2.5 pb-2 border-b border-emerald-800/40 pt-2">
+              <Phone className="w-4 h-4 text-[#fbbf24]" />
+              <h3 className="text-[#fbbf24] text-xs sm:text-sm font-bold">بيانات تواصل أولياء الأمور</h3>
             </div>
 
             {/* Father Phone */}
@@ -390,10 +388,9 @@ export default function StudentForm({ onSuccess }) {
                 maxLength={11}
                 className={getInputClass('fatherPhone')}
                 placeholder="مثال: 01012345678"
-                required
               />
               <FieldHint
-                show={touched.fatherPhone && validation.fatherPhone.message}
+                show={touched.fatherPhone}
                 type={validation.fatherPhone.type}
                 message={validation.fatherPhone.message}
               />
@@ -402,7 +399,7 @@ export default function StudentForm({ onSuccess }) {
             {/* Mother Phone */}
             <div>
               <label htmlFor="motherPhone" className="block text-xs font-bold text-slate-300 mb-1.5">
-                رقم تليفون الأم <span className="text-slate-500 text-[11px] font-normal">(اختياري)</span>
+                رقم تليفون الأم <span className="text-slate-400 text-[11px] font-normal">(اختياري)</span>
               </label>
               <input
                 type="tel"
@@ -415,7 +412,7 @@ export default function StudentForm({ onSuccess }) {
                 placeholder="مثال: 01112345678"
               />
               <FieldHint
-                show={touched.motherPhone && validation.motherPhone.message}
+                show={touched.motherPhone}
                 type={validation.motherPhone.type}
                 message={validation.motherPhone.message}
               />
@@ -424,14 +421,13 @@ export default function StudentForm({ onSuccess }) {
             {/* Father Status */}
             <div>
               <label htmlFor="fatherStatus" className="block text-xs font-bold text-slate-300 mb-1.5">
-                حالة الأب <span className="text-slate-500 text-[11px] font-normal">(لمراعاة وتكريم طلابنا الكرام)</span> <span className="text-rose-400">*</span>
+                حالة الأب <span className="text-slate-400 text-[11px] font-normal">(لمراعاة وتكريم طلابنا الكرام)</span> <span className="text-rose-400">*</span>
               </label>
               <select
                 id="fatherStatus"
                 value={formData.fatherStatus}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 rounded-xl text-sm bg-slate-900 border border-white/10 text-white focus:outline-none focus:border-teal-500 transition-all cursor-pointer"
-                required
+                className="w-full px-4 py-3 rounded-xl text-sm bg-[#062b24]/90 border border-emerald-700/50 text-white focus:outline-none focus:border-[#fbbf24] transition-all cursor-pointer"
               >
                 <option value="الأب على قيد الحياة">الأب على قيد الحياة (حفظه الله)</option>
                 <option value="يتيم الأب">يتيم الأب (رحمه الله وأسكنه الفردوس)</option>
@@ -440,19 +436,17 @@ export default function StudentForm({ onSuccess }) {
             </div>
 
             {/* Section 3: Photo Upload */}
-            <div className="flex items-center gap-2.5 pb-2 border-b border-indigo-500/20 pt-2">
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 text-sm">
-                <ImageIcon className="w-4 h-4" />
-              </div>
-              <h3 className="text-indigo-300 text-xs sm:text-sm font-bold">
-                صورة الطالب الشخصية <span className="text-slate-500 text-[11px] font-normal">(اختياري)</span>
+            <div className="flex items-center gap-2.5 pb-2 border-b border-emerald-800/40 pt-2">
+              <ImageIcon className="w-4 h-4 text-[#fbbf24]" />
+              <h3 className="text-[#fbbf24] text-xs sm:text-sm font-bold">
+                صورة الطالب الشخصية <span className="text-slate-400 text-[11px] font-normal">(اختياري)</span>
               </h3>
             </div>
 
             {/* Photo Box */}
             <div
               onClick={() => document.getElementById('photoUploadInput').click()}
-              className="border-2 border-dashed border-white/15 hover:border-teal-500/50 bg-white/[0.02] hover:bg-teal-500/5 rounded-2xl p-5 text-center cursor-pointer transition-all duration-300 group"
+              className="border-2 border-dashed border-emerald-700/50 hover:border-[#fbbf24] bg-slate-900/60 rounded-2xl p-5 text-center cursor-pointer transition-all duration-300 group"
             >
               <input
                 type="file"
@@ -467,18 +461,18 @@ export default function StudentForm({ onSuccess }) {
                   <img
                     src={photoPreview}
                     alt="معاينة صورة الطالب"
-                    className="w-24 h-24 rounded-full object-cover border-4 border-teal-500/60 shadow-xl shadow-teal-500/20 animate-scaleIn"
+                    className="w-24 h-24 rounded-full object-cover border-4 border-[#fbbf24] shadow-xl"
                   />
-                  <span className="text-xs text-teal-300 font-bold">اضغط لتغيير الصورة 🔄</span>
+                  <span className="text-xs text-[#fbbf24] font-bold">اضغط لتغيير الصورة 🔄</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform text-[#fbbf24]">
                     <span className="text-2xl">📸</span>
                   </div>
-                  <p className="text-xs font-semibold text-slate-400">
-                    اضغط هنا لتحميل صورة الطالب<br />
-                    <span className="text-[10px] text-slate-500">(تأتي مطبوعة في كارت التكريم)</span>
+                  <p className="text-xs font-semibold text-slate-300">
+                    اضغط هنا لتحميل صورة الطالب الشخصية<br />
+                    <span className="text-[10px] text-slate-400">(تأتي مطبوعة في كارت التكريم)</span>
                   </p>
                 </div>
               )}
@@ -488,7 +482,7 @@ export default function StudentForm({ onSuccess }) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-white font-black text-base shadow-xl shadow-amber-900/30 hover:shadow-amber-500/30 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden disabled:opacity-50 cursor-pointer"
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-slate-950 font-black text-base shadow-xl shadow-amber-500/20 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -498,7 +492,7 @@ export default function StudentForm({ onSuccess }) {
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  <span>حفظ وتأكيد البيانات</span>
+                  <span>حفظ وتأكيد بيانات الطالب</span>
                   <span className="text-xl">🌟</span>
                 </>
               )}

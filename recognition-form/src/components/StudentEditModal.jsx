@@ -58,7 +58,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
     setTouched(prev => ({ ...prev, [field]: true }));
   };
 
-  // ─── Real-time Validation ─────────────────────────────────
+  // ─── Real-time Arabic Validation ───────────────────────────
   const phoneRegex = /^01[0-9]{9}$/;
 
   const validation = useMemo(() => {
@@ -70,21 +70,21 @@ export default function StudentEditModal({ student, onClose, showToast }) {
       studentName: {
         valid: nameWords.length >= 3,
         message: nameVal.length === 0
-          ? null
+          ? '⚠️ يرجى كتابة اسم الطالب ثلاثياً أو رباعياً بالعربية'
           : nameWords.length < 3
-            ? `📝 الاسم يجب أن يكون ثلاثي على الأقل — كتبت ${nameWords.length} ${nameWords.length === 1 ? 'كلمة' : 'كلمات'}`
-            : '✅ تمام! الاسم مكتمل',
+            ? `📝 الاسم ناقص — كتبت ${nameWords.length} كلمة فقط`
+            : '✅ الاسم مكتمل',
         type: nameWords.length >= 3 ? 'success' : 'error',
       },
 
       studentAge: {
         valid: age >= 3 && age <= 25,
         message: formData.studentAge === ''
-          ? null
+          ? '⚠️ يرجى تحديد سن الطالب بالعربية'
           : age < 3
-            ? '⚠️ السن لازم يكون 3 سنوات على الأقل'
+            ? '⚠️ السن يجب أن يكون 3 سنوات على الأقل'
             : age > 25
-              ? '⚠️ السن لازم يكون 25 سنة أو أقل'
+              ? '⚠️ السن يجب أن يكون 25 سنة أو أقل'
               : `✅ السن ${age} سنة`,
         type: (age >= 3 && age <= 25) ? 'success' : 'error',
       },
@@ -92,9 +92,9 @@ export default function StudentEditModal({ student, onClose, showToast }) {
       schoolName: {
         valid: formData.schoolName.trim().length >= 3,
         message: formData.schoolName.trim().length === 0
-          ? null
+          ? '⚠️ يرجى كتابة اسم المدرسة بالكامل'
           : formData.schoolName.trim().length < 3
-            ? '📝 يرجى كتابة اسم المدرسة بالكامل'
+            ? '📝 يرجى التوضيح واسم المدرسة بالكامل'
             : '✅ تمام!',
         type: formData.schoolName.trim().length >= 3 ? 'success' : 'error',
       },
@@ -102,13 +102,13 @@ export default function StudentEditModal({ student, onClose, showToast }) {
       fatherPhone: {
         valid: phoneRegex.test(formData.fatherPhone),
         message: formData.fatherPhone.length === 0
-          ? null
+          ? '⚠️ يرجى إدخال رقم تليفون الأب (11 رقماً يبدأ بـ 01)'
           : !formData.fatherPhone.startsWith('01')
-            ? '📱 الرقم لازم يبدأ بـ 01'
+            ? '📱 الرقم يجب أن يبدأ بـ 01'
             : formData.fatherPhone.length < 11
               ? `📱 الرقم ناقص (${formData.fatherPhone.length}/11)`
               : formData.fatherPhone.length > 11
-                ? `📱 الرقم زيادة (${formData.fatherPhone.length}/11)`
+                ? `📱 الرقم زائد (${formData.fatherPhone.length}/11)`
                 : phoneRegex.test(formData.fatherPhone)
                   ? '✅ رقم صحيح!'
                   : '📱 الرقم أرقام فقط',
@@ -120,11 +120,11 @@ export default function StudentEditModal({ student, onClose, showToast }) {
         message: formData.motherPhone.length === 0
           ? null
           : !formData.motherPhone.startsWith('01')
-            ? '📱 الرقم لازم يبدأ بـ 01'
+            ? '📱 الرقم يجب أن يبدأ بـ 01'
             : formData.motherPhone.length < 11
               ? `📱 الرقم ناقص (${formData.motherPhone.length}/11)`
               : formData.motherPhone.length > 11
-                ? `📱 الرقم زيادة (${formData.motherPhone.length}/11)`
+                ? `📱 الرقم زائد (${formData.motherPhone.length}/11)`
                 : phoneRegex.test(formData.motherPhone)
                   ? '✅ رقم صحيح!'
                   : '📱 الرقم أرقام فقط',
@@ -144,13 +144,13 @@ export default function StudentEditModal({ student, onClose, showToast }) {
 
   const getInputClass = (field) => {
     const base = 'w-full px-3 py-2.5 bg-slate-900/80 border rounded-xl text-white focus:outline-none text-xs transition-all';
-    if (!touched[field] || validation[field]?.message === null) {
+    if (!touched[field]) {
       return `${base} border-emerald-700/50 focus:border-[#fbbf24]`;
     }
     if (validation[field]?.valid) {
       return `${base} border-emerald-500/60 bg-emerald-500/5 focus:border-emerald-400`;
     }
-    return `${base} border-rose-500/60 bg-rose-500/5 focus:border-rose-400`;
+    return `${base} border-rose-500 bg-rose-500/10 focus:border-rose-400`;
   };
 
   const handlePhotoUpload = async (e) => {
@@ -185,19 +185,19 @@ export default function StudentEditModal({ student, onClose, showToast }) {
     });
 
     if (!validation.studentName.valid) {
-      showToast?.('يرجى كتابة اسم الطالب ثلاثي على الأقل', 'error');
+      showToast?.('يرجى كتابة اسم الطالب ثلاثياً على الأقل بالعربية', 'error');
       return;
     }
     if (!validation.studentAge.valid) {
-      showToast?.('السن يجب أن يكون بين 3 و 25 سنة', 'error');
+      showToast?.('السن يجب أن يكون بين 3 و 25 سنة بالسنوات', 'error');
       return;
     }
     if (!validation.schoolName.valid) {
-      showToast?.('يرجى كتابة اسم المدرسة بالكامل', 'error');
+      showToast?.('يرجى كتابة اسم المدرسة بالكامل بالعربية', 'error');
       return;
     }
     if (!validation.fatherPhone.valid) {
-      showToast?.('رقم تليفون الأب يجب أن يبدأ بـ 01 ويتكون من 11 رقم', 'error');
+      showToast?.('رقم تليفون الأب يجب أن يبدأ بـ 01 ويتكون من 11 رقماً', 'error');
       return;
     }
 
@@ -239,7 +239,8 @@ export default function StudentEditModal({ student, onClose, showToast }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        {/* ⚠️ FORM WITH noValidate TO PREVENT ENGLISH BROWSER TOOLTIPS */}
+        <form noValidate onSubmit={handleSubmit} className="space-y-4 text-xs">
           
           {/* Photo Preview & Upload */}
           <div className="flex items-center gap-4 p-3 bg-slate-900/60 rounded-2xl border border-emerald-700/30">
@@ -269,14 +270,13 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             <label className="block font-bold text-slate-200 mb-1">اسم الطالب ثلاثي / رباعي *</label>
             <input
               type="text"
-              required
               value={formData.studentName}
               onChange={(e) => handleInputChange('studentName', e.target.value)}
               onBlur={() => handleBlur('studentName')}
               className={getInputClass('studentName')}
             />
             <FieldHint
-              show={touched.studentName && validation.studentName.message}
+              show={touched.studentName}
               type={validation.studentName.type}
               message={validation.studentName.message}
             />
@@ -290,14 +290,13 @@ export default function StudentEditModal({ student, onClose, showToast }) {
                 type="number"
                 min="3"
                 max="25"
-                required
                 value={formData.studentAge}
                 onChange={(e) => handleInputChange('studentAge', e.target.value)}
                 onBlur={() => handleBlur('studentAge')}
                 className={getInputClass('studentAge')}
               />
               <FieldHint
-                show={touched.studentAge && validation.studentAge.message}
+                show={touched.studentAge}
                 type={validation.studentAge.type}
                 message={validation.studentAge.message}
               />
@@ -323,14 +322,13 @@ export default function StudentEditModal({ student, onClose, showToast }) {
               <label className="block font-bold text-slate-200 mb-1">المدرسة / المعهد *</label>
               <input
                 type="text"
-                required
                 value={formData.schoolName}
                 onChange={(e) => handleInputChange('schoolName', e.target.value)}
                 onBlur={() => handleBlur('schoolName')}
                 className={getInputClass('schoolName')}
               />
               <FieldHint
-                show={touched.schoolName && validation.schoolName.message}
+                show={touched.schoolName}
                 type={validation.schoolName.type}
                 message={validation.schoolName.message}
               />
@@ -370,7 +368,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
                 className={getInputClass('totalParts')}
               />
               <FieldHint
-                show={touched.totalParts && validation.totalParts.message}
+                show={touched.totalParts}
                 type={validation.totalParts.type}
                 message={validation.totalParts.message}
               />
@@ -394,7 +392,6 @@ export default function StudentEditModal({ student, onClose, showToast }) {
               <label className="block font-bold text-amber-300 mb-1">هاتف الأب / الواتساب *</label>
               <input
                 type="tel"
-                required
                 maxLength={11}
                 value={formData.fatherPhone}
                 onChange={(e) => handleInputChange('fatherPhone', e.target.value)}
@@ -402,7 +399,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
                 className={getInputClass('fatherPhone')}
               />
               <FieldHint
-                show={touched.fatherPhone && validation.fatherPhone.message}
+                show={touched.fatherPhone}
                 type={validation.fatherPhone.type}
                 message={validation.fatherPhone.message}
               />
@@ -419,7 +416,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
                 className={getInputClass('motherPhone')}
               />
               <FieldHint
-                show={touched.motherPhone && validation.motherPhone.message}
+                show={touched.motherPhone}
                 type={validation.motherPhone.type}
                 message={validation.motherPhone.message}
               />

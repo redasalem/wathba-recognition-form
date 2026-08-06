@@ -20,6 +20,11 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
     e.preventDefault();
     setError('');
 
+    if (!password.trim()) {
+      setError('⚠️ يرجى إدخال كلمة المرور بالعربية أو الأرقام');
+      return;
+    }
+
     if (password.trim() === targetPassword || password.trim() === 'kuttab2026') {
       onAdminSuccess();
       setPassword('');
@@ -109,7 +114,7 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
 
         {/* ROLE 1: ADMIN LOGIN */}
         {activeRole === 'admin' && (
-          <form onSubmit={handleAdminSubmit} className="space-y-4">
+          <form noValidate onSubmit={handleAdminSubmit} className="space-y-4">
             {error && (
               <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-bold flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -153,7 +158,7 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
         {/* ROLE 2: PARENTS LOOKUP */}
         {activeRole === 'parents' && (
           <div className="space-y-4">
-            <form onSubmit={handleParentSearch} className="space-y-3">
+            <form noValidate onSubmit={handleParentSearch} className="space-y-3">
               <label className="block text-xs font-bold text-slate-300">
                 استعلام متابعة الطالب باسم الطالب أو كود الـ QR
               </label>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserCheck, Phone, BookOpen, Users, Camera, Upload, CheckCircle2, ShieldCheck, ArrowRight, Award, GraduationCap, MapPin, Calendar, MessageSquare, Heart } from 'lucide-react';
+import { UserCheck, Phone, BookOpen, Users, Camera, Upload, CheckCircle2, ShieldCheck, ArrowRight, Award, GraduationCap, MapPin, Calendar, MessageSquare, Heart, AlertCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { uploadToCloudinary } from '../services/cloudinary';
 import { addSheikhRecord } from '../firebase';
@@ -25,6 +25,7 @@ export default function SheikhForm({ onSuccess, showToast }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedSheikh, setSubmittedSheikh] = useState(null);
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   const validatePhone = (phone) => {
     if (!phone) return true;
@@ -60,11 +61,11 @@ export default function SheikhForm({ onSuccess, showToast }) {
     const newErrors = {};
 
     if (!formData.sheikhName.trim()) {
-      newErrors.sheikhName = 'يرجى إدخال اسم الشيخ أو المعلم';
+      newErrors.sheikhName = '⚠️ يرجى إدخال اسم الشيخ أو المعلم الكامل بالعربية';
     }
 
     if (formData.phone && !validatePhone(formData.phone)) {
-      newErrors.phone = 'رقم الهاتف غير صحيح (يجب أن يكون 11 رقماً ويبدأ بـ 01)';
+      newErrors.phone = '⚠️ رقم الهاتف غير صحيح (يجب أن يكون 11 رقماً ويبدأ بـ 01)';
     }
 
     setErrors(newErrors);
@@ -73,9 +74,10 @@ export default function SheikhForm({ onSuccess, showToast }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setTouched({ sheikhName: true, phone: true });
 
     if (!validateForm()) {
-      showToast?.('يرجى تصحيح الأخطاء في النموذج قبل الحفظ', 'error');
+      showToast?.('يرجى استكمال الحقول المطلوبة المحددة باللون الأحمر بالعربية', 'error');
       return;
     }
 
@@ -158,6 +160,8 @@ export default function SheikhForm({ onSuccess, showToast }) {
                 photoUrl: ''
               });
               setPhotoPreview(null);
+              setErrors({});
+              setTouched({});
             }}
             className="px-6 py-3 bg-[#0c3d34] hover:bg-[#114b40] text-emerald-300 font-bold rounded-xl border border-emerald-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
@@ -184,7 +188,8 @@ export default function SheikhForm({ onSuccess, showToast }) {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      {/* ⚠️ FORM WITH noValidate TO PREVENT ENGLISH BROWSER TOOLTIPS */}
+      <form noValidate onSubmit={handleSubmit} className="space-y-8">
         
         {/* قسم رفع صورة الشيخ */}
         <div className="flex flex-col items-center justify-center p-6 bg-slate-900/50 border border-emerald-700/40 rounded-2xl">
@@ -232,15 +237,23 @@ export default function SheikhForm({ onSuccess, showToast }) {
               </label>
               <input
                 type="text"
-                required
                 value={formData.sheikhName}
-                onChange={(e) => setFormData({ ...formData, sheikhName: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, sheikhName: e.target.value });
+                  if (errors.sheikhName) setErrors(prev => ({ ...prev, sheikhName: '' }));
+                }}
+                onBlur={() => setTouched(prev => ({ ...prev, sheikhName: true }))}
                 placeholder="مثال: الشيخ عبد الله حسن الديهى"
                 className={`w-full px-4 py-3 bg-slate-900/60 border ${
-                  errors.sheikhName ? 'border-rose-500' : 'border-emerald-700/50'
+                  errors.sheikhName && touched.sheikhName ? 'border-rose-500 bg-rose-500/10' : 'border-emerald-700/50'
                 } rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#fbbf24] text-sm transition-all`}
               />
-              {errors.sheikhName && <p className="text-rose-400 text-xs mt-1">{errors.sheikhName}</p>}
+              {errors.sheikhName && touched.sheikhName && (
+                <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold border border-rose-500/30 bg-rose-500/10 text-rose-300">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{errors.sheikhName}</span>
+                </div>
+              )}
             </div>
 
             <div>
@@ -251,13 +264,22 @@ export default function SheikhForm({ onSuccess, showToast }) {
               <input
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, phone: e.target.value });
+                  if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+                }}
+                onBlur={() => setTouched(prev => ({ ...prev, phone: true }))}
                 placeholder="مثال: 01550215634"
                 className={`w-full px-4 py-3 bg-slate-900/60 border ${
-                  errors.phone ? 'border-rose-500' : 'border-emerald-700/50'
+                  errors.phone && touched.phone ? 'border-rose-500 bg-rose-500/10' : 'border-emerald-700/50'
                 } rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#fbbf24] text-sm transition-all`}
               />
-              {errors.phone && <p className="text-rose-400 text-xs mt-1">{errors.phone}</p>}
+              {errors.phone && touched.phone && (
+                <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold border border-rose-500/30 bg-rose-500/10 text-rose-300">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{errors.phone}</span>
+                </div>
+              )}
             </div>
 
           </div>
@@ -310,10 +332,10 @@ export default function SheikhForm({ onSuccess, showToast }) {
         </div>
 
         {/* ☀️ القسم الثاني: بيانات وملاحظات المشاركة بالدورة الصيفية 2026 */}
-        <div className="space-y-4">
+        <div className="space-y-4 pt-4 border-t border-emerald-800/40">
           <div className="flex items-center gap-2 text-[#fbbf24] font-black text-sm pb-2 border-b border-emerald-800/40">
             <Calendar className="w-5 h-5 text-emerald-400" />
-            <span>ثانياً: بيانات وملاحظات الدورة الصيفية 2026</span>
+            <span>ثانياً: تفاصيل وملاحظات الدورة الصيفية 2026</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
@@ -326,23 +348,43 @@ export default function SheikhForm({ onSuccess, showToast }) {
               <select
                 value={formData.participatingSummer}
                 onChange={(e) => setFormData({ ...formData, participatingSummer: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-900/60 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] text-sm transition-all"
+                className="w-full px-4 py-3 bg-slate-900/60 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] text-sm transition-all cursor-pointer"
               >
                 <option value="نعم - مشارك بالدورة الصيفية">نعم - مشارك بالدورة الصيفية 2026</option>
                 <option value="لا - محفظ دائم بالكُتّاب">لا - محفظ دائم بالكُتّاب فقط</option>
                 <option value="مشارك جزئي / بديل">مشارك جزئي / بديل</option>
               </select>
             </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
+                <UserCheck className="w-4 h-4 text-[#fbbf24]" />
                 الحالة الاجتماعية
               </label>
               <select
                 value={formData.socialStatus}
                 onChange={(e) => setFormData({ ...formData, socialStatus: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-900/60 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] text-sm transition-all"
+                className="w-full px-4 py-3 bg-slate-900/60 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] text-sm transition-all cursor-pointer"
               >
                 <option value="متزوج">متزوج</option>
                 <option value="عزب / عزباء">عزب / عزباء</option>
                 <option value="أرمل / أرملة">أرمل / أرملة</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
+                <Heart className="w-4 h-4 text-[#fbbf24]" />
+                طبيعة التفرغ والمكافأة
+              </label>
+              <select
+                value={formData.stipendStatus}
+                onChange={(e) => setFormData({ ...formData, stipendStatus: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-900/60 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] text-sm transition-all cursor-pointer"
+              >
+                <option value="متفرغ كلياً (مكافأة شهرية)">متفرغ كلياً (مكافأة شهرية كاملة)</option>
+                <option value="متطوع بدون مقابل">عمل تطوعي لله تعالى</option>
+                <option value="متفرغ جزئياً">متفرغ جزئياً</option>
               </select>
             </div>
 
