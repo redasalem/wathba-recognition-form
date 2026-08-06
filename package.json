@@ -1,9 +1,0 @@
-{
-  "name": "wathba-kuttab-root",
-  "private": true,
-  "version": "1.0.0",
-  "scripts": {
-    "install": "npm --prefix recognition-form install",
-    "build": "npm --prefix recognition-form run build"
-  }
-}
