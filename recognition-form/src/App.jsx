@@ -5,7 +5,7 @@ import StudentForm from './components/StudentForm';
 import SheikhForm from './components/SheikhForm';
 import SuccessView from './components/SuccessView';
 import AdminDashboard from './components/AdminDashboard';
-import AdminLoginModal from './components/AdminLoginModal';
+import LoginPortalModal from './components/LoginPortalModal';
 import { subscribeStudents } from './firebase';
 
 export default function App() {
@@ -14,9 +14,9 @@ export default function App() {
   const [records, setRecords] = useState([]);
   const [submittedData, setSubmittedData] = useState(null);
 
-  // Admin auth state
+  // Auth & Login Portal Modal state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // Toast notifications state
   const [toast, setToast] = useState(null);
@@ -27,6 +27,41 @@ export default function App() {
       setToast(null);
     }, 4000);
   }, []);
+
+  // 🔗 URL HASH & ROUTE INITIALIZATION (Direct Form URLs)
+  useEffect(() => {
+    const handleUrlRoute = () => {
+      const hash = window.location.hash.toLowerCase();
+      const path = window.location.pathname.toLowerCase();
+      const search = window.location.search.toLowerCase();
+
+      if (hash.includes('sheikh-form') || path.includes('sheikh-form') || search.includes('sheikh-form')) {
+        setActiveView('sheikh-form');
+      } else if (hash.includes('student-form') || hash.includes('form') || path.includes('form') || search.includes('form')) {
+        setActiveView('form');
+      } else if (hash.includes('admin') || path.includes('admin') || search.includes('admin')) {
+        setActiveView('admin');
+      }
+    };
+
+    handleUrlRoute();
+    window.addEventListener('hashchange', handleUrlRoute);
+    return () => window.removeEventListener('hashchange', handleUrlRoute);
+  }, []);
+
+  // Sync hash when activeView changes
+  const handleNavigate = (view) => {
+    setActiveView(view);
+    if (view === 'sheikh-form') {
+      window.location.hash = '/sheikh-form';
+    } else if (view === 'form') {
+      window.location.hash = '/student-form';
+    } else if (view === 'admin') {
+      window.location.hash = '/admin';
+    } else {
+      window.location.hash = '';
+    }
+  };
 
   // Realtime Firebase Listener for Students
   useEffect(() => {
@@ -44,14 +79,14 @@ export default function App() {
 
   const handleAdminLoginSuccess = () => {
     setIsAdminLoggedIn(true);
-    setIsAdminModalOpen(false);
-    setActiveView('admin');
-    showToast('تم تسجيل دخول الإدارة بنجاح 🔑', 'success');
+    setIsLoginModalOpen(false);
+    handleNavigate('admin');
+    showToast('تم تسجيل دخول لوحة الإدارة بنجاح 🔑', 'success');
   };
 
   const handleLogout = () => {
     setIsAdminLoggedIn(false);
-    setActiveView('landing');
+    handleNavigate('landing');
     showToast('تم تسجيل الخروج بنجاح', 'info');
   };
 
@@ -85,15 +120,15 @@ export default function App() {
       {/* Header Bar */}
       <Header
         activeView={activeView}
-        onNavigate={(view) => setActiveView(view)}
+        onNavigate={handleNavigate}
         isAdminLoggedIn={isAdminLoggedIn}
-        onOpenAdminModal={() => setIsAdminModalOpen(true)}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
       />
 
       {/* Main Content Router */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
         {activeView === 'landing' && (
-          <LandingPage onNavigate={(view) => setActiveView(view)} />
+          <LandingPage onNavigate={handleNavigate} />
         )}
 
         {activeView === 'form' && (
@@ -107,8 +142,8 @@ export default function App() {
         {activeView === 'success' && (
           <SuccessView
             submittedData={submittedData}
-            onRegisterAnother={() => setActiveView('form')}
-            onGoHome={() => setActiveView('landing')}
+            onRegisterAnother={() => handleNavigate('form')}
+            onGoHome={() => handleNavigate('landing')}
           />
         )}
 
@@ -120,13 +155,13 @@ export default function App() {
               showToast={showToast}
             />
           ) : (
-            <div className="text-center py-20">
-              <p className="text-slate-400 mb-4">يرجى تسجيل الدخول للوصول إلى لوحة التحكم</p>
+            <div className="text-center py-20 bg-[#062b24]/80 rounded-3xl border border-emerald-700/40 p-8 my-8 max-w-md mx-auto">
+              <p className="text-slate-300 text-xs mb-4">يرجى تسجيل الدخول للوصول إلى لوحة الإدارة والشيوخ</p>
               <button
-                onClick={() => setIsAdminModalOpen(true)}
-                className="px-6 py-3 bg-[#fbbf24] text-slate-950 font-black rounded-xl"
+                onClick={() => setIsLoginModalOpen(true)}
+                className="px-6 py-3 bg-[#fbbf24] text-slate-950 font-black rounded-xl text-xs cursor-pointer shadow-lg"
               >
-                فتح نافذة الدخول
+                فتح بوابة تسجيل الدخول 🔑
               </button>
             </div>
           )
@@ -141,11 +176,11 @@ export default function App() {
         </p>
       </footer>
 
-      {/* Admin Login Modal */}
-      {isAdminModalOpen && (
-        <AdminLoginModal
-          onClose={() => setIsAdminModalOpen(false)}
-          onSuccess={handleAdminLoginSuccess}
+      {/* Unified Login Portal Modal */}
+      {isLoginModalOpen && (
+        <LoginPortalModal
+          onClose={() => setIsLoginModalOpen(false)}
+          onAdminSuccess={handleAdminLoginSuccess}
           showToast={showToast}
         />
       )}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { BookOpen, ShieldCheck, UserCheck, Award, Home, Menu, X, Sparkles } from 'lucide-react';
+import { BookOpen, ShieldCheck, Home, Menu, X, LogIn, Sparkles } from 'lucide-react';
 
-export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpenAdminModal }) {
+export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpenLoginModal }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNav = (view) => {
@@ -10,10 +10,10 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#041915]/90 border-b border-[#fbbf24]/20 backdrop-blur-xl transition-all">
+    <header className="sticky top-0 z-40 bg-[#041915]/95 border-b border-[#fbbf24]/20 backdrop-blur-xl transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between">
         
-        {/* LOGO & BRAND */}
+        {/* LOGO & BRAND TITLE */}
         <div
           onClick={() => handleNav('landing')}
           className="flex items-center gap-3 cursor-pointer group"
@@ -35,12 +35,11 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
           </div>
         </div>
 
-        {/* DESKTOP NAVIGATION LINKS */}
-        <nav className="hidden md:flex items-center gap-2 bg-[#062b24]/60 p-1.5 rounded-xl border border-emerald-800/40">
-          
+        {/* DESKTOP NAVIGATION */}
+        <nav className="hidden md:flex items-center gap-2 bg-[#062b24]/60 p-1 rounded-xl border border-emerald-800/40">
           <button
             onClick={() => handleNav('landing')}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeView === 'landing'
                 ? 'bg-[#fbbf24] text-slate-950 shadow-md font-black'
                 : 'text-slate-200 hover:text-white hover:bg-emerald-800/30'
@@ -49,34 +48,9 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
             <Home className="w-4 h-4" />
             الرئيسية والتعريف
           </button>
-
-          <button
-            onClick={() => handleNav('form')}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeView === 'form'
-                ? 'bg-[#fbbf24] text-slate-950 shadow-md font-black'
-                : 'text-slate-200 hover:text-white hover:bg-emerald-800/30'
-            }`}
-          >
-            <Award className="w-4 h-4" />
-            نموذج الطالب
-          </button>
-
-          <button
-            onClick={() => handleNav('sheikh-form')}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeView === 'sheikh-form'
-                ? 'bg-[#fbbf24] text-slate-950 shadow-md font-black'
-                : 'text-slate-200 hover:text-white hover:bg-emerald-800/30'
-            }`}
-          >
-            <UserCheck className="w-4 h-4" />
-            نموذج الشيخ
-          </button>
-
         </nav>
 
-        {/* RIGHT ACTION: ADMIN LOGIN */}
+        {/* RIGHT ACTION: UNIFIED LOGIN BUTTON */}
         <div className="hidden md:flex items-center gap-3">
           {isAdminLoggedIn ? (
             <button
@@ -84,15 +58,15 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl border border-emerald-400/40 transition-all flex items-center gap-2 shadow-lg cursor-pointer"
             >
               <ShieldCheck className="w-4 h-4 text-[#fbbf24]" />
-              لوحة التحكم
+              لوحة التحكم الإدارية
             </button>
           ) : (
             <button
-              onClick={onOpenAdminModal}
-              className="px-4 py-2 bg-[#062b24] hover:bg-[#0c3d34] text-[#fbbf24] text-xs font-bold rounded-xl border border-[#fbbf24]/30 transition-all flex items-center gap-2 cursor-pointer"
+              onClick={onOpenLoginModal}
+              className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer"
             >
-              <ShieldCheck className="w-4 h-4" />
-              دخول الإدارة
+              <LogIn className="w-4 h-4" />
+              تسجيل الدخول
             </button>
           )}
         </div>
@@ -120,26 +94,6 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
             الرئيسية والتعريف
           </button>
 
-          <button
-            onClick={() => handleNav('form')}
-            className={`w-full p-3 rounded-xl text-right text-xs font-bold flex items-center gap-3 ${
-              activeView === 'form' ? 'bg-[#fbbf24] text-slate-950 font-black' : 'text-slate-200'
-            }`}
-          >
-            <Award className="w-4 h-4" />
-            نموذج الطالب
-          </button>
-
-          <button
-            onClick={() => handleNav('sheikh-form')}
-            className={`w-full p-3 rounded-xl text-right text-xs font-bold flex items-center gap-3 ${
-              activeView === 'sheikh-form' ? 'bg-[#fbbf24] text-slate-950 font-black' : 'text-slate-200'
-            }`}
-          >
-            <UserCheck className="w-4 h-4" />
-            نموذج الشيخ / المعلم
-          </button>
-
           <div className="pt-2 border-t border-emerald-900/60">
             {isAdminLoggedIn ? (
               <button
@@ -153,12 +107,12 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  onOpenAdminModal();
+                  onOpenLoginModal();
                 }}
-                className="w-full p-3 bg-[#062b24] text-[#fbbf24] border border-[#fbbf24]/30 rounded-xl text-xs font-bold flex items-center gap-3"
+                className="w-full p-3 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-xl text-xs font-black flex items-center gap-3 justify-center shadow-lg"
               >
-                <ShieldCheck className="w-4 h-4" />
-                دخول الإدارة
+                <LogIn className="w-4 h-4" />
+                تسجيل الدخول
               </button>
             )}
           </div>
