@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { CheckCircle2, MessageSquare, PlusCircle, ArrowRight, QrCode } from 'lucide-react';
-import StudentBadgeModal from './StudentBadgeModal';
+import { CheckCircle2, MessageSquare, PlusCircle, ArrowRight } from 'lucide-react';
 
 export default function SuccessView({ studentData, onReset, onViewDashboard, isAdminLoggedIn }) {
-  const [showBadge, setShowBadge] = useState(false);
   useEffect(() => {
     // Launch Confetti animation
     try {
@@ -72,20 +70,11 @@ export default function SuccessView({ studentData, onReset, onViewDashboard, isA
           href={waUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-900/40 hover:shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 mb-3 cursor-pointer"
+          className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-900/40 hover:shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 mb-4"
         >
           <MessageSquare className="w-5 h-5 text-emerald-100" />
           <span>تواصل مباشر وتأكيد عبر الواتساب</span>
         </a>
-
-        {/* View & Print Recognition Badge Button */}
-        <button
-          onClick={() => setShowBadge(true)}
-          className="w-full py-3 px-4 rounded-2xl bg-[#fbbf24]/15 hover:bg-[#fbbf24]/25 text-[#fbbf24] border border-[#fbbf24]/40 font-bold text-xs shadow-md transition-all duration-300 flex items-center justify-center gap-2 mb-4 cursor-pointer"
-        >
-          <QrCode className="w-4 h-4" />
-          <span>عرض وطباعة كارت التكريم والـ QR Code الخاص بالطالب</span>
-        </button>
 
         {/* Bottom Actions */}
         <div className="flex items-center justify-center gap-3 pt-3 border-t border-white/10">
@@ -109,14 +98,6 @@ export default function SuccessView({ studentData, onReset, onViewDashboard, isA
         </div>
 
       </div>
-
-      {/* Student Badge Modal */}
-      {showBadge && studentData && (
-        <StudentBadgeModal
-          student={studentData}
-          onClose={() => setShowBadge(false)}
-        />
-      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { User, Phone, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, AlertCircle, Info, BookOpen } from 'lucide-react';
+import { User, Phone, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import { uploadStudentPhoto } from '../services/cloudinary';
-import { addStudentRecord } from '../firebase';
+import { saveStudentRegistration } from '../firebase';
 
 // ─── Inline Field Hint Component ────────────────────────────
 function FieldHint({ show, type = 'error', message }) {
@@ -27,15 +27,12 @@ function FieldHint({ show, type = 'error', message }) {
   );
 }
 
-export default function StudentForm({ onSuccess, showToast }) {
+export default function StudentForm({ onSuccess }) {
   const [formData, setFormData] = useState({
     studentName: '',
     studentAge: '',
     studyStage: '',
     schoolName: '',
-    partName: '',
-    sheikhName: '',
-    totalParts: '',
     fatherPhone: '',
     motherPhone: '',
     fatherStatus: 'الأب على قيد الحياة'
@@ -149,27 +146,6 @@ export default function StudentForm({ onSuccess, showToast }) {
         message: null,
         type: 'success',
       },
-
-      partName: {
-        valid: formData.partName !== '',
-        message: null,
-        type: 'success',
-      },
-
-      totalParts: {
-        valid: formData.totalParts === '' || (Number(formData.totalParts) >= 1 && Number(formData.totalParts) <= 30),
-        message: formData.totalParts === '' ? null
-          : Number(formData.totalParts) < 1 ? '⚠️ يجب أن يكون عدد الأجزاء 1 على الأقل'
-          : Number(formData.totalParts) > 30 ? '⚠️ أقصى عدد 30 جزء'
-          : `✅ ${formData.totalParts} جزء`,
-        type: (formData.totalParts === '' || (Number(formData.totalParts) >= 1 && Number(formData.totalParts) <= 30)) ? 'success' : 'error',
-      },
-
-      sheikhName: {
-        valid: true,
-        message: null,
-        type: 'success',
-      },
     };
   }, [formData]);
 
@@ -196,9 +172,6 @@ export default function StudentForm({ onSuccess, showToast }) {
       studentAge: true,
       studyStage: true,
       schoolName: true,
-      partName: true,
-      totalParts: true,
-      sheikhName: true,
       fatherPhone: true,
       motherPhone: true,
     });
@@ -218,10 +191,6 @@ export default function StudentForm({ onSuccess, showToast }) {
     }
     if (!validation.schoolName.valid) {
       setErrorMessage('يرجى كتابة اسم المدرسة أو المعهد');
-      return;
-    }
-    if (!validation.partName.valid) {
-      setErrorMessage('يرجى اختيار فئة المشاركة بالدورة الصيفية');
       return;
     }
     if (!validation.fatherPhone.valid) {
@@ -244,12 +213,11 @@ export default function StudentForm({ onSuccess, showToast }) {
       const studentPayload = {
         ...formData,
         studentAge: Number(formData.studentAge),
-        totalParts: formData.totalParts ? Number(formData.totalParts) : 0,
         photoUrl
       };
 
-      const docId = await addStudentRecord(studentPayload);
-      onSuccess({ id: docId, ...studentPayload });
+      const savedRecord = await saveStudentRegistration(studentPayload);
+      onSuccess(savedRecord);
     } catch (err) {
       console.error('Submission error:', err);
       setErrorMessage('حدث خطأ أثناء حفظ البيانات. يرجى المحاولة مرة أخرى.');
@@ -400,77 +368,7 @@ export default function StudentForm({ onSuccess, showToast }) {
               />
             </div>
 
-            {/* Section 2: بيانات الدورة الصيفية */}
-            <div className="flex items-center gap-2.5 pb-2 border-b border-emerald-500/20 pt-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-300 text-sm">
-                <BookOpen className="w-4 h-4" />
-              </div>
-              <h3 className="text-emerald-300 text-xs sm:text-sm font-bold">بيانات المشاركة بالدورة الصيفية 2026</h3>
-            </div>
-
-            {/* Part Name & Total Parts */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="partName" className="block text-xs font-bold text-slate-300 mb-1.5">
-                  فئة المشاركة / الجزء <span className="text-rose-400">*</span>
-                </label>
-                <select
-                  id="partName"
-                  value={formData.partName}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  className="w-full px-4 py-3 rounded-xl text-sm bg-slate-900 border border-white/10 text-white focus:outline-none focus:border-teal-500 transition-all cursor-pointer"
-                  required
-                >
-                  <option value="">اختر الفئة...</option>
-                  <option value="القرآن كاملاً">القرآن كاملاً 🏆</option>
-                  <option value="جزء الأعراف">جزء الأعراف وما فوق</option>
-                  <option value="من 10 إلى 15 جزء">من 10 إلى 15 جزء</option>
-                  <option value="من 5 إلى 10 أجزاء">من 5 إلى 10 أجزاء</option>
-                  <option value="جزء عم وقصار السور">جزء عم وقصار السور</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="totalParts" className="block text-xs font-bold text-slate-300 mb-1.5">
-                  عدد الأجزاء المحفوظة
-                </label>
-                <input
-                  type="number"
-                  id="totalParts"
-                  value={formData.totalParts}
-                  onChange={handleInputChange}
-                  onBlur={handleBlur}
-                  min="1"
-                  max="30"
-                  className={getInputClass('totalParts')}
-                  placeholder="مثال: 5"
-                />
-                <FieldHint
-                  show={touched.totalParts && validation.totalParts.message}
-                  type={validation.totalParts.type}
-                  message={validation.totalParts.message}
-                />
-              </div>
-            </div>
-
-            {/* Sheikh Name */}
-            <div>
-              <label htmlFor="sheikhName" className="block text-xs font-bold text-slate-300 mb-1.5">
-                اسم الشيخ المشرف على الطالب
-              </label>
-              <input
-                type="text"
-                id="sheikhName"
-                value={formData.sheikhName}
-                onChange={handleInputChange}
-                onBlur={handleBlur}
-                className={getInputClass('sheikhName')}
-                placeholder="مثال: الشيخ عبد الله حسن الديهى"
-              />
-            </div>
-
-            {/* Section 3: Contact Info */}
+            {/* Section 2: Contact Info */}
             <div className="flex items-center gap-2.5 pb-2 border-b border-amber-500/20 pt-2">
               <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300 text-sm">
                 <Phone className="w-4 h-4" />

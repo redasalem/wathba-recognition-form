@@ -6,13 +6,12 @@ import SheikhForm from './components/SheikhForm';
 import SuccessView from './components/SuccessView';
 import AdminDashboard from './components/AdminDashboard';
 import AdminLoginModal from './components/AdminLoginModal';
-import { subscribeStudents, subscribeSheikhs } from './firebase';
+import { subscribeStudents } from './firebase';
 
 export default function App() {
   // Views: 'landing' | 'form' | 'sheikh-form' | 'success' | 'admin'
   const [activeView, setActiveView] = useState('landing');
   const [records, setRecords] = useState([]);
-  const [sheikhs, setSheikhs] = useState([]);
   const [submittedData, setSubmittedData] = useState(null);
 
   // Admin auth state
@@ -43,19 +42,6 @@ export default function App() {
     return () => unsubscribe();
   }, [showToast]);
 
-  // Realtime Firebase Listener for Sheikhs
-  useEffect(() => {
-    const unsubscribe = subscribeSheikhs(
-      (data) => {
-        setSheikhs(data);
-      },
-      (err) => {
-        console.error('Sheikhs Firebase error:', err);
-      }
-    );
-    return () => unsubscribe();
-  }, []);
-
   const handleAdminLoginSuccess = () => {
     setIsAdminLoggedIn(true);
     setIsAdminModalOpen(false);
@@ -75,7 +61,7 @@ export default function App() {
   };
 
   const handleSheikhFormSuccess = (sheikhRecord) => {
-    showToast(`تم إدراج بيانات فضيلة الشيخ (${sheikhRecord.name}) بنجاح 🎉`, 'success');
+    // Optionally return to landing or show notification
   };
 
   return (
@@ -84,7 +70,7 @@ export default function App() {
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-2xl border text-xs font-black backdrop-blur-xl animate-fadeInUp flex items-center gap-2 ${
+          className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-2xl border text-xs font-black backdrop-blur-xl animate-bounce flex items-center gap-2 ${
             toast.type === 'success'
               ? 'border-emerald-500/40 bg-emerald-950/90 text-emerald-200'
               : toast.type === 'error'
@@ -107,11 +93,7 @@ export default function App() {
       {/* Main Content Router */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
         {activeView === 'landing' && (
-          <LandingPage
-            onNavigate={(view) => setActiveView(view)}
-            studentsCount={records.length}
-            sheikhsCount={sheikhs.length}
-          />
+          <LandingPage onNavigate={(view) => setActiveView(view)} />
         )}
 
         {activeView === 'form' && (
@@ -124,10 +106,9 @@ export default function App() {
 
         {activeView === 'success' && (
           <SuccessView
-            studentData={submittedData}
-            onReset={() => setActiveView('form')}
-            onViewDashboard={() => setActiveView('admin')}
-            isAdminLoggedIn={isAdminLoggedIn}
+            submittedData={submittedData}
+            onRegisterAnother={() => setActiveView('form')}
+            onGoHome={() => setActiveView('landing')}
           />
         )}
 

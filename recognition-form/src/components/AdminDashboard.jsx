@@ -37,10 +37,7 @@ import {
   updateSheikhRecord,
   deleteSheikhRecord
 } from '../firebase';
-import { uploadStudentPhoto } from '../services/cloudinary';
-import StudentEditModal from './StudentEditModal';
-import StudentBadgeModal from './StudentBadgeModal';
-import { MessageSquare, QrCode } from 'lucide-react';
+import { uploadToCloudinary } from '../services/cloudinary';
 
 export default function AdminDashboard({ records, onLogout, showToast }) {
   // Tab control: 'students' | 'sheikhs'
@@ -97,8 +94,6 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
   const [selectedStage, setSelectedStage] = useState('ALL');
   const [orphanFilter, setOrphanFilter] = useState('ALL');
   const [previewImage, setPreviewImage] = useState(null);
-  const [editingStudent, setEditingStudent] = useState(null);
-  const [badgedStudent, setBadgedStudent] = useState(null);
 
   // ---------------------------------------------------
   // 3. تصفية وحسابات الطلاب المتقدمة
@@ -116,8 +111,8 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
       const matchStage = selectedStage === 'ALL' || r.studyStage === selectedStage;
       const matchOrphan =
         orphanFilter === 'ALL' ||
-        (orphanFilter === 'ORPHAN' && (r.fatherStatus === 'يتيم الأب' || r.fatherStatus === 'يتيم الأبوين')) ||
-        (orphanFilter === 'ALIVE' && r.fatherStatus === 'الأب على قيد الحياة');
+        (orphanFilter === 'ORPHAN' && r.fatherStatus === 'يتيم الأب') ||
+        (orphanFilter === 'ALIVE' && r.fatherStatus !== 'يتيم الأب');
 
       const isSummer = r.partName || r.sheikhName || r.totalParts !== undefined;
       const matchScope =
@@ -132,7 +127,7 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
   const studentStats = useMemo(() => {
     const total = records.length;
     const summerCount = records.filter((r) => r.partName || r.sheikhName).length;
-    const orphans = records.filter((r) => r.fatherStatus === 'يتيم الأب' || r.fatherStatus === 'يتيم الأبوين').length;
+    const orphans = records.filter((r) => r.fatherStatus === 'يتيم الأب').length;
     const quranCompleters = records.filter((r) => r.partName === 'القرآن كاملاً').length;
     const withPhotos = records.filter((r) => r.photoUrl).length;
 
@@ -153,7 +148,8 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
 
       const isSummerSheikh =
         s.participatingSummer?.includes('نعم') ||
-        s.participatingSummer?.includes('مشارك جزئي');
+        s.summerLevel ||
+        s.availability?.includes('متفرغ');
 
       const matchScope =
         sheikhScope === 'ALL' ||
@@ -166,7 +162,7 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
 
   const sheikhStats = useMemo(() => {
     const total = sheikhs.length;
-    const summerSheikhs = sheikhs.filter((s) => s.participatingSummer?.includes('نعم') || s.participatingSummer?.includes('مشارك جزئي')).length;
+    const summerSheikhs = sheikhs.filter((s) => s.participatingSummer?.includes('نعم') || s.summerLevel).length;
     const fullTime = sheikhs.filter((s) => s.availability?.includes('متفرغ')).length;
     const totalStudentsAssigned = sheikhs.reduce((acc, s) => acc + (Number(s.studentsCount) || 0), 0);
 
@@ -302,7 +298,7 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
     setUploadingSheikhPhoto(true);
 
     try {
-      const url = await uploadStudentPhoto(file);
+      const url = await uploadToCloudinary(file);
       setSheikhFormData((prev) => ({ ...prev, photoUrl: url }));
       showToast?.('تم رفع صورة الشيخ بنجاح', 'success');
     } catch (err) {
@@ -369,7 +365,6 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
   // 7. إدارة الطلاب (Delete Student)
   // ---------------------------------------------------
   const handleDeleteStudent = async (id) => {
-    if (!window.confirm('هل أنت متأكد من حذف بيانات هذا الطالب؟ لا يمكن التراجع عن هذا الإجراء.')) return;
     try {
       await deleteStudentRecord(id);
       showToast?.('تم حذف الطالب بنجاح', 'info');
@@ -565,9 +560,9 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
                         <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
                         <td className="p-3 font-bold text-white">
                           {r.studentName}
-                          {(r.fatherStatus === 'يتيم الأب' || r.fatherStatus === 'يتيم الأبوين') && (
+                          {r.fatherStatus === 'يتيم الأب' && (
                             <span className="mr-2 px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px]">
-                              {r.fatherStatus}
+                              يتيم الأب
                             </span>
                           )}
                         </td>
@@ -612,43 +607,13 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
                           )}
                         </td>
                         <td className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => setBadgedStudent(r)}
-                              className="p-1.5 text-[#fbbf24] hover:bg-[#fbbf24]/20 rounded-lg transition-all"
-                              title="عرض كارت التكريم والـ QR Code والطباعة"
-                            >
-                              <QrCode className="w-4 h-4" />
-                            </button>
-
-                            <button
-                              onClick={() => setEditingStudent(r)}
-                              className="p-1.5 text-[#fbbf24] hover:bg-amber-500/20 rounded-lg transition-all"
-                              title="تعديل بيانات الطالب"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-
-                            {r.fatherPhone && (
-                              <a
-                                href={`https://wa.me/20${r.fatherPhone}?text=${encodeURIComponent(`السلام عليكم ورحمة الله، مرحباً بولي أمر ابننا الفاضل (${r.studentName}) في كُتّاب. نود تذكيركم بحضور حفل تكريم الدورة الصيفية.`)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-all"
-                                title="تواصل مباشر مع ولي الأمر عبر الواتساب"
-                              >
-                                <MessageSquare className="w-4 h-4" />
-                              </a>
-                            )}
-
-                            <button
-                              onClick={() => handleDeleteStudent(r.id)}
-                              className="p-1.5 text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all"
-                              title="حذف الطالب"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleDeleteStudent(r.id)}
+                            className="p-1.5 text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all"
+                            title="حذف الطالب"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -1051,23 +1016,6 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
             </form>
           </div>
         </div>
-      )}
-
-      {/* ✏️ MODAL FOR EDITING STUDENT */}
-      {editingStudent && (
-        <StudentEditModal
-          student={editingStudent}
-          onClose={() => setEditingStudent(null)}
-          showToast={showToast}
-        />
-      )}
-
-      {/* 🖨️ MODAL FOR PRINTING BADGE / QR CODE */}
-      {badgedStudent && (
-        <StudentBadgeModal
-          student={badgedStudent}
-          onClose={() => setBadgedStudent(null)}
-        />
       )}
 
     </div>
