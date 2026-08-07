@@ -38,6 +38,7 @@ import {
   deleteSheikhRecord
 } from '../firebase';
 import { uploadToCloudinary } from '../services/cloudinary';
+import StudentEditModal from './StudentEditModal';
 
 export default function AdminDashboard({ records, onLogout, showToast }) {
   // Tab control: 'students' | 'sheikhs'
@@ -89,6 +90,8 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
   // ---------------------------------------------------
   // 2. حالة الطلاب (Students State & Controls)
   // ---------------------------------------------------
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [studentModalOpen, setStudentModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPart, setSelectedPart] = useState('ALL');
   const [selectedStage, setSelectedStage] = useState('ALL');
@@ -606,14 +609,26 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
                             <span className="text-slate-500 text-[10px]">لا توجد</span>
                           )}
                         </td>
-                        <td className="p-3 text-center">
-                          <button
-                            onClick={() => handleDeleteStudent(r.id)}
-                            className="p-1.5 text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all"
-                            title="حذف الطالب"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <td className="p-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingStudent(r);
+                                setStudentModalOpen(true);
+                              }}
+                              className="p-1.5 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-all"
+                              title="تعديل بيانات الطالب وتعيين الشيخ"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteStudent(r.id)}
+                              className="p-1.5 text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all"
+                              title="حذف الطالب"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -1016,6 +1031,17 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
             </form>
           </div>
         </div>
+      )}
+
+      {studentModalOpen && editingStudent && (
+        <StudentEditModal
+          student={editingStudent}
+          onClose={() => {
+            setStudentModalOpen(false);
+            setEditingStudent(null);
+          }}
+          showToast={showToast}
+        />
       )}
 
     </div>
