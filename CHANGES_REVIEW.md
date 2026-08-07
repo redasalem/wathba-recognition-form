@@ -1,94 +1,43 @@
-# 📋 Document Review & Pull Request Description: Wathba Kuttab v2.1
+# 📋 ملخص التعديلات والتحديثات لأخر 3 Commits على مستودع Wathba Recognition Form
 
 ---
 
-## 🌿 Branch & Revision Information
-- **Target Repository:** `/Users/mac/Documents/wathba-kuttab`
-- **Active Branch:** `feature/sheikhs-form-and-landing`
-- **Latest Commits:** 
-  - `743ac37` — *feat: enhance Sheikhs form with complete profile data (qualifications, ijazat, address, summer course notes)*
-  - `d2e4c24` — *feat: add Sheikhs registration form, Sheikhs admin dashboard management tab, and interactive Landing Page with progress counters*
-- **Author:** Wathba Engineering Team
-- **Date:** August 2026
+## 📌 معلومات الفرع والتعديلات:
+* 📁 **المستودع:** `wathba-recognition-form` (`/Users/mac/Documents/wathba-dev/wathba-recognition-form`)
+* 🌿 **الفرع الحالي:** `feature/sheikhs-form-landing-and-enhancements`
+* 👤 **المراجع المعتمد:** رضا سالم (@redasalem)
 
 ---
 
-## 🚀 Summary of Changes
+## 🚀 تفاصيل الـ 3 Commits الأخيرة:
 
-This release introduces comprehensive updates to the **Wathba Kuttab Smart System**:
-
-1. 🏛️ **Independent Data Views for Kuttab vs Summer Course 2026 (`AdminDashboard.jsx`):**
-   - Separate view filters allowing administrators to switch between:
-     - 🏛️ **بيانات كُتّاب العامة (General Kuttab Data):** All registered students and core Sheikhs.
-     - ☀️ **بيانات الدورة الصيفية 2026 (Summer Course 2026 Data):** Specific students and Sheikhs participating in the 2026 Summer Competition.
-2. 👳‍♂️ **Comprehensive Sheikhs & Teachers Profile Registration (`SheikhForm.jsx`):**
-   - Includes Azharite academic qualifications, Ijazat & Quran transmissions, address/village, summer course participation details, stipend/volunteer status, and teacher notes/recommendations for Kuttab development.
-3. 🌐 **Interactive Public Landing Page with Daily Progress Updates (`LandingPage.jsx`):**
-   - Displays real-time KPI counters (141+ enrolled students, 14 teachers, 32 Hikvision security cameras, 5 study halls).
-   - Features rich sections for Building Infrastructure & Safety, Smart QR System updates, Daily Sheikh Recitation Methodology, and Summer Ceremony highlights.
-4. 📱 **Unified Navigation & Responsive Mobile View (`Header.jsx` & `App.jsx`):**
-   - Tab routing across all views (`landing`, `form`, `sheikh-form`, `admin`), with a mobile drawer for small screens.
+### 1️⃣ الـ Commit الأول (`8e4bb55`):
+> **`feat: replace native browser tooltips with custom Arabic field validations and noValidate across all forms`**
+* 🛑 **إلغاء رسائل المتصفح الإنجليزية تلقائياً:** إضافة الخاصية `noValidate` لكافة النماذج لمنع بوب أب المتصفح الإنجليزي (`Please fill out this field`).
+* 🇸🇦 **فاليديشين عربي تفاعلي بالكامل:** إظهار تنبيهات ونصوص الخطأ تحت كل حقل باللغة العربية مع إطار وخلفية حمراء شفافة لتنبيه المستخدم فورياً عند إدخال بيانات غير مكتملة.
+* 📱 **التحقق من رقم الهاتف المصري والاسم:** التأكد من إدخال اسم الطالب ثلاثياً ورقم هاتف مكون من 11 رقماً ويبدأ بـ `01`.
 
 ---
 
-## 📂 File-by-File Changes Breakdown
-
-### 1. `recognition-form/src/components/AdminDashboard.jsx` `[MODIFIED]`
-- **Purpose:** Administrative management interface.
-- **Key Features Added:**
-  - **Scope Filters:** Toggle buttons for `الكل (الكُتّاب + الدورة)`, `☀️ طلاب/شيوخ الدورة الصيفية 2026`, and `🏛️ بيانات الكُتّاب الدائم`.
-  - **Tabs Navigation:** Dual view switcher between `🎓 الطلاب المكرمون` (Students) and `👳‍♂️ الشيوخ والمعلمون` (Sheikhs).
-  - **Expanded Columns:** Displays Sheikh qualification, Ijazat, address, summer level, assigned students count, and photo preview.
-  - **Excel Export:** Generates utf-8 BOM CSV files filtered by scope for both student records and teacher rosters.
-
-### 2. `recognition-form/src/components/SheikhForm.jsx` `[MODIFIED]`
-- **Purpose:** Registration form for Sheikhs/Teachers.
-- **Key Features Added:**
-  - **Section 1 (Basic Profile):** Full Name, Phone/WhatsApp, Qualification, Ijazat, Address, Profile Photo upload via Cloudinary.
-  - **Section 2 (Summer Course 2026):** Summer participation status, supervised levels, assigned student count, stipend/volunteer status, and notes/development recommendations.
-
-### 3. `recognition-form/src/components/LandingPage.jsx` `[MODIFIED]`
-- **Purpose:** Public landing page & project progress showcase.
-- **Key Features Added:**
-  - Hero banner with brand slogan: *"الأصالة في التحفيظ والتربية .. والسهولة والذكاء في النظام والمتابعة"*.
-  - **Live Progress Counters:** 141+ Students, 14 Sheikhs, 32 Hikvision Cameras, 5 Study Rooms.
-  - **Daily Development Showcase:**
-    - 🏢 Building Infrastructure & Safety (32 Hikvision cameras, Fiber roof on 6th floor, water stations).
-    - 💻 Smart QR Code System (instant parent notification reports, zero paperwork for Sheikhs).
-    - 📖 Daily Sheikh Methodology (3-ring recitations, Tajweed exams, weekly awards).
-  - **Ceremony Highlights:** Breakdown of 8 Quran completers, 4 Araf portion students, and 141 awarded kids.
+### 2️⃣ الـ Commit الثاني (`cd52fc4`):
+> **`feat: simplify header navigation, add unified login portal modal, and add direct URL routing for student and sheikh forms`**
+* 🎨 **تنظيف ترويسة الموقع (Header):** إزالة زرين استمارة الطالب واستمارة الشيخ من الهيدر العلوي للحفاظ على فخامة الشعار والصفحة التعريفية العامة.
+* 🔐 **بوابة تسجيل الدخول الموحدة (`LoginPortalModal.jsx`):** إضافة زر موحد باسم **"تسجيل الدخول"** يفتح نافذة تبويب متعددة الصلاحيات (الإدارة والشيوخ - أولياء الأمور - المتبرعون والمتطوعون).
+* 🔗 **دعم الروابط المباشرة للنماذج (Direct URL Routing):** تمكين الوصول الفوري للنماذج عبر الـ URL مثل `/#/student-form` و `/#/sheikh-form` و `/#/admin` دون الحاجة للتنقل عبر الهيدر.
 
 ---
 
-## 🗄️ Firestore Database Schema Updates
-
-### `sheikhs` Collection Document Schema:
-```json
-{
-  "id": "auto-generated-doc-id",
-  "name": "الشيخ عبد الله حسن الديهى",
-  "phone": "01550215634",
-  "qualification": "معهد القراءات / الأزهر الشريف",
-  "ijazat": "رواية حفص عن عاصم",
-  "address": "قرية جناج - بسيون",
-  "participatingSummer": "نعم - مشارك بالدورة الصيفية",
-  "summerLevel": "إشراف عام وفصول القرآن كاملاً",
-  "stipendStatus": "متفرغ كلياً (مكافأة شهرية)",
-  "studentsCount": 12,
-  "socialStatus": "متزوج",
-  "notes": "إشراف وتدريس فصول القرآن كاملاً",
-  "photoUrl": "https://res.cloudinary.com/.../image.jpg",
-  "createdAt": "Timestamp",
-  "updatedAt": "Timestamp"
-}
-```
+### 3️⃣ الـ Commit الثالث (`9a9f4bc`):
+> **`feat: sync all recent features - SheikhForm conditional summer section, dual-scope admin filters, landing page beta badges and timeline archive, and review docs`**
+* 👳‍♂️ **إظهار سكشن الدورة الصيفية شرطياً بالـ `SheikhForm.jsx`:** يظهر السكشن فقط عند اختيار الشيخ *"نعم - مشارك بالدورة الصيفية"* ويختفي تماماً عند اختيار *"لا"*.
+* ⚠️ **وسم النظام التجريبي (Beta Notice) والأرشيف بالـ `LandingPage.jsx`:** إضافة شريط التنبيه الرسمي للأرقام التجريبية وسكشن الخط الزمني للأنشطة والأرشيف.
+* 🏛️ **التصفية المزدوجة بالـ `AdminDashboard.jsx`:** مفتاح تبديل مستقل لتصفية بيانات الكُتّاب الدائم عن بيانات الدورة الصيفية 2026 للطلاب والشيوخ.
 
 ---
 
-## 📝 Commit Summary
-
+## 📝 سجل الـ Commits في Git:
 ```bash
-git checkout feature/sheikhs-form-and-landing
-git add .
-git commit -m "feat: add independent Kuttab vs Summer Course data views in dashboard and polish landing page daily showcase"
+8e4bb55 - feat: replace native browser tooltips with custom Arabic field validations and noValidate across all forms
+cd52fc4 - feat: simplify header navigation, add unified login portal modal, and add direct URL routing for student and sheikh forms
+9a9f4bc - feat: sync all recent features - SheikhForm conditional summer section, dual-scope admin filters, landing page beta badges and timeline archive, and review docs
 ```
