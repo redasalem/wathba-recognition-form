@@ -390,6 +390,40 @@ export default function SheikhForm({ onSuccess, showToast }) {
 
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
+                <BookOpen className="w-4 h-4 text-[#fbbf24]" />
+                مستوى المشاركة الصيفية / التخصص
+              </label>
+              <select
+                value={formData.summerLevel}
+                onChange={(e) => setFormData({ ...formData, summerLevel: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-900/60 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] text-sm transition-all cursor-pointer"
+              >
+                <option value="إشراف عام وفصول القرآن كاملاً">إشراف عام وفصول القرآن كاملاً</option>
+                <option value="تأسيس وتلقين البراعم">تأسيس وتلقين البراعم</option>
+                <option value="مراجعة وتثبيت الأجزاء">مراجعة وتثبيت الأجزاء</option>
+                <option value="تحفيظ وتجويد">تحفيظ وتجويد</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-[#fbbf24]" />
+                عدد الطلاب (المقرر أو الفعلي)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={formData.studentsCount}
+                onChange={(e) => setFormData({ ...formData, studentsCount: e.target.value })}
+                placeholder="مثال: 15"
+                className="w-full px-4 py-3 bg-slate-900/60 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] text-sm transition-all"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1.5">
               <MessageSquare className="w-4 h-4 text-[#fbbf24]" />

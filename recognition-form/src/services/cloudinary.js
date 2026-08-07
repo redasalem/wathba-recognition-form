@@ -44,3 +44,5 @@ export const uploadStudentPhoto = async (file) => {
     reader.readAsDataURL(file);
   });
 };
+
+export const uploadToCloudinary = uploadStudentPhoto;

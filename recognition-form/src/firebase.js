@@ -34,7 +34,7 @@ try {
 export { db };
 
 // ---------------------------------------------------
-# 🔥 1. خدمة الطلاب (Students Collection)
+// 🔥 1. خدمة الطلاب (Students Collection)
 // ---------------------------------------------------
 export const subscribeStudents = (onSuccess, onError) => {
   if (!db) {
@@ -97,7 +97,7 @@ export const deleteStudentRecord = async (id) => {
 };
 
 // ---------------------------------------------------
-# 👳‍♂️ 2. خدمة الشيوخ والمعلمين (Sheikhs Collection)
+// 👳‍♂️ 2. خدمة الشيوخ والمعلمين (Sheikhs Collection)
 // ---------------------------------------------------
 export const subscribeSheikhs = (onSuccess, onError) => {
   if (!db) {

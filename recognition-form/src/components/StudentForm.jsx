@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { User, Phone, Image as ImageIcon, Sparkles, Loader2, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import { uploadStudentPhoto } from '../services/cloudinary';
-import { saveStudentRegistration } from '../firebase';
+import { addStudentRecord } from '../firebase';
 
 // ─── Inline Field Hint Component ────────────────────────────
 function FieldHint({ show, type = 'error', message }) {
@@ -222,7 +222,7 @@ export default function StudentForm({ onSuccess, showToast }) {
         photoUrl
       };
 
-      const savedRecord = await saveStudentRegistration(studentPayload);
+      const savedRecord = await addStudentRecord(studentPayload);
       onSuccess(savedRecord);
     } catch (err) {
       console.error('Submission error:', err);
