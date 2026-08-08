@@ -9,7 +9,7 @@
 
 ## 🎯 Master Prompt Goal
 
-Generate a high-converting, state-of-the-art Web Application design for **Wathba Kuttab (كُتّاب)** with a strict separation between public informational pages and authenticated admin operations.
+Generate a high-converting, state-of-the-art Web Application design for **Wathba Kuttab (كُتّاب)** with a strict separation between public informational pages and authenticated admin operations, including persistent "Remember Me" authentication.
 
 ---
 
@@ -52,9 +52,12 @@ Generate a high-converting, state-of-the-art Web Application design for **Wathba
 
 ---
 
-## 🔐 Screen 2: Multi-Role Login Portal Modal (`LoginPortalModal.jsx`)
+## 🔐 Screen 2: Multi-Role Login Portal & Persistent Session (`LoginPortalModal.jsx`)
 
 - Opens upon clicking **"تسجيل الدخول"** in header.
+- **Persistent Auth Checkbox (خاصية تذكر تسجيل الدخول):**
+  - Checkbox: `"تذكر تسجيل الدخول على هذا الجهاز (Remember Me)"`.
+  - Saves persistent session flag in `localStorage` so Admin stays logged in upon page refresh.
 - **3 Switcher Tabs:**
   1. 👑 **الإدارة والشيوخ (Admins & Sheikhs):** Password input (`kuttab2026@@`) -> Unlocks Admin Dashboard.
   2. 👨‍👩‍👧 **أولياء الأمور (Parents & Guardians):** Student search & evaluation report lookup by name or QR code.
@@ -64,7 +67,7 @@ Generate a high-converting, state-of-the-art Web Application design for **Wathba
 
 ## 👑 Screen 3: Restructured Admin Dashboard (`AdminDashboard.jsx`)
 
-> **Access Condition:** Visible **ONLY when Admin is logged in**.
+> **Access Condition:** Visible **ONLY when Admin is logged in** (either via active session or stored `localStorage` token).
 
 ### 4 Modular Top Navigation Tabs:
 1. ☀️ **شُغل الدورة الصيفية 2026 (Summer Course 2026):**
@@ -101,4 +104,4 @@ Generate a high-converting, state-of-the-art Web Application design for **Wathba
 ```
 
 ---
-*Generated for Wathba Kuttab Smart System v3.0 — Master Google Stitch Prompt*
+*Generated for Wathba Kuttab Smart System v3.0 — Master Google Stitch Prompt with Persistent Auth*
