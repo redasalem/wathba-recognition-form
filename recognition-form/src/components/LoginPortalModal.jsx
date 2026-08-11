@@ -8,6 +8,7 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
   // Admin state
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
 
   // Parent lookup state
@@ -26,6 +27,13 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
     }
 
     if (password.trim() === targetPassword || password.trim() === 'kuttab2026') {
+      if (rememberMe) {
+        localStorage.setItem('kuttab_admin_session', 'true');
+        localStorage.setItem('kuttab_admin_auth', 'true');
+      } else {
+        localStorage.removeItem('kuttab_admin_session');
+        localStorage.removeItem('kuttab_admin_auth');
+      }
       onAdminSuccess();
       setPassword('');
       onClose();
@@ -143,6 +151,20 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-emerald-700 bg-slate-900 text-[#fbbf24] focus:ring-[#fbbf24] cursor-pointer"
+              />
+              <label htmlFor="rememberMe" className="cursor-pointer text-slate-200 hover:text-white">
+                تذكر تسجيل الدخول على هذا الجهاز (Remember Me)
+              </label>
             </div>
 
             <button

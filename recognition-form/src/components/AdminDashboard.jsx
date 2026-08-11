@@ -41,8 +41,8 @@ import { uploadToCloudinary } from '../services/cloudinary';
 import StudentEditModal from './StudentEditModal';
 
 export default function AdminDashboard({ records, onLogout, showToast }) {
-  // Tab control: 'students' | 'sheikhs'
-  const [activeTab, setActiveTab] = useState('students');
+  // Tab control: 'summer' | 'ceremony' | 'kuttab' | 'sheikhs'
+  const [activeTab, setActiveTab] = useState('summer');
 
   // Scope Filter: 'ALL' (الكُتّاب والدورة) | 'SUMMER_2026' (الدورة الصيفية فقط) | 'KUTTAB_ONLY' (الكُتّاب العام)
   const [studentScope, setStudentScope] = useState('ALL');
@@ -390,35 +390,59 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
           <h1 className="text-2xl font-black text-white">منظومة كُتّاب | العرض المستقل والتحليلات</h1>
         </div>
 
-        {/* TABS NAVIGATION */}
-        <div className="flex flex-wrap items-center gap-2 bg-slate-900/60 p-1.5 rounded-xl border border-emerald-700/40">
+        {/* TABS NAVIGATION (4 INDEPENDENT SECTIONS) */}
+        <div className="flex flex-wrap items-center gap-2 bg-slate-900/60 p-1.5 rounded-xl border border-emerald-700/40 text-xs">
           <button
-            onClick={() => setActiveTab('students')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'students'
-                ? 'bg-[#fbbf24] text-slate-950 shadow-md font-black'
+            onClick={() => { setActiveTab('summer'); setStudentScope('SUMMER_2026'); }}
+            className={`px-3.5 py-2 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'summer'
+                ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                : 'text-slate-200 hover:text-white hover:bg-emerald-800/30'
+            }`}
+          >
+            <Sun className="w-4 h-4 text-amber-900" />
+            ☀️ الدورة الصيفية 2026 ({studentStats.summerCount})
+          </button>
+
+          <button
+            onClick={() => setActiveTab('ceremony')}
+            className={`px-3.5 py-2 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'ceremony'
+                ? 'bg-[#fbbf24] text-slate-950 font-black shadow-md'
                 : 'text-slate-200 hover:text-white hover:bg-emerald-800/30'
             }`}
           >
             <Award className="w-4 h-4" />
-            سجل الطلاب ({studentStats.total})
+            🏆 حفلة التكريم والمنصة
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('kuttab'); setStudentScope('KUTTAB_ONLY'); }}
+            className={`px-3.5 py-2 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'kuttab'
+                ? 'bg-blue-500 text-slate-950 font-black shadow-md'
+                : 'text-slate-200 hover:text-white hover:bg-emerald-800/30'
+            }`}
+          >
+            <Building className="w-4 h-4" />
+            🏛️ الكُتّاب الدائم
           </button>
 
           <button
             onClick={() => setActiveTab('sheikhs')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'sheikhs'
-                ? 'bg-[#fbbf24] text-slate-950 shadow-md font-black'
+                ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
                 : 'text-slate-200 hover:text-white hover:bg-emerald-800/30'
             }`}
           >
             <Users className="w-4 h-4" />
-            سجل الشيوخ للمعلمين ({sheikhStats.total})
+            👳‍♂️ سجل الشيوخ والمعلمين ({sheikhStats.total})
           </button>
 
           <button
             onClick={onLogout}
-            className="px-3 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-rose-500/30"
+            className="px-3 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-rose-500/30"
           >
             <LogOut className="w-3.5 h-3.5" />
             خروج
@@ -427,9 +451,120 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
       </div>
 
       {/* --------------------------------------------------- */}
-      {/* 🎓 TAB 1: STUDENTS DASHBOARD */}
+      {/* 🏆 TAB 2: CEREMONY HUB (حفلة التكريم والمنصة) */}
       {/* --------------------------------------------------- */}
-      {activeTab === 'students' && (
+      {activeTab === 'ceremony' && (
+        <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-amber-500/20 via-emerald-900/60 to-amber-500/20 border border-[#fbbf24]/40 p-6 rounded-2xl text-center space-y-2">
+            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-[#fbbf24]/20 text-[#fbbf24] text-xs font-black">
+              <Sparkles className="w-4 h-4" />
+              Ceremony Hub | مركز إتاحة ودليل حفلة التكريم 2026
+            </div>
+            <h2 className="text-2xl font-black text-white">كشف صعود المسرح، دليل المقدم، وكروت الضيوف المكرمين</h2>
+            <p className="text-xs text-slate-300 max-w-2xl mx-auto">
+              إدارة بروتوكول التكريم المباشر، ترتيب صعود الطلاب حسب إتمام أجزاء القرآن، وكروت الـ QR الخاصة بكبار الشخصيات.
+            </p>
+          </div>
+
+          {/* 3 Sub-sections of Ceremony Hub */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* 1. Stage Ascension List */}
+            <div className="lg:col-span-2 bg-[#062b24]/90 border border-emerald-700/40 rounded-2xl p-5 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between border-b border-emerald-800/40 pb-3">
+                <div className="flex items-center gap-2 font-black text-[#fbbf24] text-sm">
+                  <Award className="w-5 h-5" />
+                  كشف ترتيب صعود المسرح (Stage Ascension Roster)
+                </div>
+                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-700/40">
+                  مرتب تنازلياً حسب الحفظ
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-right border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-[#0c3d34] text-[#fbbf24] font-bold border-b border-emerald-700/50">
+                      <th className="p-2.5 text-center">الترتيب</th>
+                      <th className="p-2.5">اسم الطالب المكرم</th>
+                      <th className="p-2.5">الفئة ومستوى الحفظ</th>
+                      <th className="p-2.5">الشيخ المشرف</th>
+                      <th className="p-2.5 text-center">نداء المقدم</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-emerald-800/30">
+                    {records
+                      .slice()
+                      .sort((a, b) => (b.totalParts || 0) - (a.totalParts || 0))
+                      .slice(0, 15)
+                      .map((r, idx) => (
+                        <tr key={r.id || idx} className="hover:bg-emerald-900/20">
+                          <td className="p-2.5 text-center font-black text-[#fbbf24]">#{idx + 1}</td>
+                          <td className="p-2.5 font-bold text-white">{r.studentName}</td>
+                          <td className="p-2.5">
+                            <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[10px]">
+                              {r.partName || `${r.totalParts || 0} أجزاء`}
+                            </span>
+                          </td>
+                          <td className="p-2.5 text-slate-300">{r.sheikhName || 'الشيخ المشرف'}</td>
+                          <td className="p-2.5 text-center">
+                            <button
+                              onClick={() => showToast?.(`جاري نداء الطالب: ${r.studentName} على المسرح 🎤`, 'success')}
+                              className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-[#fbbf24] border border-[#fbbf24]/30 rounded-lg text-[10px] font-bold cursor-pointer transition-all"
+                            >
+                              🎤 نداء الآن
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 2. Presenter Guide & VIP Cards */}
+            <div className="space-y-6">
+              
+              {/* Presenter Cue Card */}
+              <div className="bg-[#062b24]/90 border border-emerald-700/40 rounded-2xl p-5 space-y-3 shadow-xl">
+                <div className="flex items-center gap-2 font-black text-[#fbbf24] text-sm border-b border-emerald-800/40 pb-3">
+                  <Printer className="w-5 h-5 text-amber-400" />
+                  دليل مقدم الحفل التفاعلي
+                </div>
+                <div className="p-3 bg-slate-900/80 rounded-xl border border-emerald-800/40 text-xs text-slate-300 space-y-2 leading-relaxed">
+                  <p className="font-bold text-amber-300">🎙️ صيغة التقديم المعتمدة:</p>
+                  <p className="italic text-[11px]">
+                    "بسم الله الرحمن الرحيم .. ويتفضل الآن لصعود منصة التكريم الطالب المتميز الحافظ لكتاب الله تعالى / [اسم الطالب] .. تحت إشراف فضيلة الشيخ / [اسم الشيخ]."
+                  </p>
+                </div>
+              </div>
+
+              {/* VIP Invitation Pass */}
+              <div className="bg-[#062b24]/90 border border-[#fbbf24]/30 rounded-2xl p-5 space-y-3 shadow-xl">
+                <div className="flex items-center gap-2 font-black text-white text-sm border-b border-emerald-800/40 pb-3">
+                  <ShieldCheck className="w-5 h-5 text-[#fbbf24]" />
+                  دعوة كبار الشخصيات والمنصة (VIP Card)
+                </div>
+                <div className="p-4 bg-gradient-to-br from-amber-500/10 to-emerald-950 rounded-xl border border-[#fbbf24]/30 text-center space-y-2">
+                  <div className="text-xs font-black text-[#fbbf24]">بطاقة شرفية لحضور المنصة الرئيسي</div>
+                  <div className="w-20 h-20 bg-slate-950 rounded-xl border border-emerald-700/40 mx-auto flex items-center justify-center text-slate-500 text-[10px]">
+                    [كود الـ QR]
+                  </div>
+                  <div className="text-[11px] text-slate-300 font-bold">منظومة كُتّاب 2026 - حفل ختام الدورة</div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* --------------------------------------------------- */}
+      {/* 🎓 TABS 1 & 3: SUMMER 2026 & KUTTAB DASHBOARD */}
+      {/* --------------------------------------------------- */}
+      {(activeTab === 'summer' || activeTab === 'kuttab' || activeTab === 'students') && (
         <div className="space-y-6">
           
           {/* 🔘 SCOPE FILTER FOR STUDENTS (الكُتّاب العام vs الدورة الصيفية 2026) */}

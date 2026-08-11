@@ -28,6 +28,14 @@ export default function App() {
     }, 4000);
   }, []);
 
+  // 🔑 PERSISTENT AUTHENTICATION CHECK (Remember Me)
+  useEffect(() => {
+    const savedAuth = localStorage.getItem('kuttab_admin_session') || localStorage.getItem('kuttab_admin_auth');
+    if (savedAuth === 'true') {
+      setIsAdminLoggedIn(true);
+    }
+  }, []);
+
   // 🔗 URL HASH & ROUTE INITIALIZATION (Direct Form URLs)
   useEffect(() => {
     const handleUrlRoute = () => {
@@ -85,6 +93,8 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('kuttab_admin_session');
+    localStorage.removeItem('kuttab_admin_auth');
     setIsAdminLoggedIn(false);
     handleNavigate('landing');
     showToast('تم تسجيل الخروج بنجاح', 'info');
