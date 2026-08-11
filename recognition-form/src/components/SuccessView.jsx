@@ -2,7 +2,9 @@ import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { CheckCircle2, MessageSquare, PlusCircle, ArrowRight } from 'lucide-react';
 
-export default function SuccessView({ studentData, onReset, onViewDashboard, isAdminLoggedIn }) {
+export default function SuccessView({ studentData, submittedData, onReset, onRegisterAnother, onViewDashboard, onGoHome, isAdminLoggedIn }) {
+  const data = studentData || submittedData;
+
   useEffect(() => {
     // Launch Confetti animation
     try {
@@ -17,10 +19,12 @@ export default function SuccessView({ studentData, onReset, onViewDashboard, isA
     }
   }, []);
 
-  const studentName = studentData?.studentName || '';
-  const fatherPhone = studentData?.fatherPhone || '';
+  const studentName = data?.studentName || '';
+  const fatherPhone = data?.fatherPhone || '';
   const waMessage = encodeURIComponent(`السلام عليكم، تم استكمال بيانات الطالب (${studentName}) لحضور حفلة تكريم الدورة الصيفية 2026 بنجاح في الكُتّاب.`);
   const waUrl = `https://wa.me/20${fatherPhone}?text=${waMessage}`;
+
+  const handleRegisterAnother = onReset || onRegisterAnother;
 
   return (
     <div className="w-full max-w-md mx-auto my-6 p-4 animate-scaleIn">
@@ -52,11 +56,11 @@ export default function SuccessView({ studentData, onReset, onViewDashboard, isA
         </p>
 
         {/* Photo Badge Preview if exists */}
-        {studentData?.photoUrl && (
+        {data?.photoUrl && (
           <div className="mb-6 flex justify-center">
             <div className="relative">
               <img
-                src={studentData.photoUrl}
+                src={data.photoUrl}
                 alt={studentName}
                 className="w-20 h-20 rounded-full object-cover border-3 border-teal-400 shadow-lg"
               />
@@ -66,32 +70,43 @@ export default function SuccessView({ studentData, onReset, onViewDashboard, isA
         )}
 
         {/* WhatsApp Direct Action Button */}
-        <a
-          href={waUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-900/40 hover:shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 mb-4"
-        >
-          <MessageSquare className="w-5 h-5 text-emerald-100" />
-          <span>تواصل مباشر وتأكيد عبر الواتساب</span>
-        </a>
+        {fatherPhone && (
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-900/40 hover:shadow-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 mb-4 cursor-pointer"
+          >
+            <MessageSquare className="w-5 h-5 text-emerald-100" />
+            <span>تواصل مباشر وتأكيد عبر الواتساب</span>
+          </a>
+        )}
 
         {/* Bottom Actions */}
-        <div className="flex items-center justify-center gap-3 pt-3 border-t border-white/10">
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-3 border-t border-white/10">
           <button
-            onClick={onReset}
-            className="flex-1 py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-white/10"
+            onClick={handleRegisterAnother}
+            className="flex-1 py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-white/10 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4 text-teal-400" />
             <span>تسجيل طالب آخر</span>
           </button>
 
-          {isAdminLoggedIn && (
+          {onGoHome && (
+            <button
+              onClick={onGoHome}
+              className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-800/40 hover:bg-emerald-800/60 text-emerald-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-emerald-500/30 cursor-pointer"
+            >
+              <span>الرئيسية</span>
+            </button>
+          )}
+
+          {isAdminLoggedIn && onViewDashboard && (
             <button
               onClick={onViewDashboard}
-              className="flex-1 py-2.5 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-amber-500/30"
+              className="flex-1 py-2.5 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-amber-500/30 cursor-pointer"
             >
-              <span>عرض لوحة التحكم</span>
+              <span>لوحة التحكم</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           )}

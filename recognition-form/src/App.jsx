@@ -154,6 +154,8 @@ export default function App() {
             submittedData={submittedData}
             onRegisterAnother={() => handleNavigate('form')}
             onGoHome={() => handleNavigate('landing')}
+            onViewDashboard={() => handleNavigate('admin')}
+            isAdminLoggedIn={isAdminLoggedIn}
           />
         )}
 
