@@ -1,5 +1,20 @@
 import React, { useState, useMemo } from 'react';
-import { X, User, Phone, BookOpen, GraduationCap, Upload, Save, Loader2, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { 
+  X, 
+  User, 
+  Phone, 
+  BookOpen, 
+  GraduationCap, 
+  Upload, 
+  Save, 
+  Loader2, 
+  CheckCircle2, 
+  AlertCircle, 
+  Info,
+  Users,
+  Plus,
+  Trash2
+} from 'lucide-react';
 import { updateStudentRecord } from '../firebase';
 import { uploadStudentPhoto } from '../services/cloudinary';
 
@@ -29,16 +44,23 @@ function FieldHint({ show, type = 'error', message }) {
 
 export default function StudentEditModal({ student, onClose, showToast }) {
   const [formData, setFormData] = useState({
+    studentId: student?.studentId || '',
+    studentCode: student?.studentCode || '',
     studentName: student?.studentName || '',
     studentAge: student?.studentAge || '',
-    studyStage: student?.studyStage || '',
+    studyStage: student?.studyStage || 'ابتدائي',
     schoolName: student?.schoolName || '',
     partName: student?.partName || 'القرآن كاملاً',
+    examScore: student?.examScore || '',
     sheikhName: student?.sheikhName || '',
     totalParts: student?.totalParts || '',
+    parentName: student?.parentName || '',
     fatherPhone: student?.fatherPhone || '',
     motherPhone: student?.motherPhone || '',
     fatherStatus: student?.fatherStatus || 'الأب على قيد الحياة',
+    totalChildrenCount: student?.totalChildrenCount || 1,
+    kuttabChildrenCount: student?.kuttabChildrenCount || 1,
+    siblings: Array.isArray(student?.siblings) ? student.siblings : [],
     photoUrl: student?.photoUrl || ''
   });
 
@@ -58,12 +80,46 @@ export default function StudentEditModal({ student, onClose, showToast }) {
     setTouched(prev => ({ ...prev, [field]: true }));
   };
 
+  const handleAddSibling = () => {
+    setFormData(prev => ({
+      ...prev,
+      siblings: [
+        ...prev.siblings,
+        {
+          id: Date.now().toString(),
+          name: '',
+          age: '',
+          studyStage: 'ابتدائي',
+          schoolName: '',
+          inKuttab: true
+        }
+      ]
+    }));
+  };
+
+  const handleRemoveSibling = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      siblings: prev.siblings.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSiblingChange = (index, field, value) => {
+    setFormData(prev => {
+      const updated = [...prev.siblings];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, siblings: updated };
+    });
+  };
+
   // ─── Real-time Arabic Validation ───────────────────────────
   const phoneRegex = /^01[0-9]{9}$/;
 
   const validation = useMemo(() => {
-    const nameVal = formData.studentName.trim();
+    const nameVal = (formData.studentName || '').trim();
     const nameWords = nameVal.split(/\s+/).filter(w => w.length > 0);
+    const parentVal = (formData.parentName || '').trim();
+    const parentWords = parentVal.split(/\s+/).filter(w => w.length > 0);
     const age = Number(formData.studentAge);
 
     return {
@@ -75,6 +131,14 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             ? `📝 الاسم ناقص — كتبت ${nameWords.length} كلمة فقط`
             : '✅ الاسم مكتمل',
         type: nameWords.length >= 3 ? 'success' : 'error',
+      },
+
+      parentName: {
+        valid: parentWords.length === 0 || parentWords.length >= 3,
+        message: parentWords.length > 0 && parentWords.length < 3
+          ? '📝 اسم ولي الأمر يجب أن يكون ثلاثياً على الأقل'
+          : null,
+        type: (parentWords.length === 0 || parentWords.length >= 3) ? 'success' : 'error',
       },
 
       studentAge: {
@@ -90,34 +154,34 @@ export default function StudentEditModal({ student, onClose, showToast }) {
       },
 
       schoolName: {
-        valid: formData.schoolName.trim().length >= 3,
-        message: formData.schoolName.trim().length === 0
+        valid: (formData.schoolName || '').trim().length >= 3,
+        message: (formData.schoolName || '').trim().length === 0
           ? '⚠️ يرجى كتابة اسم المدرسة بالكامل'
-          : formData.schoolName.trim().length < 3
+          : (formData.schoolName || '').trim().length < 3
             ? '📝 يرجى التوضيح واسم المدرسة بالكامل'
             : '✅ تمام!',
-        type: formData.schoolName.trim().length >= 3 ? 'success' : 'error',
+        type: (formData.schoolName || '').trim().length >= 3 ? 'success' : 'error',
       },
 
       fatherPhone: {
-        valid: phoneRegex.test(formData.fatherPhone),
-        message: formData.fatherPhone.length === 0
+        valid: phoneRegex.test(formData.fatherPhone || ''),
+        message: (formData.fatherPhone || '').length === 0
           ? '⚠️ يرجى إدخال رقم تليفون الأب (11 رقماً يبدأ بـ 01)'
-          : !formData.fatherPhone.startsWith('01')
+          : !(formData.fatherPhone || '').startsWith('01')
             ? '📱 الرقم يجب أن يبدأ بـ 01'
-            : formData.fatherPhone.length < 11
-              ? `📱 الرقم ناقص (${formData.fatherPhone.length}/11)`
-              : formData.fatherPhone.length > 11
-                ? `📱 الرقم زائد (${formData.fatherPhone.length}/11)`
+            : (formData.fatherPhone || '').length < 11
+              ? `📱 الرقم ناقص (${(formData.fatherPhone || '').length}/11)`
+              : (formData.fatherPhone || '').length > 11
+                ? `📱 الرقم زائد (${(formData.fatherPhone || '').length}/11)`
                 : phoneRegex.test(formData.fatherPhone)
                   ? '✅ رقم صحيح!'
                   : '📱 الرقم أرقام فقط',
-        type: phoneRegex.test(formData.fatherPhone) ? 'success' : 'error',
+        type: phoneRegex.test(formData.fatherPhone || '') ? 'success' : 'error',
       },
 
       motherPhone: {
-        valid: formData.motherPhone === '' || phoneRegex.test(formData.motherPhone),
-        message: formData.motherPhone.length === 0
+        valid: !formData.motherPhone || phoneRegex.test(formData.motherPhone),
+        message: !formData.motherPhone || formData.motherPhone.length === 0
           ? null
           : !formData.motherPhone.startsWith('01')
             ? '📱 الرقم يجب أن يبدأ بـ 01'
@@ -128,16 +192,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
                 : phoneRegex.test(formData.motherPhone)
                   ? '✅ رقم صحيح!'
                   : '📱 الرقم أرقام فقط',
-        type: (formData.motherPhone === '' || phoneRegex.test(formData.motherPhone)) ? 'success' : 'error',
-      },
-
-      totalParts: {
-        valid: formData.totalParts === '' || (Number(formData.totalParts) >= 1 && Number(formData.totalParts) <= 30),
-        message: formData.totalParts === '' ? null
-          : Number(formData.totalParts) < 1 ? '⚠️ 1 جزء على الأقل'
-          : Number(formData.totalParts) > 30 ? '⚠️ أقصى عدد 30 جزء'
-          : `✅ ${formData.totalParts} جزء`,
-        type: (formData.totalParts === '' || (Number(formData.totalParts) >= 1 && Number(formData.totalParts) <= 30)) ? 'success' : 'error',
+        type: (!formData.motherPhone || phoneRegex.test(formData.motherPhone)) ? 'success' : 'error',
       },
     };
   }, [formData]);
@@ -181,7 +236,6 @@ export default function StudentEditModal({ student, onClose, showToast }) {
       schoolName: true,
       fatherPhone: true,
       motherPhone: true,
-      totalParts: true,
     });
 
     if (!validation.studentName.valid) {
@@ -208,10 +262,13 @@ export default function StudentEditModal({ student, onClose, showToast }) {
         ...formData,
         studentAge: Number(formData.studentAge) || 0,
         totalParts: formData.totalParts ? Number(formData.totalParts) : 0,
+        totalChildrenCount: Number(formData.totalChildrenCount || 1),
+        kuttabChildrenCount: Number(formData.kuttabChildrenCount || 1),
+        completed: true
       };
 
       await updateStudentRecord(student.id, payload);
-      showToast?.('تم تحديث بيانات الطالب بنجاح 🎉', 'success');
+      showToast?.('تم تحديث بيانات الطالب والأسرة بنجاح 🎉', 'success');
       onClose();
     } catch (err) {
       console.error('Update student error:', err);
@@ -229,7 +286,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
         <div className="flex items-center justify-between pb-3 border-b border-emerald-800/40">
           <div className="flex items-center gap-2">
             <User className="w-5 h-5 text-[#fbbf24]" />
-            <h3 className="text-lg font-black text-white">تعديل بيانات الطالب المكرم</h3>
+            <h3 className="text-lg font-black text-white">تعديل بيانات الطالب المكرم والأسرة</h3>
           </div>
           <button
             onClick={onClose}
@@ -239,7 +296,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
           </button>
         </div>
 
-        {/* ⚠️ FORM WITH noValidate TO PREVENT ENGLISH BROWSER TOOLTIPS */}
+        {/* Form */}
         <form noValidate onSubmit={handleSubmit} className="space-y-4 text-xs">
           
           {/* Photo Preview & Upload */}
@@ -265,24 +322,37 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
           </div>
 
-          {/* Student Name */}
-          <div>
-            <label className="block font-bold text-slate-200 mb-1">اسم الطالب ثلاثي / رباعي *</label>
-            <input
-              type="text"
-              value={formData.studentName}
-              onChange={(e) => handleInputChange('studentName', e.target.value)}
-              onBlur={() => handleBlur('studentName')}
-              className={getInputClass('studentName')}
-            />
-            <FieldHint
-              show={touched.studentName}
-              type={validation.studentName.type}
-              message={validation.studentName.message}
-            />
+          {/* Section: Student Core Info */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-200 mb-1">اسم الطالب ثلاثي / رباعي *</label>
+              <input
+                type="text"
+                value={formData.studentName}
+                onChange={(e) => handleInputChange('studentName', e.target.value)}
+                onBlur={() => handleBlur('studentName')}
+                className={getInputClass('studentName')}
+              />
+              <FieldHint
+                show={touched.studentName}
+                type={validation.studentName.type}
+                message={validation.studentName.message}
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-200 mb-1">اسم ولي الأمر</label>
+              <input
+                type="text"
+                value={formData.parentName}
+                onChange={(e) => handleInputChange('parentName', e.target.value)}
+                className="w-full px-3 py-2.5 bg-slate-900/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+                placeholder="اسم ولي الأمر..."
+              />
+            </div>
           </div>
 
-          {/* Age & Stage */}
+          {/* Age & Stage & School */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block font-bold text-slate-200 mb-1">السن (بالسنوات) *</label>
@@ -309,7 +379,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
                 onChange={(e) => setFormData({ ...formData, studyStage: e.target.value })}
                 className="w-full px-3 py-2.5 bg-slate-900/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
               >
-                <option value="حضانة">روضة / حضانة</option>
+                <option value="حضانة / روضة">روضة / حضانة</option>
                 <option value="ابتدائي">ابتدائي</option>
                 <option value="إعدادي">إعدادي</option>
                 <option value="ثانوي">ثانوي</option>
@@ -335,42 +405,31 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
           </div>
 
-          {/* Summer Course Details */}
+          {/* Summer Course & Score */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-emerald-800/30">
             <div>
               <label className="block font-bold text-emerald-300 mb-1 flex items-center gap-1">
                 <BookOpen className="w-3.5 h-3.5" />
-                فئة المشاركة بالدورة
+                فئة التكريم
               </label>
-              <select
+              <input
+                type="text"
                 value={formData.partName}
                 onChange={(e) => setFormData({ ...formData, partName: e.target.value })}
+                placeholder="مثال: القرآن كاملاً"
                 className="w-full px-3 py-2.5 bg-slate-900/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
-              >
-                <option value="القرآن كاملاً">القرآن كاملاً 🏆</option>
-                <option value="جزء الأعراف">جزء الأعراف وما فوق</option>
-                <option value="من 10 إلى 15 جزء">من 10 إلى 15 جزء</option>
-                <option value="من 5 إلى 10 أجزاء">من 5 إلى 10 أجزاء</option>
-                <option value="جزء عم وقصار السور">جزء عم وقصار السور</option>
-              </select>
+              />
             </div>
 
             <div>
-              <label className="block font-bold text-emerald-300 mb-1">عدد الأجزاء المحفوظة</label>
+              <label className="block font-bold text-emerald-300 mb-1">درجة الاختبار (%)</label>
               <input
                 type="number"
-                min="0"
-                max="30"
-                value={formData.totalParts}
-                onChange={(e) => handleInputChange('totalParts', e.target.value)}
-                onBlur={() => handleBlur('totalParts')}
-                placeholder="مثال: 15"
-                className={getInputClass('totalParts')}
-              />
-              <FieldHint
-                show={touched.totalParts}
-                type={validation.totalParts.type}
-                message={validation.totalParts.message}
+                step="0.1"
+                value={formData.examScore}
+                onChange={(e) => handleInputChange('examScore', e.target.value)}
+                placeholder="مثال: 95.5"
+                className="w-full px-3 py-2.5 bg-slate-900/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
               />
             </div>
 
@@ -423,7 +482,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
 
             <div>
-              <label className="block font-bold text-amber-300 mb-1">الحالة الإنسانية *</label>
+              <label className="block font-bold text-amber-300 mb-1">حالة الأب *</label>
               <select
                 value={formData.fatherStatus}
                 onChange={(e) => setFormData({ ...formData, fatherStatus: e.target.value })}
@@ -434,6 +493,78 @@ export default function StudentEditModal({ student, onClose, showToast }) {
                 <option value="يتيم الأبوين">يتيم الأبوين 💔</option>
               </select>
             </div>
+          </div>
+
+          {/* Family Children Counts & Siblings */}
+          <div className="p-3 bg-slate-950/60 rounded-2xl border border-emerald-800/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 font-bold text-slate-200">
+                <Users className="w-4 h-4 text-[#fbbf24]" />
+                <span>إحصاءات الأسرة والأشقاء</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddSibling}
+                className="px-2.5 py-1 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3 h-3" />
+                <span>+ إضافة أخ</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 mb-1">إجمالي الأولاد بالأسرة</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.totalChildrenCount}
+                  onChange={(e) => handleInputChange('totalChildrenCount', e.target.value)}
+                  className="w-full px-3 py-1.5 bg-[#062b24] border border-emerald-700/40 rounded-lg text-white text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 mb-1">المقيدين في الكُتّاب</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.kuttabChildrenCount}
+                  onChange={(e) => handleInputChange('kuttabChildrenCount', e.target.value)}
+                  className="w-full px-3 py-1.5 bg-[#062b24] border border-emerald-700/40 rounded-lg text-white text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Siblings list */}
+            {formData.siblings.map((sib, index) => (
+              <div key={sib.id || index} className="flex items-center gap-2 p-2 bg-[#062b24]/80 rounded-lg border border-emerald-800/30">
+                <input
+                  type="text"
+                  placeholder="اسم الأخ/الأخت"
+                  value={sib.name}
+                  onChange={(e) => handleSiblingChange(index, 'name', e.target.value)}
+                  className="flex-1 px-2.5 py-1 bg-slate-900 rounded text-xs border border-emerald-700/30 text-white"
+                />
+                <select
+                  value={sib.studyStage}
+                  onChange={(e) => handleSiblingChange(index, 'studyStage', e.target.value)}
+                  className="px-2 py-1 bg-slate-900 rounded text-xs border border-emerald-700/30 text-white"
+                >
+                  <option value="حضانة / روضة">حضانة</option>
+                  <option value="ابتدائي">ابتدائي</option>
+                  <option value="إعدادي">إعدادي</option>
+                  <option value="ثانوي">ثانوي</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveSibling(index)}
+                  className="text-rose-400 hover:text-rose-300 p-1 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
           </div>
 
           {/* Action Buttons */}

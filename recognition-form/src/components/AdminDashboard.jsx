@@ -41,12 +41,18 @@ import { uploadToCloudinary } from '../services/cloudinary';
 import StudentEditModal from './StudentEditModal';
 
 export default function AdminDashboard({ records, onLogout, showToast }) {
-  // Tab control: 'summer' | 'ceremony' | 'kuttab' | 'sheikhs'
+  // Tab control: 'summer' | 'ceremony' | 'kuttab' | 'sheikhs' | 'families'
   const [activeTab, setActiveTab] = useState('summer');
 
   // Scope Filter: 'ALL' (الكُتّاب والدورة) | 'SUMMER_2026' (الدورة الصيفية فقط) | 'KUTTAB_ONLY' (الكُتّاب العام)
   const [studentScope, setStudentScope] = useState('ALL');
   const [sheikhScope, setSheikhScope] = useState('ALL');
+
+  // ---------------------------------------------------
+  // 👨‍👩‍👧‍👦 حالة وبيانات الأسر والأشقاء (Families & Siblings State)
+  // ---------------------------------------------------
+  const [familySearch, setFamilySearch] = useState('');
+  const [familyFilter, setFamilyFilter] = useState('ALL'); // 'ALL' | 'WITH_SIBLINGS' | 'SINGLE_CHILD'
 
   // ---------------------------------------------------
   // 1. حالة الشيوخ والمعلمين (Sheikhs State & Subscriptions)
@@ -252,6 +258,130 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
   };
 
   // ---------------------------------------------------
+  // 👨‍👩‍👧‍👦 5.2 تجميع وتصدير الأسر والأشقاء
+  // ---------------------------------------------------
+  const familiesData = useMemo(() => {
+    const map = new Map();
+
+    records.forEach((rec) => {
+      const phoneKey = (rec.fatherPhone || '').trim();
+      const nameKey = (rec.parentName || '').trim();
+      const key = (phoneKey.length >= 10) ? phoneKey : (nameKey || rec.id);
+
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          parentName: rec.parentName || 'ولي أمر غير محدد',
+          fatherPhone: rec.fatherPhone || '',
+          motherPhone: rec.motherPhone || '',
+          fatherStatus: rec.fatherStatus || 'الأب على قيد الحياة',
+          totalChildrenCount: Number(rec.totalChildrenCount || 1),
+          kuttabChildrenCount: Number(rec.kuttabChildrenCount || 1),
+          students: [],
+          siblingsList: []
+        });
+      }
+
+      const fam = map.get(key);
+      fam.students.push(rec);
+
+      if (rec.parentName && (fam.parentName === 'ولي أمر غير محدد' || !fam.parentName)) {
+        fam.parentName = rec.parentName;
+      }
+      if (rec.fatherPhone && !fam.fatherPhone) {
+        fam.fatherPhone = rec.fatherPhone;
+      }
+      if (rec.motherPhone && !fam.motherPhone) {
+        fam.motherPhone = rec.motherPhone;
+      }
+      if (rec.totalChildrenCount && Number(rec.totalChildrenCount) > fam.totalChildrenCount) {
+        fam.totalChildrenCount = Number(rec.totalChildrenCount);
+      }
+      if (rec.kuttabChildrenCount && Number(rec.kuttabChildrenCount) > fam.kuttabChildrenCount) {
+        fam.kuttabChildrenCount = Number(rec.kuttabChildrenCount);
+      }
+
+      if (Array.isArray(rec.siblings)) {
+        rec.siblings.forEach(sib => {
+          if (sib.name && !fam.siblingsList.some(s => s.name === sib.name)) {
+            fam.siblingsList.push(sib);
+          }
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [records]);
+
+  const filteredFamilies = useMemo(() => {
+    return familiesData.filter((fam) => {
+      const matchSearch =
+        !familySearch ||
+        fam.parentName?.toLowerCase().includes(familySearch.toLowerCase()) ||
+        fam.fatherPhone?.includes(familySearch) ||
+        fam.motherPhone?.includes(familySearch) ||
+        fam.students.some(s => s.studentName?.toLowerCase().includes(familySearch.toLowerCase())) ||
+        fam.siblingsList.some(sib => sib.name?.toLowerCase().includes(familySearch.toLowerCase()));
+
+      const hasSiblings = fam.students.length > 1 || fam.siblingsList.length > 0 || fam.kuttabChildrenCount > 1;
+      const matchFilter =
+        familyFilter === 'ALL' ||
+        (familyFilter === 'WITH_SIBLINGS' && hasSiblings) ||
+        (familyFilter === 'SINGLE_CHILD' && !hasSiblings);
+
+      return matchSearch && matchFilter;
+    });
+  }, [familiesData, familySearch, familyFilter]);
+
+  const familyStats = useMemo(() => {
+    const totalFamilies = familiesData.length;
+    const totalStudents = records.length;
+    const familiesWithSiblings = familiesData.filter(f => f.students.length > 1 || f.siblingsList.length > 0 || f.kuttabChildrenCount > 1).length;
+    const totalKids = familiesData.reduce((acc, f) => acc + (f.totalChildrenCount || 1), 0);
+    const avgKids = totalFamilies ? (totalKids / totalFamilies).toFixed(1) : '0';
+
+    return { totalFamilies, totalStudents, familiesWithSiblings, avgKids };
+  }, [familiesData, records]);
+
+  const exportFamiliesToExcel = () => {
+    if (filteredFamilies.length === 0) {
+      showToast?.('لا توجد بيانات أسر لتصديرها', 'error');
+      return;
+    }
+
+    let csvContent = '\uFEFF';
+    csvContent += 'م,اسم ولي الأمر,هاتف ولي الأمر (واتساب),هاتف الأم,حالة الأب,إجمالي الأولاد,المقيدين في الكُتّاب,الطلاب المكرمون المسجلون,بيانات الأشقاء الإضافيين\n';
+
+    filteredFamilies.forEach((fam, idx) => {
+      const studentNames = fam.students.map(s => `${s.studentName || ''} (${s.partName || 'القرآن'} - ${s.studyStage || ''})`).join(' | ');
+      const siblingNames = fam.siblingsList.map(sib => `${sib.name || ''} (${sib.studyStage || ''})`).join(' | ');
+
+      const row = [
+        idx + 1,
+        `"${fam.parentName || ''}"`,
+        `"${fam.fatherPhone || ''}"`,
+        `"${fam.motherPhone || ''}"`,
+        `"${fam.fatherStatus || ''}"`,
+        fam.totalChildrenCount || 1,
+        fam.kuttabChildrenCount || 1,
+        `"${studentNames}"`,
+        `"${siblingNames}"`
+      ];
+      csvContent += row.join(',') + '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `سجل_الأسر_والأشقاء_الكتاب_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast?.('تم تصدير سجل الأسر والأشقاء بنجاح 👨‍👩‍👧‍👦', 'success');
+  };
+
+  // ---------------------------------------------------
   // 6. إدارة الشيوخ (Add/Edit/Delete Sheikh)
   // ---------------------------------------------------
   const handleOpenSheikhModal = (sheikh = null) => {
@@ -438,6 +568,18 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
           >
             <Users className="w-4 h-4" />
             👳‍♂️ سجل الشيوخ والمعلمين ({sheikhStats.total})
+          </button>
+
+          <button
+            onClick={() => setActiveTab('families')}
+            className={`px-3.5 py-2 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'families'
+                ? 'bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black shadow-md'
+                : 'text-slate-200 hover:text-white hover:bg-emerald-800/30'
+            }`}
+          >
+            <Users className="w-4 h-4 text-emerald-900" />
+            👨‍👩‍👧‍👦 سجل الأسر والأشقاء ({familyStats.totalFamilies})
           </button>
 
           <button
@@ -981,6 +1123,235 @@ export default function AdminDashboard({ records, onLogout, showToast }) {
                 </tbody>
               </table>
             </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* --------------------------------------------------- */}
+      {/* 👨‍👩‍👧‍👦 TAB 5: FAMILIES & SIBLINGS HUB (سجل الأسر والأشقاء) */}
+      {/* --------------------------------------------------- */}
+      {activeTab === 'families' && (
+        <div className="space-y-6 animate-fadeInUp">
+          
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-emerald-900/60 via-[#062b24] to-teal-900/60 border border-[#fbbf24]/40 p-6 rounded-2xl text-center space-y-2 shadow-xl">
+            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-[#fbbf24]/20 text-[#fbbf24] text-xs font-black">
+              <Users className="w-4 h-4" />
+              سجل الأسر وتحليل الأشقاء في الكُتّاب 2026
+            </div>
+            <h2 className="text-2xl font-black text-white">حصر أولياء الأمور وربط الطلاب بأسرهم وإخوانهم</h2>
+            <p className="text-xs text-slate-300 max-w-2xl mx-auto">
+              تجميع ذكي تلقائي لكل أسرة وولي أمر، حصر الأشقاء المقيدين في الكُتّاب، وتيسير التواصل المباشر عبر الواتساب.
+            </p>
+          </div>
+
+          {/* 4 KPI Summary Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-[#062b24]/90 p-4 rounded-2xl border border-emerald-700/40 text-center shadow">
+              <span className="text-2xl block mb-1">👨‍👩‍👧</span>
+              <span className="text-slate-400 text-xs font-bold block">إجمالي أولياء الأمور (الأسر)</span>
+              <strong className="text-2xl font-black text-[#fbbf24]">{familyStats.totalFamilies}</strong>
+            </div>
+
+            <div className="bg-[#062b24]/90 p-4 rounded-2xl border border-emerald-700/40 text-center shadow">
+              <span className="text-2xl block mb-1">👦</span>
+              <span className="text-slate-400 text-xs font-bold block">إجمالي الطلاب المكرمين</span>
+              <strong className="text-2xl font-black text-white">{familyStats.totalStudents}</strong>
+            </div>
+
+            <div className="bg-[#062b24]/90 p-4 rounded-2xl border border-emerald-700/40 text-center shadow">
+              <span className="text-2xl block mb-1">👥</span>
+              <span className="text-slate-400 text-xs font-bold block">أسر لديها أشقاء بالكُتّاب</span>
+              <strong className="text-2xl font-black text-emerald-300">{familyStats.familiesWithSiblings}</strong>
+            </div>
+
+            <div className="bg-[#062b24]/90 p-4 rounded-2xl border border-emerald-700/40 text-center shadow">
+              <span className="text-2xl block mb-1">📊</span>
+              <span className="text-slate-400 text-xs font-bold block">متوسط الأبناء لكل أسرة</span>
+              <strong className="text-2xl font-black text-amber-200">{familyStats.avgKids}</strong>
+            </div>
+          </div>
+
+          {/* Filter & Export Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-[#062b24]/80 rounded-2xl border border-emerald-700/40">
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-72">
+                <Search className="w-4 h-4 text-slate-400 absolute top-3 right-3" />
+                <input
+                  type="text"
+                  value={familySearch}
+                  onChange={(e) => setFamilySearch(e.target.value)}
+                  placeholder="بحث باسم ولي الأمر، الهاتف، أو اسم الطالب/الأخ..."
+                  className="w-full pl-3 pr-9 py-2 rounded-xl bg-slate-900/90 border border-emerald-700/50 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-[#fbbf24]"
+                />
+              </div>
+
+              <select
+                value={familyFilter}
+                onChange={(e) => setFamilyFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl bg-slate-900/90 border border-emerald-700/50 text-white text-xs focus:outline-none focus:border-[#fbbf24]"
+              >
+                <option value="ALL">جميع الأسر ({familiesData.length})</option>
+                <option value="WITH_SIBLINGS">أسر لديها أشقاء في الكُتّاب فقط ({familyStats.familiesWithSiblings})</option>
+                <option value="SINGLE_CHILD">أسر بطالب واحد ({familiesData.length - familyStats.familiesWithSiblings})</option>
+              </select>
+            </div>
+
+            <button
+              onClick={exportFamiliesToExcel}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black rounded-xl border border-emerald-400/40 flex items-center gap-2 shadow-lg cursor-pointer w-full sm:w-auto justify-center"
+            >
+              <Download className="w-4 h-4" />
+              <span>تصدير تقرير الأسر والأشقاء Excel 📊</span>
+            </button>
+          </div>
+
+          {/* Families Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredFamilies.length === 0 ? (
+              <div className="md:col-span-2 text-center py-12 bg-[#062b24]/60 rounded-2xl border border-emerald-800/40 text-slate-400 text-xs">
+                لا توجد أسر مطابقة للبحث أو التصفية الحالية
+              </div>
+            ) : (
+              filteredFamilies.map((fam, idx) => {
+                const hasMultiple = fam.students.length > 1 || fam.siblingsList.length > 0 || fam.kuttabChildrenCount > 1;
+                const waUrl = fam.fatherPhone ? `https://api.whatsapp.com/send?phone=2${fam.fatherPhone.replace(/^0/, '')}` : null;
+
+                return (
+                  <div
+                    key={fam.key || idx}
+                    className={`rounded-2xl border p-5 space-y-4 transition-all shadow-xl ${
+                      hasMultiple
+                        ? 'bg-gradient-to-b from-[#062b24] to-[#041d18] border-emerald-500/50 hover:border-[#fbbf24]'
+                        : 'bg-[#062b24]/80 border-emerald-800/40'
+                    }`}
+                  >
+                    {/* Family Header */}
+                    <div className="flex items-start justify-between gap-3 border-b border-emerald-800/40 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-black text-white">{fam.parentName}</span>
+                          {hasMultiple && (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[#fbbf24] text-[10px] font-black">
+                              أشقاء في الكُتّاب 👥
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
+                          {fam.fatherPhone ? (
+                            <span className="font-mono text-emerald-300 font-bold flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {fam.fatherPhone}
+                            </span>
+                          ) : (
+                            <span>هاتف غير مسجل</span>
+                          )}
+
+                          {fam.fatherStatus && (
+                            <span className="text-amber-200">| {fam.fatherStatus}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* WhatsApp Action */}
+                      {waUrl && (
+                        <a
+                          href={waUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shrink-0"
+                          title="محادثة واتساب مباشرة مع ولي الأمر"
+                        >
+                          <span>واتساب</span>
+                          <span className="text-sm">💬</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Family Counts Metrics */}
+                    <div className="flex items-center justify-between text-xs bg-slate-950/60 p-2.5 rounded-xl border border-emerald-800/30">
+                      <div className="text-slate-300">
+                        <span className="text-slate-400 text-[10px] block">إجمالي أولاد الأسرة:</span>
+                        <strong className="text-[#fbbf24] font-black">{fam.totalChildrenCount} أبناء</strong>
+                      </div>
+                      <div className="text-slate-300 text-left">
+                        <span className="text-slate-400 text-[10px] block">المقيدين بالكُتّاب:</span>
+                        <strong className="text-emerald-300 font-black">{fam.kuttabChildrenCount} بالكُتّاب</strong>
+                      </div>
+                    </div>
+
+                    {/* Honored Students in Family */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-[#fbbf24] block">
+                        الطلاب المكرمون المسجلون بالدورة ({fam.students.length}):
+                      </span>
+                      <div className="space-y-1.5">
+                        {fam.students.map((stu) => (
+                          <div
+                            key={stu.id}
+                            className="p-2.5 rounded-xl bg-slate-900/80 border border-emerald-700/40 flex items-center justify-between text-xs"
+                          >
+                            <div className="space-y-0.5">
+                              <div className="font-bold text-white flex items-center gap-2">
+                                <span>{stu.studentName}</span>
+                                {stu.studentCode && (
+                                  <span className="text-[#fbbf24] text-[10px] px-1.5 py-0.5 bg-amber-500/10 rounded font-mono">
+                                    {stu.studentCode}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-slate-400">
+                                {stu.partName || 'القرآن'} {stu.examScore ? `(${stu.examScore}%)` : ''} — {stu.studyStage || ''} ({stu.schoolName || ''})
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setEditingStudent(stu);
+                                  setStudentModalOpen(true);
+                                }}
+                                className="p-1.5 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-all"
+                                title="تعديل بيانات الطالب"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteStudent(stu.id)}
+                                className="p-1.5 text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all"
+                                title="حذف الطالب"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sibling Repeaters in Family */}
+                    {fam.siblingsList.length > 0 && (
+                      <div className="space-y-1.5 pt-1 border-t border-emerald-900/40">
+                        <span className="text-[11px] font-bold text-emerald-300 block">
+                          أشقاء آخرون مسجلون بالكُتّاب ({fam.siblingsList.length}):
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          {fam.siblingsList.map((sib, sIdx) => (
+                            <div key={sib.id || sIdx} className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-800/30 text-[11px]">
+                              <span className="font-bold text-white block">{sib.name}</span>
+                              <span className="text-slate-400 text-[10px]">{sib.studyStage} {sib.schoolName ? `— ${sib.schoolName}` : ''}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })
+            )}
           </div>
 
         </div>
