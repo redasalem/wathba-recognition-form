@@ -53,6 +53,11 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
     schoolName: '',
     partName: '',
     examScore: '',
+    awardTier: '',
+    gift: '',
+    totalParts: 1,
+    smartUrl: '',
+    qrCodeUrl: '',
     parentName: '',
     fatherPhone: '',
     motherPhone: '',
@@ -81,6 +86,11 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
         schoolName: initialStudentData.schoolName || prev.schoolName,
         partName: initialStudentData.partName || initialStudentData.part || prev.partName,
         examScore: initialStudentData.examScore || initialStudentData.score || prev.examScore,
+        awardTier: initialStudentData.awardTier || initialStudentData.tier || prev.awardTier,
+        gift: initialStudentData.gift || prev.gift,
+        totalParts: initialStudentData.totalParts || prev.totalParts || 1,
+        smartUrl: initialStudentData.smartUrl || initialStudentData.smart_url || prev.smartUrl,
+        qrCodeUrl: initialStudentData.qrCodeUrl || initialStudentData.qr_code_url || prev.qrCodeUrl,
         parentName: initialStudentData.parentName || prev.parentName,
         fatherPhone: initialStudentData.fatherPhone || prev.fatherPhone,
         motherPhone: initialStudentData.motherPhone || prev.motherPhone,
@@ -387,16 +397,26 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
           </p>
 
           {/* Recognized Student Badge from QR Code */}
-          {(formData.studentCode || formData.partName || formData.studentId) && (
-            <div className="mt-4 inline-flex flex-wrap items-center justify-center gap-2 px-4 py-2 rounded-2xl bg-slate-950/80 border border-[#fbbf24]/50 shadow-inner text-xs font-black">
-              {formData.studentCode && (
-                <span className="text-[#fbbf24]">🏷️ كود التكريم: {formData.studentCode}</span>
-              )}
-              {formData.partName && (
-                <span className="text-emerald-300">| 📖 المستوى: {formData.partName}</span>
-              )}
-              {formData.examScore && (
-                <span className="text-amber-200">| ⭐ الدرجة: {formData.examScore}%</span>
+          {(formData.studentCode || formData.partName || formData.studentId || formData.awardTier) && (
+            <div className="mt-4 flex flex-col items-center justify-center gap-2">
+              <div className="inline-flex flex-wrap items-center justify-center gap-2 px-4 py-2 rounded-2xl bg-slate-950/80 border border-[#fbbf24]/50 shadow-inner text-xs font-black">
+                {formData.studentCode && (
+                  <span className="text-[#fbbf24]">🏷️ كود التكريم: {formData.studentCode}</span>
+                )}
+                {formData.partName && (
+                  <span className="text-emerald-300">| 📖 المستوى: {formData.partName}</span>
+                )}
+                {formData.examScore && (
+                  <span className="text-amber-200">| ⭐ الدرجة: {formData.examScore}%</span>
+                )}
+              </div>
+
+              {formData.awardTier && (
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black">
+                  <Sparkles className="w-3.5 h-3.5 text-[#fbbf24]" />
+                  <span>{formData.awardTier}</span>
+                  {formData.gift && <span className="text-emerald-300 mr-2">🎁 {formData.gift}</span>}
+                </div>
               )}
             </div>
           )}

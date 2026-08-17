@@ -130,6 +130,11 @@ export default function App() {
           studentName: catalogMatch ? catalogMatch.name : (nameParam || ''),
           partName: catalogMatch ? catalogMatch.part : '',
           examScore: catalogMatch ? catalogMatch.score : '',
+          awardTier: catalogMatch ? catalogMatch.tier : '',
+          gift: catalogMatch ? catalogMatch.gift : '',
+          totalParts: catalogMatch ? catalogMatch.totalParts : 1,
+          smartUrl: catalogMatch ? catalogMatch.smart_url : '',
+          qrCodeUrl: catalogMatch ? catalogMatch.qr_code_url : '',
           ...(existingDoc || {})
         });
         setIsEditMode(false);

@@ -14,7 +14,8 @@ import {
   ShieldCheck, 
   ArrowRight,
   HeartHandshake,
-  BookOpen
+  BookOpen,
+  Gift
 } from 'lucide-react';
 
 export default function StudentProfileView({ student, onEdit, onGoHome, showToast }) {
@@ -30,13 +31,12 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
     : window.location.href;
 
   const handleShareWhatsApp = () => {
-    const text = `🎉 كارت تكريم الطالب المكرم في كُتّاب: ${student.studentName}\nكود التكريم: ${student.studentCode || ''}\nفئة التكريم: ${student.partName || student.part || 'القرآن كاملاً'}\nالدرجة: ${student.examScore || student.score || ''}%\n\nرابط بروفايل وكارت التكريم الرسمي:\n${studentSmartUrl}`;
+    const text = `🎉 كارت تكريم الطالب المكرم في كُتّاب: ${student.studentName}\nكود التكريم: ${student.studentCode || ''}\nفئة التكريم: ${student.awardTier || student.tier || ''}\nمستوى الحفظ: ${student.partName || student.part || 'القرآن كاملاً'}\nالدرجة: ${student.examScore || student.score || ''}%\nالجائزة: ${student.gift || ''}\n\nرابط بروفايل وكارت التكريم الرسمي:\n${studentSmartUrl}`;
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
 
-  const qrPayload = studentSmartUrl;
-
+  const qrPayload = student.smartUrl || studentSmartUrl;
   const siblings = Array.isArray(student.siblings) ? student.siblings : [];
 
   return (
@@ -94,7 +94,7 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-black">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>بيانات معتمدة ومكتملة</span>
+                <span>بيانات معتمدة ومسجلة</span>
               </div>
             </div>
 
@@ -129,15 +129,27 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
                   <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-[#fbbf24]" />
-                    <span>مستوى التكريم: {student.partName || student.part || 'القرآن كاملاً'}</span>
+                    <span>{student.awardTier || student.tier || '👑 الفئة المتميزة'}</span>
+                  </span>
+
+                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
+                    {student.partName || student.part || 'القرآن الكريم'}
                   </span>
 
                   {(student.examScore || student.score) && (
-                    <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
-                      الدرجة: {student.examScore || student.score}%
+                    <span className="px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-400 font-mono font-black text-xs">
+                      {student.examScore || student.score}%
                     </span>
                   )}
                 </div>
+
+                {/* Gift description */}
+                {(student.gift) && (
+                  <div className="p-2.5 bg-gradient-to-r from-amber-500/15 via-[#062b24] to-amber-500/15 rounded-xl border border-[#fbbf24]/30 text-amber-300 text-xs font-black flex items-center justify-center sm:justify-start gap-2">
+                    <Gift className="w-4 h-4 text-[#fbbf24]" />
+                    <span>{student.gift}</span>
+                  </div>
+                )}
 
                 {student.studentId && (
                   <p className="text-[11px] text-slate-400 font-mono">
@@ -157,7 +169,7 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
                   includeMargin={false}
                 />
                 <span className="text-[8px] font-black text-slate-800 tracking-wider font-mono">
-                  {student.studentId || 'KUTTAB-2026'}
+                  {student.studentCode || student.studentId || 'KUTTAB-2026'}
                 </span>
               </div>
             </div>
@@ -182,6 +194,10 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
                 <div className="flex justify-between">
                   <span className="text-slate-400">المدرسة / المعهد:</span>
                   <span className="font-bold text-white">{student.schoolName || '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">الشيخ المشرف:</span>
+                  <span className="font-bold text-[#fbbf24]">{student.sheikhName || 'مشرف الحلقات'}</span>
                 </div>
               </div>
             </div>

@@ -50,8 +50,10 @@ export default function StudentEditModal({ student, onClose, showToast }) {
     studentAge: student?.studentAge || '',
     studyStage: student?.studyStage || 'ابتدائي',
     schoolName: student?.schoolName || '',
-    partName: student?.partName || 'القرآن كاملاً',
-    examScore: student?.examScore || '',
+    partName: student?.partName || student?.part || 'القرآن كاملاً',
+    examScore: student?.examScore || student?.score || '',
+    awardTier: student?.awardTier || student?.tier || '',
+    gift: student?.gift || '',
     sheikhName: student?.sheikhName || '',
     totalParts: student?.totalParts || '',
     parentName: student?.parentName || '',
@@ -441,6 +443,31 @@ export default function StudentEditModal({ student, onClose, showToast }) {
                 onChange={(e) => setFormData({ ...formData, sheikhName: e.target.value })}
                 placeholder="اسم الشيخ..."
                 className="w-full px-3 py-2.5 bg-slate-900/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+              />
+            </div>
+          </div>
+
+          {/* Award Tier & Prize Gift */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-emerald-800/30">
+            <div>
+              <label className="block font-bold text-[#fbbf24] mb-1">فئة الجائزة والتكريم (Award Tier)</label>
+              <input
+                type="text"
+                value={formData.awardTier}
+                onChange={(e) => setFormData({ ...formData, awardTier: e.target.value })}
+                placeholder="مثال: 👑 الفئة الأولى الذهبية (تاج الوقار)"
+                className="w-full px-3 py-2.5 bg-slate-900/80 border border-amber-500/40 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-amber-300 mb-1">المكافأة والجائزة المادية (Gift)</label>
+              <input
+                type="text"
+                value={formData.gift}
+                onChange={(e) => setFormData({ ...formData, gift: e.target.value })}
+                placeholder="مثال: مكافأة مالية: 2,500 ج.م + تاج الوقار ودرع مذهب"
+                className="w-full px-3 py-2.5 bg-slate-900/80 border border-amber-500/40 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
               />
             </div>
           </div>

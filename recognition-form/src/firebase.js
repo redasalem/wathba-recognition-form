@@ -7,10 +7,13 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  setDoc,
+  getDoc,
   serverTimestamp,
   getDocs,
   writeBatch
 } from 'firebase/firestore';
+import { STUDENTS_CATALOG } from './data/studentsCatalog';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKeyForDevelopment",
@@ -52,8 +55,9 @@ export const subscribeStudents = (onSuccess, onError) => {
         ...docSnap.data()
       }));
 
-      // Sort by createdAt descending
+      // Sort by idx or code or score
       data.sort((a, b) => {
+        if (a.idx && b.idx) return a.idx - b.idx;
         const tA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt || 0);
         const tB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt || 0);
         return tB - tA;
@@ -94,6 +98,56 @@ export const deleteStudentRecord = async (id) => {
   if (!db) throw new Error("Firestore is not initialized");
   const docRef = doc(db, 'students', id);
   await deleteDoc(docRef);
+};
+
+// ---------------------------------------------------
+// ⚡ محرك مزامنة الطلاب الـ 143 مع Firebase دفعة واحدة (Batch Sync Engine)
+// ---------------------------------------------------
+export const batchSyncStudentsToFirestore = async (customCatalog = null, onProgress = null) => {
+  if (!db) throw new Error("Firestore is not initialized");
+
+  const catalogToSync = customCatalog || STUDENTS_CATALOG;
+  const total = catalogToSync.length;
+  let processed = 0;
+
+  // Firestore allows up to 500 operations per batch
+  const chunkSize = 400;
+  for (let i = 0; i < total; i += chunkSize) {
+    const chunk = catalogToSync.slice(i, i + chunkSize);
+    const batch = writeBatch(db);
+
+    for (const student of chunk) {
+      const docId = student.studentId || `STU-2026-${String(student.idx).padStart(3, '0')}`;
+      const docRef = doc(db, 'students', docId);
+
+      const studentPayload = {
+        idx: student.idx,
+        studentId: docId,
+        studentCode: student.code || `#${String(student.idx).padStart(3, '0')}`,
+        studentName: student.name,
+        partName: student.part,
+        examScore: Number(student.score) || 0,
+        awardTier: student.tier || "✨ الفئة الثالثة (درجات التفوق 90%-99%)",
+        gift: student.gift || "مكافأة مالية + شهادة تقدير",
+        totalParts: Number(student.totalParts) || 1,
+        smartUrl: student.smart_url || `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(student.name)}&id=${docId}`,
+        qrCodeUrl: student.qr_code_url || student.smart_url,
+        qrImgUrl: student.qr_img_url || "",
+        isSummerStudent: true,
+        accountStatus: "ACTIVE",
+        updatedAt: serverTimestamp()
+      };
+
+      // Use setDoc with merge: true to avoid deleting existing phone numbers or photos
+      batch.set(docRef, studentPayload, { merge: true });
+      processed++;
+      if (onProgress) onProgress(processed, total);
+    }
+
+    await batch.commit();
+  }
+
+  return { success: true, count: processed };
 };
 
 // ---------------------------------------------------
@@ -154,4 +208,72 @@ export const deleteSheikhRecord = async (id) => {
   if (!db) throw new Error("Firestore is not initialized");
   const docRef = doc(db, 'sheikhs', id);
   await deleteDoc(docRef);
+};
+
+// ⚡ استيراد ومزامنة طاقم الشيوخ والكوادر المعتمدة
+export const batchSyncSheikhsToFirestore = async (onProgress = null) => {
+  if (!db) throw new Error("Firestore is not initialized");
+
+  const DEFAULT_SHEIKHS = [
+    {
+      sheikhId: "TCH-001",
+      name: "الشيخ عبدالله حسن الديهى",
+      phone: "01000000001",
+      qualification: "ليسانس شريعة وقانون - إجازة بالقراءات العشر",
+      ijazat: "حفص عن عاصم، ورش عن نافع، القراءات العشر الكبرى",
+      adminRole: "SUPER_ADMIN",
+      permissionsLevel: "FULL_SYSTEM_CONTROL",
+      hasAdminAccess: true,
+      participatingSummer: true,
+      summerLevel: "القرآن كاملاً والفئة العليا",
+      availability: "طوال أيام الأسبوع",
+      studentsCount: 25,
+      notes: "المشرف العام ومدير منظومة الكُتّاب"
+    },
+    {
+      sheikhId: "TCH-002",
+      name: "الشيخ محمد الشعراوي الفوال",
+      phone: "01000000002",
+      qualification: "ليسانس دراسات إسلامية - إجازة حفص عن عاصم",
+      ijazat: "حفص عن عاصم بالسند المتصل",
+      adminRole: "DEPUTY_ADMIN",
+      permissionsLevel: "ACADEMIC_EXAM_CONTROL",
+      hasAdminAccess: true,
+      participatingSummer: true,
+      summerLevel: "الأجزاء المتقدمة (الأعراف إلى يس)",
+      availability: "السبت والإثنين والأربعاء",
+      studentsCount: 30,
+      notes: "المشرف الأكاديمي والتنفيذي للجان الاختبارات"
+    },
+    {
+      sheikhId: "TCH-003",
+      name: "الشيخ أحمد فرج عبد المنعم",
+      phone: "01000000003",
+      qualification: "معهد القراءات - إجازة حفص",
+      ijazat: "حفص عن عاصم",
+      adminRole: "TEACHER",
+      permissionsLevel: "GROUP_ONLY",
+      hasAdminAccess: false,
+      participatingSummer: true,
+      summerLevel: "جزء عم وتبارك وقد سمع",
+      availability: "الأحد والثلاثاء والخميس",
+      studentsCount: 22,
+      notes: "محفظ معتمد لحلقات المبتدئين"
+    }
+  ];
+
+  const batch = writeBatch(db);
+  let count = 0;
+  for (const sheikh of DEFAULT_SHEIKHS) {
+    const docRef = doc(db, 'sheikhs', sheikh.sheikhId);
+    batch.set(docRef, {
+      ...sheikh,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    count++;
+    if (onProgress) onProgress(count, DEFAULT_SHEIKHS.length);
+  }
+
+  await batch.commit();
+  return { success: true, count };
 };
