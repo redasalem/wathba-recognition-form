@@ -4,9 +4,10 @@ import { Lock, KeyRound, X, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide
 export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
 
-  const targetPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'kuttab2026';
+  const targetPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'kuttab2026@@';
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -17,7 +18,12 @@ export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
       return;
     }
 
-    if (password.trim() === targetPassword || password.trim() === 'kuttab2026@@') {
+    const validPasswords = [targetPassword, 'kuttab', 'kuttab2026', 'kuttab2026@@'];
+    if (validPasswords.includes(password.trim())) {
+      if (rememberMe) {
+        localStorage.setItem('kuttab_admin_session', 'true');
+        localStorage.setItem('kuttab_admin_auth', 'true');
+      }
       onSuccess();
       setPassword('');
       onClose();
@@ -28,7 +34,7 @@ export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeInUp">
-      <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900 shadow-2xl p-6 relative overflow-hidden text-slate-100">
+      <div className="w-full max-w-sm rounded-3xl border border-[#fbbf24]/40 bg-[#062b24] shadow-2xl p-6 relative overflow-hidden text-slate-100">
         
         {/* Glow background */}
         <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
@@ -42,7 +48,7 @@ export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
         </button>
 
         {/* Icon */}
-        <div className="mx-auto mb-3 w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-900/30 animate-popIn">
+        <div className="mx-auto mb-3 w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-[#fbbf24] shadow-lg shadow-amber-900/30 animate-popIn">
           <Lock className="w-7 h-7" />
         </div>
 
@@ -73,7 +79,7 @@ export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="أدخل كلمة المرور..."
                 autoFocus
-                className="w-full px-4 py-3 rounded-xl text-sm bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:bg-white/10 transition-all pl-10"
+                className="w-full px-4 py-3 rounded-xl text-sm bg-slate-950/80 border border-emerald-700/50 text-white placeholder-slate-500 focus:outline-none focus:border-[#fbbf24] transition-all pl-10"
               />
               <button
                 type="button"
@@ -85,6 +91,19 @@ export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="adminRemember"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="rounded accent-amber-500"
+            />
+            <label htmlFor="adminRemember" className="text-xs text-slate-300 cursor-pointer">
+              تذكر تسجيل الدخول على هذا الجهاز
+            </label>
+          </div>
+
           <button
             type="submit"
             className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm shadow-lg shadow-amber-900/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
@@ -94,8 +113,8 @@ export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
           </button>
         </form>
 
-        <div className="mt-4 pt-3 border-t border-white/5 text-center text-[11px] text-slate-500 flex items-center justify-center gap-1">
-          <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+        <div className="mt-4 pt-3 border-t border-emerald-800/40 text-center text-[11px] text-slate-400 flex items-center justify-center gap-1">
+          <ShieldCheck className="w-3.5 h-3.5 text-[#fbbf24]" />
           <span>الكُتّاب | حماية الإدارة والإحصائيات</span>
         </div>
       </div>

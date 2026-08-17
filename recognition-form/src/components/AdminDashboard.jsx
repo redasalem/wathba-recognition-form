@@ -1,47 +1,30 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Download,
   Filter,
-  UserCheck,
-  Phone,
-  BookOpen,
-  School,
-  Heart,
   Plus,
   Edit2,
   Trash2,
   X,
-  Check,
-  Camera,
   Users,
   Award,
   Sparkles,
   RefreshCw,
   Eye,
   LogOut,
-  ChevronDown,
   Printer,
   ShieldCheck,
   Building,
-  GraduationCap,
-  MapPin,
   Sun,
-  Calendar,
-  MessageSquare,
-  TrendingUp,
-  Activity,
-  Layers,
   Gift,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Database,
-  ArrowUpDown,
   FileSpreadsheet
 } from 'lucide-react';
 import {
-  updateStudentRecord,
   deleteStudentRecord,
   subscribeSheikhs,
   addSheikhRecord,
@@ -50,7 +33,7 @@ import {
   batchSyncStudentsToFirestore,
   batchSyncSheikhsToFirestore
 } from '../firebase';
-import { STUDENTS_CATALOG, AWARD_TIERS, normalizeArabic } from '../data/studentsCatalog';
+import { STUDENTS_CATALOG, normalizeArabic } from '../data/studentsCatalog';
 import { uploadToCloudinary } from '../services/cloudinary';
 import StudentEditModal from './StudentEditModal';
 import StudentBadgeModal from './StudentBadgeModal';
@@ -67,7 +50,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // ⚡ حالة المزامنة مع Firebase (Batch Sync Engine State)
   // ---------------------------------------------------
   const [syncModalOpen, setSyncModalOpen] = useState(false);
-  const [syncType, setSyncType] = useState('students'); // 'students' | 'sheikhs'
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ processed: 0, total: 143, percentage: 0 });
   const [syncResult, setSyncResult] = useState(null);
@@ -91,7 +73,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // 👳‍♂️ حالة الشيوخ والمعلمين (Sheikhs State)
   // ---------------------------------------------------
   const [sheikhs, setSheikhs] = useState([]);
-  const [sheikhsLoading, setSheikhsLoading] = useState(true);
   const [sheikhSearch, setSheikhSearch] = useState('');
   const [sheikhModalOpen, setSheikhModalOpen] = useState(false);
   const [editingSheikh, setEditingSheikh] = useState(null);
@@ -124,11 +105,9 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     const unsubscribe = subscribeSheikhs(
       (data) => {
         setSheikhs(data);
-        setSheikhsLoading(false);
       },
       (err) => {
         console.error('Error fetching sheikhs:', err);
-        setSheikhsLoading(false);
       }
     );
     return () => unsubscribe();
@@ -168,7 +147,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   const handleExecuteSyncSheikhs = async () => {
     setIsSyncing(true);
     try {
-      const res = await batchSyncSheikhsToFirestore();
+      await batchSyncSheikhsToFirestore();
       showToast?.(`تم استيراد الكوادر والشيوخ المعتمدين في فايربيز بنجاح 👳‍♂️✨`, 'success');
       setSyncModalOpen(false);
     } catch (err) {
@@ -183,7 +162,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // 🌟 دمج وإعداد قائمة الطلاب المكرمين الشاملة (143 طالب)
   // ---------------------------------------------------
   const masterStudentsList = useMemo(() => {
-    // If Firestore already has records, overlay them with the master catalog
     return STUDENTS_CATALOG.map((catStudent) => {
       const matchedRecord = records.find((r) => {
         if (r.studentId && r.studentId.toUpperCase() === catStudent.studentId.toUpperCase()) return true;
@@ -224,11 +202,10 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     });
   }, [records]);
 
-  // Combined records for Students Tab: Use masterStudentsList if records is empty or merge additional standalone records
+  // Combined records for Students Tab
   const allDisplayStudents = useMemo(() => {
     if (records.length === 0) return masterStudentsList;
     
-    // Check if there are any records not in masterStudentsList
     const standaloneRecords = records.filter(r => 
       !masterStudentsList.some(m => m.id === r.id || m.studentId === r.studentId)
     );
@@ -236,11 +213,19 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     return [...masterStudentsList, ...standaloneRecords];
   }, [masterStudentsList, records]);
 
+  // الأجزاء المتاحة للفلترة
+  const availableParts = useMemo(() => {
+    const partsSet = new Set();
+    allDisplayStudents.forEach(s => {
+      if (s.partName) partsSet.add(s.partName);
+    });
+    return Array.from(partsSet);
+  }, [allDisplayStudents]);
+
   // ---------------------------------------------------
   // 🏆 تصفية وترتيب طلاب حفل التكريم والمسرح (Ceremony Hub Roster)
   // ---------------------------------------------------
   const ceremonyStudents = useMemo(() => {
-    // Determine priority weight for sorting
     const getTierWeight = (tierStr = '') => {
       if (tierStr.includes('الأولى') || tierStr.includes('تاج الوقار')) return 1;
       if (tierStr.includes('الثانية') || tierStr.includes('الأوائل')) return 2;
@@ -251,7 +236,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
     let list = [...masterStudentsList];
 
-    // Filter by Tier
     if (ceremonyTierFilter !== 'ALL') {
       list = list.filter((s) => {
         const tier = s.awardTier || '';
@@ -264,7 +248,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       });
     }
 
-    // Filter by Search Query
     if (ceremonySearch.trim()) {
       const q = normalizeArabic(ceremonySearch);
       list = list.filter((s) => 
@@ -276,7 +259,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       );
     }
 
-    // Sort by Tier Weight (1..5), then totalParts descending (30..1), then examScore descending
     list.sort((a, b) => {
       const weightA = getTierWeight(a.awardTier);
       const weightB = getTierWeight(b.awardTier);
@@ -483,6 +465,91 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     showToast?.('تم تصدير سجل الطلاب بنجاح 📊', 'success');
   };
 
+  const exportSheikhsToCSV = () => {
+    if (filteredSheikhs.length === 0) {
+      showToast?.('لا توجد بيانات شيوخ لتصديرها', 'error');
+      return;
+    }
+
+    let csvContent = '\uFEFF';
+    csvContent += 'م,اسم الشيخ / المحفظ,رقم التليفون,المؤهل العلمي,الإجازات القرآنية,مشارك بالدورة الصيفية,المستوى المشرف عليه,طبيعة التفرغ,عدد الطلاب,الملاحظات\n';
+
+    filteredSheikhs.forEach((s, idx) => {
+      const row = [
+        idx + 1,
+        `"${s.name || ''}"`,
+        `"${s.phone || ''}"`,
+        `"${s.qualification || ''}"`,
+        `"${s.ijazat || ''}"`,
+        `"${s.participatingSummer || 'نعم'}"`,
+        `"${s.summerLevel || ''}"`,
+        `"${s.availability || ''}"`,
+        s.studentsCount || 0,
+        `"${s.notes || ''}"`
+      ];
+      csvContent += row.join(',') + '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `سجل_شيوخ_الكتاب_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast?.('تم تصدير سجل الشيوخ بنجاح 📊', 'success');
+  };
+
+  const exportFamiliesToCSV = () => {
+    if (filteredFamilies.length === 0) {
+      showToast?.('لا توجد بيانات أسر لتصديرها', 'error');
+      return;
+    }
+
+    let csvContent = '\uFEFF';
+    csvContent += 'م,اسم ولي الأمر / الأسرة,هاتف الأب,هاتف الأم,حالة الأب,عدد الأبناء بالكتاب,أسماء ومستويات الأبناء\n';
+
+    filteredFamilies.forEach((fam, idx) => {
+      const childrenSummary = fam.students.map(s => `${s.studentName} (${s.partName || 'القرآن'})`).join(' - ');
+      const row = [
+        idx + 1,
+        `"${fam.parentName || ''}"`,
+        `"${fam.fatherPhone || ''}"`,
+        `"${fam.motherPhone || ''}"`,
+        `"${fam.fatherStatus || ''}"`,
+        fam.students.length,
+        `"${childrenSummary}"`
+      ];
+      csvContent += row.join(',') + '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `سجل_الأسر_والأشقاء_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast?.('تم تصدير سجل الأسر والأشقاء بنجاح 📊', 'success');
+  };
+
+  // حذف طالب من Firebase
+  const handleDeleteStudent = async (student) => {
+    if (window.confirm(`هل أنت متأكد من حذف سجل الطالب: "${student.studentName}" من فايربيز؟`)) {
+      try {
+        if (student.id) {
+          await deleteStudentRecord(student.id);
+          showToast?.(`تم حذف سجل الطالب ${student.studentName} بنجاح`, 'success');
+        }
+      } catch (err) {
+        console.error('Delete student error:', err);
+        showToast?.('حدث خطأ أثناء حذف الطالب من فايربيز', 'error');
+      }
+    }
+  };
+
   // نداء الطالب على المسرح في البرومبتر
   const handleOpenStagePrompter = (student, index) => {
     setStagePrompterStudent(student);
@@ -581,10 +648,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
           {/* Action Buttons & Sync Engine Trigger */}
           <div className="flex flex-wrap items-center justify-center gap-2.5">
             <button
-              onClick={() => {
-                setSyncType('students');
-                setSyncModalOpen(true);
-              }}
+              onClick={() => setSyncModalOpen(true)}
               className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-lg active:scale-95 border border-amber-300/40"
               title="مزامنة وتعيين كافة الطلاب الـ 143 في Firebase"
             >
@@ -614,7 +678,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             }`}
           >
             <Sun className={`w-4 h-4 ${activeTab === 'summer' ? 'text-slate-950' : 'text-amber-400'}`} />
-            <span>الدورة الصيفية (143 طالب)</span>
+            <span>الدورة الصيفية ({masterStudentsList.length} طالب)</span>
           </button>
 
           <button
@@ -626,7 +690,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             }`}
           >
             <Award className="w-4 h-4" />
-            <span>🏆 حفل التكريم والمسرح (143)</span>
+            <span>🏆 حفل التكريم والمسرح ({masterStudentsList.length})</span>
           </button>
 
           <button
@@ -922,19 +986,79 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {(activeTab === 'summer' || activeTab === 'kuttab' || activeTab === 'students') && (
         <div className="space-y-6 animate-fadeInUp">
           
+          {/* Scope Filter Pill Bar */}
+          <div className="bg-[#062b24]/90 border border-emerald-700/40 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-2 text-xs font-black text-[#fbbf24]">
+              <Filter className="w-4 h-4" />
+              <span>نطاق العرض المعتمد للطلاب:</span>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setStudentScope('ALL')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                  studentScope === 'ALL'
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
+                    : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
+                }`}
+              >
+                <Building className="w-3.5 h-3.5" />
+                <span>الكل (الكُتّاب + الدورة)</span>
+              </button>
+
+              <button
+                onClick={() => setStudentScope('SUMMER_2026')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                  studentScope === 'SUMMER_2026'
+                    ? 'bg-amber-400 text-slate-950 font-black shadow-md'
+                    : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
+                }`}
+              >
+                <Sun className="w-3.5 h-3.5 text-amber-900" />
+                <span>☀️ طلاب الدورة الصيفية ({masterStudentsList.length})</span>
+              </button>
+
+              <button
+                onClick={() => setStudentScope('KUTTAB_ONLY')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                  studentScope === 'KUTTAB_ONLY'
+                    ? 'bg-blue-500 text-slate-950 font-black shadow-md'
+                    : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
+                }`}
+              >
+                <Building className="w-3.5 h-3.5" />
+                <span>🏛️ بيانات الكُتّاب الدائم</span>
+              </button>
+            </div>
+          </div>
+
           {/* Controls Bar */}
           <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
             
-            {/* Search Input */}
-            <div className="relative w-full md:w-80">
-              <Search className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={studentSearch}
-                onChange={(e) => setStudentSearch(e.target.value)}
-                placeholder="ابحث بالاسم، الكود، الهاتف..."
-                className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
-              />
+            {/* Search Input & Part Filter */}
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              <div className="relative w-full sm:w-72">
+                <Search className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  placeholder="ابحث بالاسم، الكود، الهاتف..."
+                  className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
+                />
+              </div>
+
+              {/* Part Filter Dropdown */}
+              <select
+                value={studentFilterPart}
+                onChange={(e) => setStudentFilterPart(e.target.value)}
+                className="px-3 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white focus:outline-none focus:border-[#fbbf24]"
+              >
+                <option value="ALL">جميع الأجزاء والمستويات</option>
+                {availableParts.map((part) => (
+                  <option key={part} value={part}>{part}</option>
+                ))}
+              </select>
             </div>
 
             {/* Actions: Export Excel & Add Student */}
@@ -1026,6 +1150,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
+                          <button
+                            onClick={() => handleDeleteStudent(r)}
+                            className="p-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-xl transition-all cursor-pointer"
+                            title="حذف الطالب من السجل"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1054,7 +1185,15 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
               />
             </div>
 
-            <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
+            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+              <button
+                onClick={exportSheikhsToCSV}
+                className="px-4 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all"
+              >
+                <Download className="w-4 h-4" />
+                <span>تصدير كشف الشيوخ</span>
+              </button>
+
               <button
                 onClick={handleExecuteSyncSheikhs}
                 className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-[#fbbf24]/50 text-[#fbbf24] rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all"
@@ -1165,6 +1304,14 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
               />
             </div>
+
+            <button
+              onClick={exportFamiliesToCSV}
+              className="px-4 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all"
+            >
+              <Download className="w-4 h-4" />
+              <span>تصدير كشف الأسر</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
