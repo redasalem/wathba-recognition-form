@@ -19,6 +19,7 @@ import {
   Sun,
   Gift,
   CheckCircle2,
+  AlertCircle,
   ChevronLeft,
   ChevronRight,
   Database,
@@ -99,6 +100,40 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   const [studentFilterPart, setStudentFilterPart] = useState('ALL');
   const [studentModalOpen, setStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
+
+  // ---------------------------------------------------
+  // 🗑️ حالة نافذة تأكيد الحذف المخصصة (Custom Delete Modal)
+  // ---------------------------------------------------
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({
+    isOpen: false,
+    type: null, // 'student' | 'sheikh'
+    data: null,
+    isDeleting: false
+  });
+
+  // 🔑 Close any active modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (deleteConfirmModal.isOpen) {
+          setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false });
+        } else if (syncModalOpen && !isSyncing) {
+          setSyncModalOpen(false);
+        } else if (stagePrompterStudent) {
+          setStagePrompterStudent(null);
+        } else if (sheikhModalOpen) {
+          setSheikhModalOpen(false);
+        } else if (badgeModalStudent) {
+          setBadgeModalStudent(null);
+        } else if (studentModalOpen) {
+          setStudentModalOpen(false);
+          setEditingStudent(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [deleteConfirmModal.isOpen, syncModalOpen, isSyncing, stagePrompterStudent, sheikhModalOpen, badgeModalStudent, studentModalOpen]);
 
   // اشتراك الشيوخ لحظياً
   useEffect(() => {
@@ -535,18 +570,51 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     showToast?.('تم تصدير سجل الأسر والأشقاء بنجاح 📊', 'success');
   };
 
-  // حذف طالب من Firebase
-  const handleDeleteStudent = async (student) => {
-    if (window.confirm(`هل أنت متأكد من حذف سجل الطالب: "${student.studentName}" من فايربيز؟`)) {
-      try {
-        if (student.id) {
-          await deleteStudentRecord(student.id);
-          showToast?.(`تم حذف سجل الطالب ${student.studentName} بنجاح`, 'success');
+  // 🗑️ فتح نافذة تأكيد حذف طالب
+  const handleRequestDeleteStudent = (student) => {
+    setDeleteConfirmModal({
+      isOpen: true,
+      type: 'student',
+      data: student,
+      isDeleting: false
+    });
+  };
+
+  // 🗑️ فتح نافذة تأكيد حذف شيخ
+  const handleRequestDeleteSheikh = (sheikh) => {
+    setDeleteConfirmModal({
+      isOpen: true,
+      type: 'sheikh',
+      data: sheikh,
+      isDeleting: false
+    });
+  };
+
+  // 🗑️ تنفيذ الحذف النهائي من Firebase
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmModal.data) return;
+    setDeleteConfirmModal(prev => ({ ...prev, isDeleting: true }));
+
+    try {
+      if (deleteConfirmModal.type === 'student') {
+        const student = deleteConfirmModal.data;
+        const studentDocId = student.id || student.studentId;
+        if (studentDocId) {
+          await deleteStudentRecord(studentDocId);
         }
-      } catch (err) {
-        console.error('Delete student error:', err);
-        showToast?.('حدث خطأ أثناء حذف الطالب من فايربيز', 'error');
+        showToast?.(`تم حذف سجل الطالب "${student.studentName || student.name}" بنجاح 🗑️`, 'success');
+      } else if (deleteConfirmModal.type === 'sheikh') {
+        const sheikh = deleteConfirmModal.data;
+        if (sheikh.id) {
+          await deleteSheikhRecord(sheikh.id);
+        }
+        showToast?.(`تم حذف الشيخ "${sheikh.name}" من السجل بنجاح 🗑️`, 'success');
       }
+    } catch (err) {
+      console.error('Delete error:', err);
+      showToast?.('حدث خطأ أثناء تنفيذ الحذف من قاعدة البيانات', 'error');
+    } finally {
+      setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false });
     }
   };
 
@@ -554,7 +622,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   const handleOpenStagePrompter = (student, index) => {
     setStagePrompterStudent(student);
     setStagePrompterIndex(index);
-    showToast?.(`تم تحضير نداء الطالب: ${student.studentName} على منصة التكريم 🎤`, 'success');
+    showToast?.(`تم تحضير نداء الطالب: ${student.studentName || student.name} على منصة التكريم 🎤`, 'success');
   };
 
   const handleNextPrompterStudent = () => {
@@ -589,18 +657,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     } catch (err) {
       console.error('Sheikh save error:', err);
       showToast?.('حدث خطأ أثناء حفظ بيانات الشيخ', 'error');
-    }
-  };
-
-  const handleDeleteSheikh = async (id) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا الشيخ من السجل؟')) {
-      try {
-        await deleteSheikhRecord(id);
-        showToast?.('تم حذف الشيخ من السجل بنجاح', 'success');
-      } catch (err) {
-        console.error('Delete sheikh error:', err);
-        showToast?.('حدث خطأ أثناء الحذف', 'error');
-      }
     }
   };
 
@@ -1151,7 +1207,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => handleDeleteStudent(r)}
+                            onClick={() => handleRequestDeleteStudent(r)}
                             className="p-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-xl transition-all cursor-pointer"
                             title="حذف الطالب من السجل"
                           >
@@ -1229,7 +1285,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             </div>
           </div>
 
-          {/* Sheikhs Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredSheikhs.map((s) => (
               <div key={s.id} className="bg-[#062b24]/90 border border-emerald-700/40 rounded-3xl p-5 shadow-xl space-y-4 relative hover:border-[#fbbf24]/50 transition-all">
@@ -1260,8 +1315,9 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => handleDeleteSheikh(s.id)}
+                      onClick={() => handleRequestDeleteSheikh(s)}
                       className="p-1.5 text-rose-400 hover:text-rose-200 bg-rose-950/40 rounded-lg transition-all cursor-pointer"
+                      title="حذف المحفظ من السجل"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1349,14 +1405,30 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {/* ⚡ MODAL 1: FIREBASE BATCH SYNC ENGINE MODAL */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {syncModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 overflow-y-auto animate-fadeInUp">
-          <div className="relative bg-[#041915] rounded-3xl border-2 border-[#fbbf24] max-w-lg w-full p-6 text-slate-100 shadow-2xl space-y-5">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isSyncing) {
+              setSyncModalOpen(false);
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-[#041915] rounded-3xl border-2 border-[#fbbf24]/50 max-w-lg w-full p-5 sm:p-6 text-slate-100 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto"
+          >
             <div className="flex items-center justify-between border-b border-emerald-800/40 pb-3">
               <div className="flex items-center gap-2 text-[#fbbf24] font-black text-base">
                 <Database className="w-5 h-5" />
                 <span>محرك المزامنة التلقائي مع Firebase</span>
               </div>
-              <button onClick={() => setSyncModalOpen(false)} className="p-1 text-slate-400 hover:text-white rounded-lg bg-white/5">
+              <button
+                type="button"
+                onClick={() => !isSyncing && setSyncModalOpen(false)}
+                disabled={isSyncing}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer disabled:opacity-30"
+                title="إغلاق"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1376,7 +1448,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 </p>
               </div>
 
-              {/* Progress Bar during sync */}
               {isSyncing && (
                 <div className="space-y-2 pt-2">
                   <div className="flex justify-between text-xs font-bold text-amber-300">
@@ -1405,16 +1476,16 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 type="button"
                 onClick={() => setSyncModalOpen(false)}
                 disabled={isSyncing}
-                className="px-4 py-2 bg-slate-800 text-slate-300 font-bold rounded-xl cursor-pointer"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer transition-all"
               >
-                إغلاق
+                إلغاء
               </button>
 
               <button
                 type="button"
                 onClick={handleExecuteSyncStudents}
                 disabled={isSyncing}
-                className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg flex items-center gap-2 disabled:opacity-50 transition-all active:scale-95"
               >
                 <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
                 <span>{isSyncing ? 'جاري المزامنة...' : 'بدء المزامنة الآن ⚡'}</span>
@@ -1424,99 +1495,95 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {/* 🎤 MODAL 2: STAGE LIVE PROMPTER MODAL (دليل مقدم الحفل) */}
-      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* 🎤 MODAL 2: STAGE LIVE PROMPTER MODAL */}
       {stagePrompterStudent && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 overflow-y-auto animate-fadeInUp">
-          <div className="relative bg-gradient-to-b from-[#062b24] via-[#041915] to-[#02100d] rounded-3xl border-2 border-[#fbbf24] max-w-2xl w-full p-6 text-slate-100 shadow-2xl space-y-6">
-            
-            {/* Header with Navigation */}
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setStagePrompterStudent(null);
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-gradient-to-b from-[#062b24] via-[#041915] to-[#02100d] rounded-3xl border-2 border-[#fbbf24]/50 max-w-2xl w-full p-5 sm:p-6 text-slate-100 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto"
+          >
             <div className="flex items-center justify-between border-b border-[#fbbf24]/30 pb-3">
               <div className="flex items-center gap-2 text-[#fbbf24] font-black">
                 <Sparkles className="w-5 h-5" />
-                <span>منصة التكريم | النداء المباشر على المسرح 🎙️</span>
+                <span className="text-sm sm:text-base">منصة التكريم | النداء المباشر على المسرح 🎙️</span>
               </div>
-
               <div className="flex items-center gap-2">
                 <span className="px-3 py-1 rounded-full bg-slate-900 border border-[#fbbf24]/40 text-[#fbbf24] text-xs font-mono font-black">
                   #{stagePrompterIndex + 1} من {ceremonyStudents.length}
                 </span>
                 <button
+                  type="button"
                   onClick={() => setStagePrompterStudent(null)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5"
+                  className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Student Stage Cue Presentation Card */}
             <div className="text-center space-y-4 py-2">
               <div className="inline-block px-4 py-1 rounded-full bg-[#fbbf24]/20 border border-[#fbbf24]/50 text-[#fbbf24] font-mono font-black text-sm">
                 كود التكريم: {stagePrompterStudent.studentCode}
               </div>
-
-              <h2 className="text-3xl sm:text-4xl font-black text-white drop-shadow tracking-wide">
-                {stagePrompterStudent.studentName}
+              <h2 className="text-2xl sm:text-4xl font-black text-white drop-shadow tracking-wide">
+                {stagePrompterStudent.studentName || stagePrompterStudent.name}
               </h2>
-
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black">
-                  {stagePrompterStudent.awardTier}
+                  {stagePrompterStudent.awardTier || stagePrompterStudent.tier}
                 </span>
                 <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
-                  {stagePrompterStudent.partName}
+                  {stagePrompterStudent.partName || stagePrompterStudent.part}
                 </span>
-                {stagePrompterStudent.examScore && (
-                  <span className="px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-400 font-mono font-black text-xs">
-                    الدرجة: {stagePrompterStudent.examScore}%
-                  </span>
-                )}
               </div>
 
-              {/* MC Announcement Cue Box */}
               <div className="p-4 bg-slate-950/90 rounded-2xl border border-emerald-700/40 text-right space-y-2">
-                <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                  <span>🎙️ صيغة إلقاء مقدم الحفل:</span>
-                </div>
-                <p className="text-sm text-slate-100 leading-relaxed font-semibold">
-                  "بسم الله الرحمن الرحيم .. ويتفضل الآن لصعود منصة التكريم الطالب الحافظ / <strong className="text-[#fbbf24] text-base">{stagePrompterStudent.studentName}</strong> .. الحاصل على <strong className="text-emerald-300">{stagePrompterStudent.awardTier}</strong> بمستوى <strong className="text-white">{stagePrompterStudent.partName}</strong> .. تحت إشراف فضيلة الشيخ / <strong className="text-amber-300">{stagePrompterStudent.sheikhName}</strong>."
+                <p className="text-xs sm:text-sm text-slate-100 leading-relaxed font-semibold">
+                  "بسم الله الرحمن الرحيم .. ويتفضل الآن لصعود منصة التكريم الطالب الحافظ / <strong className="text-[#fbbf24] text-sm sm:text-base">{stagePrompterStudent.studentName || stagePrompterStudent.name}</strong> .. الحاصل على <strong className="text-emerald-300">{stagePrompterStudent.awardTier || stagePrompterStudent.tier}</strong> بمستوى <strong className="text-white">{stagePrompterStudent.partName || stagePrompterStudent.part}</strong> .. تحت إشراف فضيلة الشيخ / <strong className="text-amber-300">{stagePrompterStudent.sheikhName || 'شيوخ الكُتّاب'}</strong>."
                 </p>
               </div>
 
-              {/* Gift Award Handover Box */}
               <div className="p-4 bg-gradient-to-r from-amber-500/20 via-[#062b24] to-amber-500/20 rounded-2xl border border-[#fbbf24]/50 text-center space-y-1">
                 <div className="text-xs font-bold text-emerald-300">🎁 الجائزة المستحقة للتسليم على المسرح:</div>
-                <div className="text-base font-black text-[#fbbf24]">{stagePrompterStudent.gift}</div>
+                <div className="text-sm sm:text-base font-black text-[#fbbf24]">{stagePrompterStudent.gift || 'مكافأة تكريم خاصة'}</div>
               </div>
             </div>
 
             {/* Bottom Navigator Buttons */}
             <div className="flex items-center justify-between pt-3 border-t border-[#fbbf24]/20">
               <button
+                type="button"
                 onClick={handlePrevPrompterStudent}
                 disabled={stagePrompterIndex === 0}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 font-bold rounded-xl flex items-center gap-2 cursor-pointer transition-all"
+                className="px-3.5 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 font-bold rounded-xl flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all text-xs sm:text-sm"
               >
                 <ChevronRight className="w-4 h-4" />
-                <span>الطالب السابق</span>
+                <span>السابق</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => setBadgeModalStudent(stagePrompterStudent)}
-                className="px-4 py-2 bg-[#fbbf24]/20 hover:bg-[#fbbf24]/30 border border-[#fbbf24]/40 text-[#fbbf24] font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
+                className="px-3 sm:px-4 py-2 bg-[#fbbf24]/20 hover:bg-[#fbbf24]/30 border border-[#fbbf24]/40 text-[#fbbf24] font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-all"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>معاينة الكارت والـ QR</span>
+                <span>معاينة الكارت</span>
               </button>
 
               <button
+                type="button"
                 onClick={handleNextPrompterStudent}
                 disabled={stagePrompterIndex === ceremonyStudents.length - 1}
-                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 text-slate-950 font-black rounded-xl flex items-center gap-2 cursor-pointer shadow-lg transition-all"
+                className="px-3.5 sm:px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 text-slate-950 font-black rounded-xl flex items-center gap-1.5 sm:gap-2 cursor-pointer shadow-lg transition-all text-xs sm:text-sm"
               >
-                <span>الطالب التالي</span>
+                <span>التالي</span>
                 <ChevronLeft className="w-4 h-4" />
               </button>
             </div>
@@ -1536,7 +1603,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* 👨‍🎓 MODAL 4: EDIT STUDENT MODAL */}
+      {/* 👨‍🎓 MODAL 4: EDIT / ADD STUDENT MODAL */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {studentModalOpen && (
         <StudentEditModal
@@ -1553,13 +1620,28 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {/* 👳‍♂️ MODAL 5: ADD / EDIT SHEIKH MODAL */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {sheikhModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto animate-fadeInUp">
-          <div className="relative bg-[#062b24] p-6 rounded-3xl border border-[#fbbf24]/40 max-w-xl w-full text-right space-y-4 shadow-2xl backdrop-blur-xl text-slate-100">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSheikhModalOpen(false);
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-[#062b24] p-5 sm:p-6 rounded-3xl border-2 border-[#fbbf24]/50 max-w-xl w-full text-right space-y-4 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto"
+          >
             <div className="flex items-center justify-between pb-3 border-b border-emerald-800/40">
               <h3 className="text-base font-black text-white">
                 {editingSheikh ? 'تعديل بيانات المحفظ / المشرف' : 'تسجيل شيخ ومحفظ جديد'}
               </h3>
-              <button onClick={() => setSheikhModalOpen(false)} className="p-1 text-slate-400 hover:text-white rounded-lg bg-white/5">
+              <button
+                type="button"
+                onClick={() => setSheikhModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                title="إغلاق"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1615,7 +1697,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   type="file"
                   accept="image/*"
                   onChange={handleSheikhPhotoUpload}
-                  className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-3 file:rounded-xl file:border-0 file:bg-emerald-700 file:text-white"
+                  className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-3 file:rounded-xl file:border-0 file:bg-emerald-700 file:text-white cursor-pointer"
                 />
                 {uploadingSheikhPhoto && <p className="text-[11px] text-amber-400 mt-1">جاري رفع الصورة...</p>}
               </div>
@@ -1624,19 +1706,106 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 <button
                   type="button"
                   onClick={() => setSheikhModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 font-bold rounded-xl cursor-pointer"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer transition-all"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={uploadingSheikhPhoto}
-                  className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg"
+                  className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg transition-all active:scale-95"
                 >
                   حفظ البيانات 🌟
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* 🗑️ MODAL 6: CUSTOM DELETE CONFIRMATION MODAL */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {deleteConfirmModal.isOpen && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !deleteConfirmModal.isDeleting) {
+              setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false });
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-[#081f1b] border-2 border-rose-500/50 rounded-3xl max-w-md w-full p-5 sm:p-6 text-slate-100 shadow-2xl space-y-4 animate-scaleIn my-auto"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-rose-500/30">
+              <div className="flex items-center gap-2 text-rose-400 font-black text-base">
+                <Trash2 className="w-5 h-5 text-rose-400" />
+                <span>
+                  {deleteConfirmModal.type === 'student' ? 'تأكيد حذف سجل الطالب ⚠️' : 'تأكيد حذف المحفظ / الشيخ ⚠️'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false })}
+                disabled={deleteConfirmModal.isDeleting}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                title="إغلاق"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-300">
+              <p className="leading-relaxed">
+                هل أنت متأكد من رغبتك في حذف{' '}
+                <strong className="text-white text-sm font-black">
+                  {deleteConfirmModal.type === 'student'
+                    ? deleteConfirmModal.data?.studentName || deleteConfirmModal.data?.name
+                    : deleteConfirmModal.data?.name}
+                </strong>{' '}
+                من قاعدة البيانات؟
+              </p>
+
+              {deleteConfirmModal.type === 'student' && (
+                <div className="p-3 bg-slate-900/80 rounded-2xl border border-rose-500/20 text-slate-300 space-y-1">
+                  <div className="flex justify-between">
+                    <span>كود التكريم:</span>
+                    <span className="font-mono text-amber-400 font-bold">{deleteConfirmModal.data?.studentCode || (deleteConfirmModal.data?.idx ? `#${deleteConfirmModal.data.idx}` : '---')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>المستوى:</span>
+                    <span className="text-emerald-300 font-bold">{deleteConfirmModal.data?.partName || deleteConfirmModal.data?.part || 'القرآن الكريم'}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-[11px] font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>تنبيه: لا يمكن التراجع عن هذا الإجراء بعد تنفيذه.</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-rose-500/20">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false })}
+                disabled={deleteConfirmModal.isDeleting}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer transition-all"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleteConfirmModal.isDeleting}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl cursor-pointer shadow-lg flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{deleteConfirmModal.isDeleting ? 'جاري الحذف...' : 'تأكيد الحذف النهائي'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

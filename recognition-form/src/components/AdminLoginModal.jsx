@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lock, KeyRound, X, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
@@ -6,6 +6,22 @@ export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
+
+  // 🔑 Close on Escape key and lock body scroll
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [onClose]);
 
   const targetPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'kuttab2026@@';
 
@@ -33,8 +49,18 @@ export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeInUp">
-      <div className="w-full max-w-sm rounded-3xl border border-[#fbbf24]/40 bg-[#062b24] shadow-2xl p-6 relative overflow-hidden text-slate-100">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto animate-fade-in"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-3xl border-2 border-[#fbbf24]/40 bg-[#062b24] shadow-2xl p-5 sm:p-6 relative overflow-hidden text-slate-100 animate-scaleIn max-h-[90vh] overflow-y-auto my-auto"
+      >
         
         {/* Glow background */}
         <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
@@ -43,6 +69,7 @@ export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
         <button
           onClick={onClose}
           className="absolute top-4 left-4 p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
+          title="إغلاق"
         >
           <X className="w-4 h-4" />
         </button>

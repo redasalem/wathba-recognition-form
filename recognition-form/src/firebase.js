@@ -91,7 +91,7 @@ export const updateStudentRecord = async (id, formData) => {
     ...formData,
     updatedAt: serverTimestamp()
   };
-  await updateDoc(docRef, payload);
+  await setDoc(docRef, payload, { merge: true });
 };
 
 export const deleteStudentRecord = async (id) => {

@@ -1,40 +1,82 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Printer, Award, BookOpen, Sparkles, CheckCircle2, ShieldCheck, Gift } from 'lucide-react';
+import { X, Printer, Award, BookOpen, Sparkles, CheckCircle2, ShieldCheck, Gift, Share2 } from 'lucide-react';
 
 export default function StudentBadgeModal({ student, onClose }) {
+  // 🔑 Close on Escape key and lock body scroll
+  // NOTE: Hooks must be called before any early return (Rules of Hooks)
+  useEffect(() => {
+    if (!student) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [student, onClose]);
+
   if (!student) return null;
 
   const handlePrint = () => {
     window.print();
   };
 
-  const studentQrUrl = student.smartUrl || student.qrCodeUrl || `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(student.studentName || '')}&id=${student.studentId || student.id || ''}`;
+  const handleShareWhatsApp = () => {
+    const text = `🎉 كارت وتصريح تكريم الطالب في كُتّاب: ${student.studentName || student.name}\nكود التكريم: ${student.studentCode || ''}\nفئة التكريم: ${student.awardTier || student.tier || ''}\nمستوى الحفظ: ${student.partName || student.part || 'القرآن الكريم'}\nالدرجة: ${student.examScore || student.score || ''}%\nالجائزة: ${student.gift || ''}\n\nرابط الكارت والـ QR:\n${studentQrUrl}`;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
+  const studentQrUrl = student.smartUrl || student.qrCodeUrl || `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(student.studentName || student.name || '')}&id=${student.studentId || student.id || ''}`;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 overflow-y-auto animate-fadeInUp">
-      <div className="relative bg-[#041915] rounded-3xl border border-[#fbbf24]/50 max-w-xl w-full p-6 text-slate-100 shadow-2xl space-y-6">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in print:p-0 print:bg-white print:static"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative bg-[#041915] rounded-3xl border-2 border-[#fbbf24]/50 max-w-xl w-full p-5 sm:p-6 text-slate-100 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto print:max-h-none print:border-none print:shadow-none print:p-0"
+      >
         
         {/* Top Controls (Hidden during print) */}
         <div className="flex items-center justify-between pb-4 border-b border-emerald-800/40 print:hidden">
           <div className="flex items-center gap-2">
             <Award className="w-6 h-6 text-[#fbbf24]" />
             <div>
-              <h3 className="text-lg font-black text-white">كارت وتصريح التكريم الرسمي</h3>
+              <h3 className="text-base sm:text-lg font-black text-white">كارت وتصريح التكريم الرسمي</h3>
               <p className="text-xs text-amber-400 font-mono font-bold">{student.studentCode || `#${student.idx || '---'}`}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={handleShareWhatsApp}
+              className="p-2 bg-emerald-700/40 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-200 rounded-xl transition-all cursor-pointer"
+              title="مشاركة عبر الواتساب"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+            <button
               onClick={handlePrint}
-              className="px-4 py-2 bg-[#fbbf24] hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-lg active:scale-95"
+              className="px-3.5 sm:px-4 py-2 bg-[#fbbf24] hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-lg active:scale-95"
             >
               <Printer className="w-4 h-4" />
-              <span>طباعة الكارت الآن</span>
+              <span>طباعة الكارت</span>
             </button>
             <button
               onClick={onClose}
               className="p-2 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+              title="إغلاق"
             >
               <X className="w-5 h-5" />
             </button>

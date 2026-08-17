@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, 
   User, 
@@ -15,7 +15,7 @@ import {
   Plus,
   Trash2
 } from 'lucide-react';
-import { updateStudentRecord } from '../firebase';
+import { updateStudentRecord, addStudentRecord } from '../firebase';
 import { uploadStudentPhoto } from '../services/cloudinary';
 
 // ─── Inline Field Hint Component ────────────────────────────
@@ -70,6 +70,50 @@ export default function StudentEditModal({ student, onClose, showToast }) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [touched, setTouched] = useState({});
+
+  // 🔑 Close on Escape key and lock body scroll
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [onClose]);
+
+  // 🔄 Sync state when student prop changes
+  useEffect(() => {
+    setFormData({
+      studentId: student?.studentId || '',
+      studentCode: student?.studentCode || '',
+      studentName: student?.studentName || '',
+      studentAge: student?.studentAge || '',
+      studyStage: student?.studyStage || 'ابتدائي',
+      schoolName: student?.schoolName || '',
+      partName: student?.partName || student?.part || 'القرآن كاملاً',
+      examScore: student?.examScore || student?.score || '',
+      awardTier: student?.awardTier || student?.tier || '',
+      gift: student?.gift || '',
+      sheikhName: student?.sheikhName || '',
+      totalParts: student?.totalParts || '',
+      parentName: student?.parentName || '',
+      fatherPhone: student?.fatherPhone || '',
+      motherPhone: student?.motherPhone || '',
+      fatherStatus: student?.fatherStatus || 'الأب على قيد الحياة',
+      totalChildrenCount: student?.totalChildrenCount || 1,
+      kuttabChildrenCount: student?.kuttabChildrenCount || 1,
+      siblings: Array.isArray(student?.siblings) ? student.siblings : [],
+      photoUrl: student?.photoUrl || ''
+    });
+    setPhotoPreview(student?.photoUrl || null);
+    setTouched({});
+  }, [student]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -269,30 +313,50 @@ export default function StudentEditModal({ student, onClose, showToast }) {
         completed: true
       };
 
-      await updateStudentRecord(student.id, payload);
-      showToast?.('تم تحديث بيانات الطالب والأسرة بنجاح 🎉', 'success');
+      if (student?.id || student?.studentId) {
+        const docId = student.id || student.studentId;
+        await updateStudentRecord(docId, payload);
+        showToast?.('تم تحديث بيانات الطالب والأسرة بنجاح 🎉', 'success');
+      } else {
+        await addStudentRecord(payload);
+        showToast?.('تمت إضافة الطالب الجديد بنجاح 🎉', 'success');
+      }
       onClose();
     } catch (err) {
-      console.error('Update student error:', err);
-      showToast?.('حدث خطأ أثناء حفظ التعديلات', 'error');
+      console.error('Save student error:', err);
+      showToast?.('حدث خطأ أثناء حفظ البيانات', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto animate-fadeInUp">
-      <div className="relative bg-[#062b24] p-6 rounded-3xl border border-[#fbbf24]/40 max-w-2xl w-full text-right space-y-4 my-8 shadow-2xl backdrop-blur-xl text-slate-100">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative bg-[#062b24] p-5 sm:p-6 rounded-3xl border-2 border-[#fbbf24]/50 max-w-2xl w-full text-right space-y-4 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto"
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-emerald-800/40">
           <div className="flex items-center gap-2">
             <User className="w-5 h-5 text-[#fbbf24]" />
-            <h3 className="text-lg font-black text-white">تعديل بيانات الطالب المكرم والأسرة</h3>
+            <h3 className="text-base sm:text-lg font-black text-white">
+              {student ? 'تعديل بيانات الطالب المكرم والأسرة' : 'تسجيل وإضافة طالب جديد في الكُتّاب 🌟'}
+            </h3>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded-lg bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+            title="إغلاق النافذة"
           >
             <X className="w-5 h-5" />
           </button>
