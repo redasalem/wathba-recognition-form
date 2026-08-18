@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, Printer, Award, BookOpen, Sparkles, CheckCircle2, ShieldCheck, Gift, Share2 } from 'lucide-react';
 
@@ -35,14 +36,14 @@ export default function StudentBadgeModal({ student, onClose }) {
 
   const studentQrUrl = student.smartUrl || student.qrCodeUrl || `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(student.studentName || student.name || '')}&id=${student.studentId || student.id || ''}`;
 
-  return (
+  return createPortal(
     <div
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
         }
       }}
-      className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in print:p-0 print:bg-white print:static"
+      className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in print:p-0 print:bg-white print:static"
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -206,6 +207,7 @@ export default function StudentBadgeModal({ student, onClose }) {
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

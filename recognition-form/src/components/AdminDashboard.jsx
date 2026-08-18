@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search,
   Download,
@@ -677,7 +678,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 pb-16 animate-fadeInUp">
+    <div className="w-full max-w-7xl mx-auto space-y-6 pb-16 animate-fade-in">
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* 👑 TOP HEADER & MAIN CONTROLS */}
@@ -791,7 +792,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {/* 🏆 TAB 2: CEREMONY HUB (حفل التكريم والمسرح ودليل التقديم) */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'ceremony' && (
-        <div className="space-y-6 animate-fadeInUp">
+        <div className="space-y-6 animate-fade-in">
           
           {/* Ceremony Stats KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1040,7 +1041,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {/* 🎓 TABS 1 & 3: SUMMER 2026 & KUTTAB DASHBOARD */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {(activeTab === 'summer' || activeTab === 'kuttab' || activeTab === 'students') && (
-        <div className="space-y-6 animate-fadeInUp">
+        <div className="space-y-6 animate-fade-in">
           
           {/* Scope Filter Pill Bar */}
           <div className="bg-[#062b24]/90 border border-emerald-700/40 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
@@ -1228,7 +1229,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {/* 👳‍♂️ TAB 4: SHEIKHS REGISTRY (سجل الشيوخ والمعلمين) */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'sheikhs' && (
-        <div className="space-y-6 animate-fadeInUp">
+        <div className="space-y-6 animate-fade-in">
           <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
             <div className="relative w-full md:w-80">
               <Search className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
@@ -1348,7 +1349,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {/* 👨‍👩‍👧‍👦 TAB 5: FAMILIES & SIBLINGS (الأسر والأشقاء) */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'families' && (
-        <div className="space-y-6 animate-fadeInUp">
+        <div className="space-y-6 animate-fade-in">
           <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
             <div className="relative w-full md:w-80">
               <Search className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
@@ -1404,14 +1405,14 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* ⚡ MODAL 1: FIREBASE BATCH SYNC ENGINE MODAL */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      {syncModalOpen && (
+      {syncModalOpen && createPortal(
         <div
           onClick={(e) => {
             if (e.target === e.currentTarget && !isSyncing) {
               setSyncModalOpen(false);
             }
           }}
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -1492,18 +1493,19 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 🎤 MODAL 2: STAGE LIVE PROMPTER MODAL */}
-      {stagePrompterStudent && (
+      {stagePrompterStudent && createPortal(
         <div
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setStagePrompterStudent(null);
             }
           }}
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[99999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -1589,7 +1591,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
@@ -1619,14 +1622,14 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* 👳‍♂️ MODAL 5: ADD / EDIT SHEIKH MODAL */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      {sheikhModalOpen && (
+      {sheikhModalOpen && createPortal(
         <div
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setSheikhModalOpen(false);
             }
           }}
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -1720,20 +1723,21 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* 🗑️ MODAL 6: CUSTOM DELETE CONFIRMATION MODAL */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      {deleteConfirmModal.isOpen && (
+      {deleteConfirmModal.isOpen && createPortal(
         <div
           onClick={(e) => {
             if (e.target === e.currentTarget && !deleteConfirmModal.isDeleting) {
               setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false });
             }
           }}
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -1807,7 +1811,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

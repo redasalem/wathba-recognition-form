@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   User, 
@@ -330,14 +331,14 @@ export default function StudentEditModal({ student, onClose, showToast }) {
     }
   };
 
-  return (
+  return createPortal(
     <div
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
         }
       }}
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -688,6 +689,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
 
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

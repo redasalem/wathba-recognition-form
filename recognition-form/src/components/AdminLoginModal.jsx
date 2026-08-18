@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Lock, KeyRound, X, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
@@ -48,14 +49,14 @@ export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
     }
   };
 
-  return (
+  return createPortal(
     <div
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
         }
       }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto animate-fade-in"
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -145,6 +146,7 @@ export default function AdminLoginModal({ onClose, onSuccess, showToast }) {
           <span>الكُتّاب | حماية الإدارة والإحصائيات</span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
