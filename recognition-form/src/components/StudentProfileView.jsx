@@ -40,7 +40,7 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
   const siblings = Array.isArray(student.siblings) ? student.siblings : [];
 
   return (
-    <div className="w-full max-w-2xl mx-auto my-4 sm:my-8 animate-fadeInUp">
+    <div className="w-full max-w-2xl mx-auto my-4 sm:my-8 animate-fade-in">
       {/* Outer Card Container */}
       <div className="rounded-3xl overflow-hidden border border-[#fbbf24]/40 shadow-2xl bg-[#062b24]/90 backdrop-blur-xl">
 

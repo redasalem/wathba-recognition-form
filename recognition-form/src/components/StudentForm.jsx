@@ -365,7 +365,7 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto my-4 animate-fadeInUp">
+    <div className="w-full max-w-2xl mx-auto my-4 animate-fade-in">
       {/* Outer Card */}
       <div className="rounded-3xl overflow-hidden border border-[#fbbf24]/30 shadow-2xl bg-[#062b24]/90 backdrop-blur-xl">
 
@@ -427,7 +427,7 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
 
           {/* Global Arabic Error Banner */}
           {errorMessage && (
-            <div className="mb-5 p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-bold flex items-center gap-2.5 animate-fadeInUp">
+            <div className="mb-5 p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-bold flex items-center gap-2.5 animate-fade-in">
               <AlertCircle className="w-5 h-5 text-rose-300 shrink-0" />
               <span>{errorMessage}</span>
             </div>
@@ -695,7 +695,7 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
                 {formData.siblings.map((sibling, index) => (
                   <div
                     key={sibling.id || index}
-                    className="p-3.5 rounded-xl bg-slate-950/70 border border-emerald-700/40 space-y-3 animate-fadeInUp"
+                    className="p-3.5 rounded-xl bg-slate-950/70 border border-emerald-700/40 space-y-3 animate-fade-in"
                   >
                     <div className="flex items-center justify-between pb-1 border-b border-emerald-900/40">
                       <span className="text-xs font-bold text-[#fbbf24]">الأخ / الأخت #{index + 1}</span>

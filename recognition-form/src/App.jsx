@@ -224,7 +224,7 @@ export default function App() {
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-2xl border text-xs font-black backdrop-blur-xl animate-bounce flex items-center gap-2 ${
+          className={`fixed top-20 left-1/2 -translate-x-1/2 z-[999999] px-6 py-3 rounded-xl shadow-2xl border text-xs font-black backdrop-blur-xl animate-bounce flex items-center gap-2 ${
             toast.type === 'success'
               ? 'border-emerald-500/40 bg-emerald-950/90 text-emerald-200'
               : toast.type === 'error'
