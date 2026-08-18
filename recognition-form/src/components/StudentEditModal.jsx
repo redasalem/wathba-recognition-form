@@ -390,7 +390,18 @@ export default function StudentEditModal({ student, onClose, showToast }) {
           </div>
 
           {/* Section: Student Core Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block font-bold text-[#fbbf24] mb-1">كود الطالب (الكود التكريمي)</label>
+              <input
+                type="text"
+                value={formData.studentCode}
+                onChange={(e) => handleInputChange('studentCode', e.target.value)}
+                placeholder="مثال: #001 أو #KUT-001"
+                className="w-full px-3 py-2.5 bg-slate-900/80 border border-amber-500/50 rounded-xl text-amber-300 font-mono font-bold focus:outline-none focus:border-[#fbbf24]"
+              />
+            </div>
+
             <div>
               <label className="block font-bold text-slate-200 mb-1">اسم الطالب ثلاثي / رباعي *</label>
               <input

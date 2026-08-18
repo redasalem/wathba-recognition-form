@@ -24,9 +24,22 @@ export default function StudentBadgeModal({ student, onClose }) {
 
   if (!student) return null;
 
+  // 🖨️ Handle Print
   const handlePrint = () => {
+    document.body.classList.add('printing-badge');
     window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing-badge');
+    }, 1500);
   };
+
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      document.body.classList.remove('printing-badge');
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => window.removeEventListener('afterprint', handleAfterPrint);
+  }, []);
 
   const handleShareWhatsApp = () => {
     const text = `🎉 كارت وتصريح تكريم الطالب في كُتّاب: ${student.studentName || student.name}\nكود التكريم: ${student.studentCode || ''}\nفئة التكريم: ${student.awardTier || student.tier || ''}\nمستوى الحفظ: ${student.partName || student.part || 'القرآن الكريم'}\nالدرجة: ${student.examScore || student.score || ''}%\nالجائزة: ${student.gift || ''}\n\nرابط الكارت والـ QR:\n${studentQrUrl}`;
@@ -56,7 +69,7 @@ export default function StudentBadgeModal({ student, onClose }) {
             <Award className="w-6 h-6 text-[#fbbf24]" />
             <div>
               <h3 className="text-base sm:text-lg font-black text-white">كارت وتصريح التكريم الرسمي</h3>
-              <p className="text-xs text-amber-400 font-mono font-bold">{student.studentCode || `#${student.idx || '---'}`}</p>
+              <p className="text-xs text-amber-400 font-mono font-bold">{student.studentCode || (student.idx ? `#${String(student.idx).padStart(3, '0')}` : '#KUT-VIP')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

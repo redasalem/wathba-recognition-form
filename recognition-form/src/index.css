@@ -107,53 +107,81 @@
 
 /* Print Styles */
 @media print {
-  header, footer, nav {
-    display: none !important;
-  }
-
-  body {
-    background: white !important;
-    color: black !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
+  /* 1. Hide the entire application background and UI when printing from modal */
+  body.printing-badge #root,
+  body:has(#printable-badge) #root,
+  header,
+  footer,
+  nav,
+  button,
   .print\:hidden {
     display: none !important;
   }
 
-  .print\:block {
-    display: block !important;
+  /* 2. Reset page, html and body */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
+  /* 3. Remove modal fixed position and black backdrops */
+  .fixed.inset-0 {
+    position: static !important;
+    display: block !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* 4. Format the official Student Badge Card for luxury print */
   #printable-badge {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important;
+    margin: 0.5cm auto !important;
+    max-width: 450px !important;
+    width: 100% !important;
     border: 3px solid #fbbf24 !important;
     background: #041915 !important;
-    color: white !important;
-    max-w: 500px !important;
-    margin: 20px auto !important;
+    color: #ffffff !important;
+    border-radius: 20px !important;
     box-shadow: none !important;
-    page-break-inside: avoid;
+    padding: 20px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  table {
-    border-collapse: collapse;
-    width: 100%;
+  #printable-badge * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  th, td {
-    border: 1px solid #ddd;
-    padding: 8px 12px;
-    text-align: right;
-    font-size: 11px;
+  /* 5. Format Student Profile Card if printing from student view */
+  #printable-profile-card {
+    border: 2px solid #fbbf24 !important;
+    background: #062b24 !important;
+    max-width: 580px !important;
+    margin: 0.5cm auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  th {
-    background-color: #f3f4f6 !important;
-    font-weight: bold;
-  }
-
-  tr:nth-child(even) {
-    background-color: #f9fafb !important;
+  @page {
+    size: A4 portrait;
+    margin: 0.8cm;
   }
 }

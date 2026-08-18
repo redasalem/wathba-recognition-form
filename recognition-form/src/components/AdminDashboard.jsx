@@ -35,7 +35,7 @@ import {
   batchSyncStudentsToFirestore,
   batchSyncSheikhsToFirestore
 } from '../firebase';
-import { STUDENTS_CATALOG, normalizeArabic } from '../data/studentsCatalog';
+import { STUDENTS_CATALOG, normalizeArabic, isStudentMatch } from '../data/studentsCatalog';
 import { uploadToCloudinary } from '../services/cloudinary';
 import StudentEditModal from './StudentEditModal';
 import StudentBadgeModal from './StudentBadgeModal';
@@ -199,18 +199,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // ---------------------------------------------------
   const masterStudentsList = useMemo(() => {
     return STUDENTS_CATALOG.map((catStudent) => {
-      const matchedRecord = records.find((r) => {
-        if (r.studentId && r.studentId.toUpperCase() === catStudent.studentId.toUpperCase()) return true;
-        if (r.studentCode && r.studentCode.replace('#', '') === catStudent.code.replace('#', '')) return true;
-        if (r.studentName && normalizeArabic(r.studentName) === normalizeArabic(catStudent.name)) return true;
-        return false;
-      });
+      const matchedRecord = records.find((r) => isStudentMatch(r, catStudent));
 
       return {
         id: matchedRecord?.id || catStudent.studentId,
         idx: catStudent.idx,
         studentId: catStudent.studentId,
-        studentCode: catStudent.code,
+        studentCode: matchedRecord?.studentCode || catStudent.code || `#${String(catStudent.idx).padStart(3, '0')}`,
         studentName: matchedRecord?.studentName || catStudent.name,
         partName: matchedRecord?.partName || catStudent.part,
         examScore: matchedRecord?.examScore ?? catStudent.score,
@@ -243,8 +238,14 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     if (records.length === 0) return masterStudentsList;
     
     const standaloneRecords = records.filter(r => 
-      !masterStudentsList.some(m => m.id === r.id || m.studentId === r.studentId)
-    );
+      !masterStudentsList.some(m => isStudentMatch(r, m))
+    ).map((r, extraIdx) => ({
+      ...r,
+      studentCode: r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#KUT-${String(masterStudentsList.length + extraIdx + 1).padStart(3, '0')}`),
+      awardTier: r.awardTier || '✨ فئة متميزة',
+      gift: r.gift || 'مكافأة وهدية التكريم',
+      partName: r.partName || 'القرآن الكريم'
+    }));
 
     return [...masterStudentsList, ...standaloneRecords];
   }, [masterStudentsList, records]);
@@ -1169,7 +1170,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                       <td className="p-3 text-center text-slate-400 font-bold">{idx + 1}</td>
                       <td className="p-3 text-center">
                         <span className="px-2 py-0.5 rounded-lg bg-slate-950 border border-amber-500/40 text-amber-400 font-mono font-bold text-[11px]">
-                          {r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : '---')}
+                          {r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#KUT-${String(idx + 1).padStart(3, '0')}`)}
                         </span>
                       </td>
                       <td className="p-3">
@@ -1776,7 +1777,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 <div className="p-3 bg-slate-900/80 rounded-2xl border border-rose-500/20 text-slate-300 space-y-1">
                   <div className="flex justify-between">
                     <span>كود التكريم:</span>
-                    <span className="font-mono text-amber-400 font-bold">{deleteConfirmModal.data?.studentCode || (deleteConfirmModal.data?.idx ? `#${deleteConfirmModal.data.idx}` : '---')}</span>
+                    <span className="font-mono text-amber-400 font-bold">{deleteConfirmModal.data?.studentCode || (deleteConfirmModal.data?.idx ? `#${String(deleteConfirmModal.data.idx).padStart(3, '0')}` : '#KUT-NEW')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>المستوى:</span>

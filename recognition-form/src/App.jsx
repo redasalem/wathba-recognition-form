@@ -8,7 +8,7 @@ import SuccessView from './components/SuccessView';
 import AdminDashboard from './components/AdminDashboard';
 import LoginPortalModal from './components/LoginPortalModal';
 import { subscribeStudents } from './firebase';
-import { STUDENTS_CATALOG, findStudentInCatalog, normalizeArabic } from './data/studentsCatalog';
+import { STUDENTS_CATALOG, findStudentInCatalog, normalizeArabic, isStudentMatch } from './data/studentsCatalog';
 
 export default function App() {
   // Views: 'landing' | 'form' | 'student-profile' | 'sheikh-form' | 'success' | 'admin'
@@ -98,9 +98,9 @@ export default function App() {
       // Search Firestore records
       const existingDoc = currentRecords.find(rec => {
         if (idParam && (rec.studentId === idParam || rec.id === idParam)) return true;
-        if (catalogMatch && (rec.studentId === catalogMatch.studentId || rec.studentCode === catalogMatch.code)) return true;
-        if (catalogMatch && normalizeArabic(rec.studentName) === normalizeArabic(catalogMatch.name)) return true;
-        if (nameParam && normalizeArabic(rec.studentName) === normalizeArabic(nameParam)) return true;
+        if (codeParam && rec.studentCode && rec.studentCode.replace('#', '') === codeParam.replace('#', '')) return true;
+        if (catalogMatch && isStudentMatch(rec, catalogMatch)) return true;
+        if (nameParam && isStudentMatch(rec, { name: nameParam })) return true;
         return false;
       });
 

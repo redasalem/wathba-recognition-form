@@ -196,12 +196,72 @@ export function findStudentInCatalog(identifier) {
   });
   if (match) return match;
 
-  // 3. مطابقة بالاسم العربي
+  // 3. مطابقة بالاسم العربي (مطابقة تامة أو متضمنة)
   match = STUDENTS_CATALOG.find(s => {
     const sNorm = normalizeArabic(s.name);
     return sNorm === normalizedQuery || sNorm.includes(normalizedQuery) || normalizedQuery.includes(sNorm);
   });
   if (match) return match;
 
+  // 4. مطابقة ذكية بالأجزاء والكلمات (مثل كتابة الاسم رباعي أو خماسي)
+  const qWords = normalizedQuery.split(' ').filter(Boolean);
+  if (qWords.length >= 2) {
+    match = STUDENTS_CATALOG.find(s => {
+      const sWords = normalizeArabic(s.name).split(' ').filter(Boolean);
+      if (sWords.length < 2) return false;
+      const firstMatch = sWords[0] === qWords[0];
+      const lastMatch = sWords[sWords.length - 1] === qWords[qWords.length - 1];
+      const matchedWordsCount = sWords.filter(w => qWords.includes(w)).length;
+      return (firstMatch && lastMatch) || (firstMatch && matchedWordsCount >= 2) || (matchedWordsCount >= 3);
+    });
+    if (match) return match;
+  }
+
   return null;
 }
+
+// دالة فحص مطابقة سجل طالب مع طالب في الكتالوج
+export function isStudentMatch(rec, catStudent) {
+  if (!rec || !catStudent) return false;
+
+  // 1. مطابقة بمعرف الطالب
+  if (rec.studentId && catStudent.studentId && rec.studentId.toUpperCase() === catStudent.studentId.toUpperCase()) {
+    return true;
+  }
+  if (rec.id && catStudent.studentId && rec.id.toUpperCase() === catStudent.studentId.toUpperCase()) {
+    return true;
+  }
+
+  // 2. مطابقة بالكود التكريمي
+  if (rec.studentCode && catStudent.code) {
+    const cleanRec = String(rec.studentCode).replace(/^#/, '').trim();
+    const cleanCat = String(catStudent.code).replace(/^#/, '').trim();
+    if (cleanRec && cleanCat && (cleanRec === cleanCat || parseInt(cleanRec, 10) === parseInt(cleanCat, 10))) {
+      return true;
+    }
+  }
+
+  // 3. مطابقة بالاسم الموحد
+  const recName = normalizeArabic(rec.studentName || rec.name || '');
+  const catName = normalizeArabic(catStudent.name || '');
+  if (!recName || !catName) return false;
+
+  if (recName === catName || recName.includes(catName) || catName.includes(recName)) {
+    return true;
+  }
+
+  // 4. مطابقة ذكية بالكلمات للألقاب والأسماء المركبة
+  const rWords = recName.split(' ').filter(Boolean);
+  const cWords = catName.split(' ').filter(Boolean);
+  if (rWords.length >= 2 && cWords.length >= 2) {
+    const firstMatch = rWords[0] === cWords[0];
+    const lastMatch = rWords[rWords.length - 1] === cWords[cWords.length - 1];
+    const matchedCount = cWords.filter(w => rWords.includes(w)).length;
+    if ((firstMatch && lastMatch) || (firstMatch && matchedCount >= 2) || (matchedCount >= 3)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+

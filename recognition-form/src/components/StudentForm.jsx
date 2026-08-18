@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { uploadStudentPhoto } from '../services/cloudinary';
 import { addStudentRecord, updateStudentRecord } from '../firebase';
+import { findStudentInCatalog } from '../data/studentsCatalog';
 
 // ─── Inline Field Hint Component ────────────────────────────
 function FieldHint({ show, type = 'error', message }) {
@@ -332,8 +333,34 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
         photoUrl = await uploadStudentPhoto(photoFile);
       }
 
+      // Auto-resolve code and catalog details if not already present
+      let resolvedCode = formData.studentCode;
+      let resolvedId = formData.studentId;
+      let resolvedTier = formData.awardTier;
+      let resolvedPart = formData.partName;
+      let resolvedScore = formData.examScore;
+      let resolvedGift = formData.gift;
+
+      if (!resolvedCode) {
+        const catMatch = findStudentInCatalog(formData.studentName);
+        if (catMatch) {
+          resolvedCode = catMatch.code;
+          resolvedId = catMatch.studentId;
+          if (!resolvedTier) resolvedTier = catMatch.tier;
+          if (!resolvedPart) resolvedPart = catMatch.part;
+          if (resolvedScore === undefined || resolvedScore === '') resolvedScore = catMatch.score;
+          if (!resolvedGift) resolvedGift = catMatch.gift;
+        }
+      }
+
       const studentPayload = {
         ...formData,
+        studentCode: resolvedCode || '',
+        studentId: resolvedId || formData.studentId || '',
+        awardTier: resolvedTier || formData.awardTier || '✨ فئة متميزة',
+        partName: resolvedPart || formData.partName || 'القرآن الكريم',
+        examScore: resolvedScore !== undefined && resolvedScore !== '' ? Number(resolvedScore) : (Number(formData.examScore) || 0),
+        gift: resolvedGift || formData.gift || 'مكافأة وهدية التكريم',
         studentAge: Number(formData.studentAge),
         totalChildrenCount: Number(formData.totalChildrenCount || 1),
         kuttabChildrenCount: Number(formData.kuttabChildrenCount || 1),

@@ -42,7 +42,7 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
   return (
     <div className="w-full max-w-2xl mx-auto my-4 sm:my-8 animate-fade-in">
       {/* Outer Card Container */}
-      <div className="rounded-3xl overflow-hidden border border-[#fbbf24]/40 shadow-2xl bg-[#062b24]/90 backdrop-blur-xl">
+      <div id="printable-profile-card" className="rounded-3xl overflow-hidden border border-[#fbbf24]/40 shadow-2xl bg-[#062b24]/90 backdrop-blur-xl">
 
         {/* Top Control Bar (Hidden on print) */}
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 bg-[#041915]/90 border-b border-emerald-800/40 print:hidden">
