@@ -241,7 +241,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       !masterStudentsList.some(m => isStudentMatch(r, m))
     ).map((r, extraIdx) => ({
       ...r,
-      studentCode: r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#KUT-${String(masterStudentsList.length + extraIdx + 1).padStart(3, '0')}`),
+      studentCode: r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#${String(masterStudentsList.length + extraIdx + 1).padStart(3, '0')}`),
       awardTier: r.awardTier || '✨ فئة متميزة',
       gift: r.gift || 'مكافأة وهدية التكريم',
       partName: r.partName || 'القرآن الكريم'
@@ -1156,7 +1156,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 <thead>
                   <tr className="bg-[#0c3d34] text-[#fbbf24] font-black border-b border-emerald-700/50">
                     <th className="p-3 text-center rounded-r-xl w-14">م</th>
-                    <th className="p-3 text-center w-20">كود الطالب</th>
+                    <th className="p-3 text-center w-24 whitespace-nowrap">كود الطالب</th>
                     <th className="p-3">اسم الطالب</th>
                     <th className="p-3">فئة التكريم والجائزة</th>
                     <th className="p-3">المرحلة والمدرسة</th>
@@ -1169,8 +1169,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                     <tr key={r.id || idx} className="hover:bg-emerald-900/30 transition-colors">
                       <td className="p-3 text-center text-slate-400 font-bold">{idx + 1}</td>
                       <td className="p-3 text-center">
-                        <span className="px-2 py-0.5 rounded-lg bg-slate-950 border border-amber-500/40 text-amber-400 font-mono font-bold text-[11px]">
-                          {r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#KUT-${String(idx + 1).padStart(3, '0')}`)}
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-500/40 text-amber-400 font-mono font-black text-xs whitespace-nowrap inline-block">
+                          {r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#${String(idx + 1).padStart(3, '0')}`)}
                         </span>
                       </td>
                       <td className="p-3">
@@ -1777,7 +1777,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 <div className="p-3 bg-slate-900/80 rounded-2xl border border-rose-500/20 text-slate-300 space-y-1">
                   <div className="flex justify-between">
                     <span>كود التكريم:</span>
-                    <span className="font-mono text-amber-400 font-bold">{deleteConfirmModal.data?.studentCode || (deleteConfirmModal.data?.idx ? `#${String(deleteConfirmModal.data.idx).padStart(3, '0')}` : '#KUT-NEW')}</span>
+                    <span className="font-mono text-amber-400 font-bold">{deleteConfirmModal.data?.studentCode || (deleteConfirmModal.data?.idx ? `#${String(deleteConfirmModal.data.idx).padStart(3, '0')}` : '#NEW')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>المستوى:</span>

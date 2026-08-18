@@ -117,8 +117,8 @@ export default function StudentBadgeModal({ student, onClose }) {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-lg bg-amber-400/20 text-[#fbbf24] border border-[#fbbf24]/40 font-mono font-black text-xs">
-                {student.studentCode || (student.idx ? `#${String(student.idx).padStart(3, '0')}` : '#---')}
+              <span className="px-2.5 py-1 rounded-lg bg-amber-400/20 text-[#fbbf24] border border-[#fbbf24]/40 font-mono font-black text-xs whitespace-nowrap">
+                {student.studentCode || (student.idx ? `#${String(student.idx).padStart(3, '0')}` : '#001')}
               </span>
               <div className="px-2.5 py-1 bg-[#fbbf24]/15 border border-[#fbbf24]/40 rounded-full text-[10px] font-black text-[#fbbf24] flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
