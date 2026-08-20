@@ -140,7 +140,7 @@ export default function StudentBadgeModal({ student, onClose }) {
               ) : (
                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-emerald-950 border-3 border-[#fbbf24] flex flex-col items-center justify-center text-emerald-400">
                   <Award className="w-10 h-10 mb-1 text-[#fbbf24]" />
-                  <span className="text-[10px] font-bold">طالب مكرم</span>
+                  <span className="text-[10px] font-bold">طالب مُكَرَّم</span>
                 </div>
               )}
               <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full text-xs font-black shadow">

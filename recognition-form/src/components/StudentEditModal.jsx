@@ -12,9 +12,10 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Info,
-  Users,
-  Plus,
-  Trash2
+  Calendar,
+  School,
+  Heart,
+  Award
 } from 'lucide-react';
 import { updateStudentRecord, addStudentRecord } from '../firebase';
 import { uploadStudentPhoto } from '../services/cloudinary';
@@ -48,7 +49,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
     studentId: student?.studentId || '',
     studentCode: student?.studentCode || '',
     studentName: student?.studentName || '',
-    studentAge: student?.studentAge || '',
+    birthDate: student?.birthDate || '',
     studyStage: student?.studyStage || 'ابتدائي',
     schoolName: student?.schoolName || '',
     partName: student?.partName || student?.part || 'القرآن كاملاً',
@@ -56,14 +57,8 @@ export default function StudentEditModal({ student, onClose, showToast }) {
     awardTier: student?.awardTier || student?.tier || '',
     gift: student?.gift || '',
     sheikhName: student?.sheikhName || '',
-    totalParts: student?.totalParts || '',
-    parentName: student?.parentName || '',
     fatherPhone: student?.fatherPhone || '',
-    motherPhone: student?.motherPhone || '',
-    fatherStatus: student?.fatherStatus || 'الأب على قيد الحياة',
-    totalChildrenCount: student?.totalChildrenCount || 1,
-    kuttabChildrenCount: student?.kuttabChildrenCount || 1,
-    siblings: Array.isArray(student?.siblings) ? student.siblings : [],
+    fatherStatus: student?.fatherStatus || 'نعم (على قيد الحياة)',
     photoUrl: student?.photoUrl || ''
   });
 
@@ -94,22 +89,16 @@ export default function StudentEditModal({ student, onClose, showToast }) {
       studentId: student?.studentId || '',
       studentCode: student?.studentCode || '',
       studentName: student?.studentName || '',
-      studentAge: student?.studentAge || '',
+      birthDate: student?.birthDate || '',
       studyStage: student?.studyStage || 'ابتدائي',
       schoolName: student?.schoolName || '',
       partName: student?.partName || student?.part || 'القرآن كاملاً',
-      examScore: student?.examScore || student?.score || '',
+      examScore: student?.examScore ?? student?.score ?? '',
       awardTier: student?.awardTier || student?.tier || '',
       gift: student?.gift || '',
       sheikhName: student?.sheikhName || '',
-      totalParts: student?.totalParts || '',
-      parentName: student?.parentName || '',
       fatherPhone: student?.fatherPhone || '',
-      motherPhone: student?.motherPhone || '',
-      fatherStatus: student?.fatherStatus || 'الأب على قيد الحياة',
-      totalChildrenCount: student?.totalChildrenCount || 1,
-      kuttabChildrenCount: student?.kuttabChildrenCount || 1,
-      siblings: Array.isArray(student?.siblings) ? student.siblings : [],
+      fatherStatus: student?.fatherStatus || 'نعم (على قيد الحياة)',
       photoUrl: student?.photoUrl || ''
     });
     setPhotoPreview(student?.photoUrl || null);
@@ -123,129 +112,39 @@ export default function StudentEditModal({ student, onClose, showToast }) {
     }
   };
 
-  const handleBlur = (field) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
-  };
-
-  const handleAddSibling = () => {
-    setFormData(prev => ({
-      ...prev,
-      siblings: [
-        ...prev.siblings,
-        {
-          id: Date.now().toString(),
-          name: '',
-          age: '',
-          studyStage: 'ابتدائي',
-          schoolName: '',
-          inKuttab: true
-        }
-      ]
-    }));
-  };
-
-  const handleRemoveSibling = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      siblings: prev.siblings.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleSiblingChange = (index, field, value) => {
-    setFormData(prev => {
-      const updated = [...prev.siblings];
-      updated[index] = { ...updated[index], [field]: value };
-      return { ...prev, siblings: updated };
-    });
-  };
-
-  // ─── Real-time Arabic Validation ───────────────────────────
   const phoneRegex = /^01[0-9]{9}$/;
 
   const validation = useMemo(() => {
     const nameVal = (formData.studentName || '').trim();
     const nameWords = nameVal.split(/\s+/).filter(w => w.length > 0);
-    const parentVal = (formData.parentName || '').trim();
-    const parentWords = parentVal.split(/\s+/).filter(w => w.length > 0);
-    const age = Number(formData.studentAge);
 
     return {
       studentName: {
         valid: nameWords.length >= 3,
         message: nameVal.length === 0
-          ? '⚠️ يرجى كتابة اسم الطالب ثلاثياً أو رباعياً بالعربية'
+          ? '⚠️ يرجى إدخال اسم الطالب كاملاً'
           : nameWords.length < 3
-            ? `📝 الاسم ناقص — كتبت ${nameWords.length} كلمة فقط`
-            : '✅ الاسم مكتمل',
+            ? `📝 الاسم ناقص — يرجى كتابة الاسم ثلاثي أو رباعي (${nameWords.length} كلمات)`
+            : '✅ الاسم مكتمل وصحيح',
         type: nameWords.length >= 3 ? 'success' : 'error',
       },
 
-      parentName: {
-        valid: parentWords.length === 0 || parentWords.length >= 3,
-        message: parentWords.length > 0 && parentWords.length < 3
-          ? '📝 اسم ولي الأمر يجب أن يكون ثلاثياً على الأقل'
-          : null,
-        type: (parentWords.length === 0 || parentWords.length >= 3) ? 'success' : 'error',
-      },
-
-      studentAge: {
-        valid: age >= 3 && age <= 25,
-        message: formData.studentAge === ''
-          ? '⚠️ يرجى تحديد سن الطالب بالعربية'
-          : age < 3
-            ? '⚠️ السن يجب أن يكون 3 سنوات على الأقل'
-            : age > 25
-              ? '⚠️ السن يجب أن يكون 25 سنة أو أقل'
-              : `✅ السن ${age} سنة`,
-        type: (age >= 3 && age <= 25) ? 'success' : 'error',
-      },
-
-      schoolName: {
-        valid: (formData.schoolName || '').trim().length >= 3,
-        message: (formData.schoolName || '').trim().length === 0
-          ? '⚠️ يرجى كتابة اسم المدرسة بالكامل'
-          : (formData.schoolName || '').trim().length < 3
-            ? '📝 يرجى التوضيح واسم المدرسة بالكامل'
-            : '✅ تمام!',
-        type: (formData.schoolName || '').trim().length >= 3 ? 'success' : 'error',
-      },
-
       fatherPhone: {
-        valid: phoneRegex.test(formData.fatherPhone || ''),
-        message: (formData.fatherPhone || '').length === 0
-          ? '⚠️ يرجى إدخال رقم تليفون الأب (11 رقماً يبدأ بـ 01)'
-          : !(formData.fatherPhone || '').startsWith('01')
-            ? '📱 الرقم يجب أن يبدأ بـ 01'
-            : (formData.fatherPhone || '').length < 11
-              ? `📱 الرقم ناقص (${(formData.fatherPhone || '').length}/11)`
-              : (formData.fatherPhone || '').length > 11
-                ? `📱 الرقم زائد (${(formData.fatherPhone || '').length}/11)`
-                : phoneRegex.test(formData.fatherPhone)
-                  ? '✅ رقم صحيح!'
-                  : '📱 الرقم أرقام فقط',
-        type: phoneRegex.test(formData.fatherPhone || '') ? 'success' : 'error',
-      },
-
-      motherPhone: {
-        valid: !formData.motherPhone || phoneRegex.test(formData.motherPhone),
-        message: !formData.motherPhone || formData.motherPhone.length === 0
+        valid: !formData.fatherPhone || phoneRegex.test(formData.fatherPhone),
+        message: !formData.fatherPhone || formData.fatherPhone.length === 0
           ? null
-          : !formData.motherPhone.startsWith('01')
-            ? '📱 الرقم يجب أن يبدأ بـ 01'
-            : formData.motherPhone.length < 11
-              ? `📱 الرقم ناقص (${formData.motherPhone.length}/11)`
-              : formData.motherPhone.length > 11
-                ? `📱 الرقم زائد (${formData.motherPhone.length}/11)`
-                : phoneRegex.test(formData.motherPhone)
-                  ? '✅ رقم صحيح!'
-                  : '📱 الرقم أرقام فقط',
-        type: (!formData.motherPhone || phoneRegex.test(formData.motherPhone)) ? 'success' : 'error',
-      },
+          : !formData.fatherPhone.startsWith('01')
+            ? '📱 رقم الهاتف يجب أن يبدأ بـ 01'
+            : formData.fatherPhone.length !== 11
+              ? `📱 يجب أن يتكون من 11 رقماً (كتبت ${formData.fatherPhone.length})`
+              : '✅ رقم الهاتف صحيح',
+        type: (!formData.fatherPhone || phoneRegex.test(formData.fatherPhone)) ? 'success' : 'error',
+      }
     };
   }, [formData]);
 
   const getInputClass = (field) => {
-    const base = 'w-full px-3 py-2.5 bg-slate-900/80 border rounded-xl text-white focus:outline-none text-xs transition-all';
+    const base = 'w-full px-3 py-2 bg-slate-900 border rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none transition-all';
     if (!touched[field]) {
       return `${base} border-emerald-700/50 focus:border-[#fbbf24]`;
     }
@@ -279,26 +178,11 @@ export default function StudentEditModal({ student, onClose, showToast }) {
 
     setTouched({
       studentName: true,
-      studentAge: true,
-      schoolName: true,
-      fatherPhone: true,
-      motherPhone: true,
+      fatherPhone: true
     });
 
     if (!validation.studentName.valid) {
       showToast?.('يرجى كتابة اسم الطالب ثلاثياً على الأقل بالعربية', 'error');
-      return;
-    }
-    if (!validation.studentAge.valid) {
-      showToast?.('السن يجب أن يكون بين 3 و 25 سنة بالسنوات', 'error');
-      return;
-    }
-    if (!validation.schoolName.valid) {
-      showToast?.('يرجى كتابة اسم المدرسة بالكامل بالعربية', 'error');
-      return;
-    }
-    if (!validation.fatherPhone.valid) {
-      showToast?.('رقم تليفون الأب يجب أن يبدأ بـ 01 ويتكون من 11 رقماً', 'error');
       return;
     }
 
@@ -307,17 +191,14 @@ export default function StudentEditModal({ student, onClose, showToast }) {
     try {
       const payload = {
         ...formData,
-        studentAge: Number(formData.studentAge) || 0,
-        totalParts: formData.totalParts ? Number(formData.totalParts) : 0,
-        totalChildrenCount: Number(formData.totalChildrenCount || 1),
-        kuttabChildrenCount: Number(formData.kuttabChildrenCount || 1),
+        examScore: formData.examScore !== '' ? Number(formData.examScore) : 0,
         completed: true
       };
 
       if (student?.id || student?.studentId) {
         const docId = student.id || student.studentId;
         await updateStudentRecord(docId, payload);
-        showToast?.('تم تحديث بيانات الطالب والأسرة بنجاح 🎉', 'success');
+        showToast?.('تم تحديث بيانات الطالب بنجاح 🎉', 'success');
       } else {
         await addStudentRecord(payload);
         showToast?.('تمت إضافة الطالب الجديد بنجاح 🎉', 'success');
@@ -350,7 +231,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
           <div className="flex items-center gap-2">
             <User className="w-5 h-5 text-[#fbbf24]" />
             <h3 className="text-base sm:text-lg font-black text-white">
-              {student ? 'تعديل بيانات الطالب المكرم والأسرة' : 'تسجيل وإضافة طالب جديد في الكُتّاب 🌟'}
+              {student ? 'تعديل وتحديث بيانات الطالب المُكَرَّم' : 'تسجيل وإضافة طالب جديد في الكُتّاب 🌟'}
             </h3>
           </div>
           <button
@@ -389,26 +270,28 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
           </div>
 
-          {/* Section: Student Core Info */}
+          {/* Core Info Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block font-bold text-[#fbbf24] mb-1">كود الطالب (الكود التكريمي)</label>
+              <label className="block font-bold text-[#fbbf24] mb-1">كود الطالب</label>
               <input
                 type="text"
                 value={formData.studentCode}
                 onChange={(e) => handleInputChange('studentCode', e.target.value)}
-                placeholder="مثال: #001 أو #KUT-001"
-                className="w-full px-3 py-2.5 bg-slate-900/80 border border-amber-500/50 rounded-xl text-amber-300 font-mono font-bold focus:outline-none focus:border-[#fbbf24]"
+                placeholder="مثال: #001"
+                className={getInputClass('studentCode')}
               />
             </div>
 
-            <div>
-              <label className="block font-bold text-slate-200 mb-1">اسم الطالب ثلاثي / رباعي *</label>
+            <div className="sm:col-span-2">
+              <label className="block font-bold text-slate-200 mb-1">
+                اسم الطالب رباعي <span className="text-rose-400">*</span>
+              </label>
               <input
                 type="text"
                 value={formData.studentName}
                 onChange={(e) => handleInputChange('studentName', e.target.value)}
-                onBlur={() => handleBlur('studentName')}
+                placeholder="اسم الطالب كاملاً بالعربية"
                 className={getInputClass('studentName')}
               />
               <FieldHint
@@ -417,47 +300,28 @@ export default function StudentEditModal({ student, onClose, showToast }) {
                 message={validation.studentName.message}
               />
             </div>
-
-            <div>
-              <label className="block font-bold text-slate-200 mb-1">اسم ولي الأمر</label>
-              <input
-                type="text"
-                value={formData.parentName}
-                onChange={(e) => handleInputChange('parentName', e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-900/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
-                placeholder="اسم ولي الأمر..."
-              />
-            </div>
           </div>
 
-          {/* Age & Stage & School */}
+          {/* Academic & Age Details */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block font-bold text-slate-200 mb-1">السن (بالسنوات) *</label>
+              <label className="block font-bold text-slate-200 mb-1">تاريخ الميلاد</label>
               <input
-                type="number"
-                min="3"
-                max="25"
-                value={formData.studentAge}
-                onChange={(e) => handleInputChange('studentAge', e.target.value)}
-                onBlur={() => handleBlur('studentAge')}
-                className={getInputClass('studentAge')}
-              />
-              <FieldHint
-                show={touched.studentAge}
-                type={validation.studentAge.type}
-                message={validation.studentAge.message}
+                type="date"
+                value={formData.birthDate}
+                onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                className={getInputClass('birthDate')}
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-200 mb-1">المرحلة الدراسية *</label>
+              <label className="block font-bold text-slate-200 mb-1">المرحلة الدراسية</label>
               <select
                 value={formData.studyStage}
-                onChange={(e) => setFormData({ ...formData, studyStage: e.target.value })}
-                className="w-full px-3 py-2.5 bg-slate-900/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+                onChange={(e) => handleInputChange('studyStage', e.target.value)}
+                className={getInputClass('studyStage')}
               >
-                <option value="حضانة / روضة">روضة / حضانة</option>
+                <option value="روضة / حضانة">روضة / حضانة</option>
                 <option value="ابتدائي">ابتدائي</option>
                 <option value="إعدادي">إعدادي</option>
                 <option value="ثانوي">ثانوي</option>
@@ -467,97 +331,63 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-200 mb-1">المدرسة / المعهد *</label>
+              <label className="block font-bold text-slate-200 mb-1">المدرسة / الحضانة</label>
               <input
                 type="text"
                 value={formData.schoolName}
                 onChange={(e) => handleInputChange('schoolName', e.target.value)}
-                onBlur={() => handleBlur('schoolName')}
+                placeholder="اسم المدرسة أو الحضانة"
                 className={getInputClass('schoolName')}
-              />
-              <FieldHint
-                show={touched.schoolName}
-                type={validation.schoolName.type}
-                message={validation.schoolName.message}
               />
             </div>
           </div>
 
-          {/* Summer Course & Score */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-emerald-800/30">
+          {/* Quranic Level & Score */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block font-bold text-emerald-300 mb-1 flex items-center gap-1">
-                <BookOpen className="w-3.5 h-3.5" />
-                فئة التكريم
-              </label>
+              <label className="block font-bold text-emerald-300 mb-1">المستوى القرآني</label>
               <input
                 type="text"
                 value={formData.partName}
-                onChange={(e) => setFormData({ ...formData, partName: e.target.value })}
-                placeholder="مثال: القرآن كاملاً"
-                className="w-full px-3 py-2.5 bg-slate-900/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+                onChange={(e) => handleInputChange('partName', e.target.value)}
+                placeholder="مثال: القرآن كاملاً / جزء عم"
+                className={getInputClass('partName')}
               />
             </div>
 
             <div>
-              <label className="block font-bold text-emerald-300 mb-1">درجة الاختبار (%)</label>
+              <label className="block font-bold text-amber-300 mb-1">درجة الاختبار %</label>
               <input
                 type="number"
-                step="0.1"
                 value={formData.examScore}
                 onChange={(e) => handleInputChange('examScore', e.target.value)}
-                placeholder="مثال: 95.5"
-                className="w-full px-3 py-2.5 bg-slate-900/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+                placeholder="الدرجة من 100"
+                className={getInputClass('examScore')}
               />
             </div>
 
             <div>
-              <label className="block font-bold text-emerald-300 mb-1">الشيخ المشرف</label>
-              <input
-                type="text"
-                value={formData.sheikhName}
-                onChange={(e) => setFormData({ ...formData, sheikhName: e.target.value })}
-                placeholder="اسم الشيخ..."
-                className="w-full px-3 py-2.5 bg-slate-900/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
-              />
-            </div>
-          </div>
-
-          {/* Award Tier & Prize Gift */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-emerald-800/30">
-            <div>
-              <label className="block font-bold text-[#fbbf24] mb-1">فئة الجائزة والتكريم (Award Tier)</label>
+              <label className="block font-bold text-[#fbbf24] mb-1">فئة التكريم</label>
               <input
                 type="text"
                 value={formData.awardTier}
-                onChange={(e) => setFormData({ ...formData, awardTier: e.target.value })}
-                placeholder="مثال: 👑 الفئة الأولى الذهبية (تاج الوقار)"
-                className="w-full px-3 py-2.5 bg-slate-900/80 border border-amber-500/40 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-amber-300 mb-1">المكافأة والجائزة المادية (Gift)</label>
-              <input
-                type="text"
-                value={formData.gift}
-                onChange={(e) => setFormData({ ...formData, gift: e.target.value })}
-                placeholder="مثال: مكافأة مالية: 2,500 ج.م + تاج الوقار ودرع مذهب"
-                className="w-full px-3 py-2.5 bg-slate-900/80 border border-amber-500/40 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+                onChange={(e) => handleInputChange('awardTier', e.target.value)}
+                placeholder="مثال: الفئة الأولى الذهبية"
+                className={getInputClass('awardTier')}
               />
             </div>
           </div>
 
-          {/* Family & Contact Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-emerald-800/30">
+          {/* Parent & Contact Details */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-emerald-800/40">
             <div>
-              <label className="block font-bold text-amber-300 mb-1">هاتف الأب / الواتساب *</label>
+              <label className="block font-bold text-slate-200 mb-1">هاتف ولي الأمر (واتساب)</label>
               <input
                 type="tel"
-                maxLength={11}
                 value={formData.fatherPhone}
                 onChange={(e) => handleInputChange('fatherPhone', e.target.value)}
-                onBlur={() => handleBlur('fatherPhone')}
+                placeholder="01012345678"
+                maxLength={11}
                 className={getInputClass('fatherPhone')}
               />
               <FieldHint
@@ -568,121 +398,32 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
 
             <div>
-              <label className="block font-bold text-amber-300 mb-1">هاتف الأم</label>
-              <input
-                type="tel"
-                maxLength={11}
-                value={formData.motherPhone}
-                onChange={(e) => handleInputChange('motherPhone', e.target.value)}
-                onBlur={() => handleBlur('motherPhone')}
-                className={getInputClass('motherPhone')}
-              />
-              <FieldHint
-                show={touched.motherPhone}
-                type={validation.motherPhone.type}
-                message={validation.motherPhone.message}
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-amber-300 mb-1">حالة الأب *</label>
+              <label className="block font-bold text-slate-200 mb-1">حالة الوالد</label>
               <select
                 value={formData.fatherStatus}
-                onChange={(e) => setFormData({ ...formData, fatherStatus: e.target.value })}
-                className="w-full px-3 py-2.5 bg-slate-900/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+                onChange={(e) => handleInputChange('fatherStatus', e.target.value)}
+                className="w-full px-3 py-2 bg-slate-900 border border-emerald-700/50 rounded-xl text-xs text-white focus:outline-none focus:border-[#fbbf24]"
               >
-                <option value="الأب على قيد الحياة">الأب على قيد الحياة</option>
-                <option value="يتيم الأب">يتيم الأب ❤️</option>
-                <option value="يتيم الأبوين">يتيم الأبوين 💔</option>
+                <option value="نعم (على قيد الحياة)">نعم (على قيد الحياة)</option>
+                <option value="لا (متوفى - رحمه الله)">لا (متوفى - رحمه الله)</option>
               </select>
             </div>
           </div>
 
-          {/* Family Children Counts & Siblings */}
-          <div className="p-3 bg-slate-950/60 rounded-2xl border border-emerald-800/40 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-slate-200">
-                <Users className="w-4 h-4 text-[#fbbf24]" />
-                <span>إحصاءات الأسرة والأشقاء</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleAddSibling}
-                className="px-2.5 py-1 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer"
-              >
-                <Plus className="w-3 h-3" />
-                <span>+ إضافة أخ</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">إجمالي الأولاد بالأسرة</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.totalChildrenCount}
-                  onChange={(e) => handleInputChange('totalChildrenCount', e.target.value)}
-                  className="w-full px-3 py-1.5 bg-[#062b24] border border-emerald-700/40 rounded-lg text-white text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">المقيدين في الكُتّاب</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.kuttabChildrenCount}
-                  onChange={(e) => handleInputChange('kuttabChildrenCount', e.target.value)}
-                  className="w-full px-3 py-1.5 bg-[#062b24] border border-emerald-700/40 rounded-lg text-white text-xs"
-                />
-              </div>
-            </div>
-
-            {/* Siblings list */}
-            {formData.siblings.map((sib, index) => (
-              <div key={sib.id || index} className="flex items-center gap-2 p-2 bg-[#062b24]/80 rounded-lg border border-emerald-800/30">
-                <input
-                  type="text"
-                  placeholder="اسم الأخ/الأخت"
-                  value={sib.name}
-                  onChange={(e) => handleSiblingChange(index, 'name', e.target.value)}
-                  className="flex-1 px-2.5 py-1 bg-slate-900 rounded text-xs border border-emerald-700/30 text-white"
-                />
-                <select
-                  value={sib.studyStage}
-                  onChange={(e) => handleSiblingChange(index, 'studyStage', e.target.value)}
-                  className="px-2 py-1 bg-slate-900 rounded text-xs border border-emerald-700/30 text-white"
-                >
-                  <option value="حضانة / روضة">حضانة</option>
-                  <option value="ابتدائي">ابتدائي</option>
-                  <option value="إعدادي">إعدادي</option>
-                  <option value="ثانوي">ثانوي</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveSibling(index)}
-                  className="text-rose-400 hover:text-rose-300 p-1 cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-emerald-800/40">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-emerald-800/40">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-xl border border-emerald-700/40 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
             >
               إلغاء
             </button>
+
             <button
               type="submit"
-              disabled={isSubmitting || uploadingPhoto}
-              className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              disabled={isSubmitting}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs transition-all shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
@@ -692,7 +433,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  <span>حفظ التعديلات</span>
+                  <span>{student ? 'حفظ التعديلات' : 'إضافة الطالب'}</span>
                 </>
               )}
             </button>
@@ -700,7 +441,6 @@ export default function StudentEditModal({ student, onClose, showToast }) {
 
         </form>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }

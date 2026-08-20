@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Lock, KeyRound, X, AlertCircle, Eye, EyeOff, ShieldCheck, Users, HeartHandshake, Search, BookOpen, CheckCircle2 } from 'lucide-react';
+import { Lock, KeyRound, X, AlertCircle, Eye, EyeOff, ShieldCheck, Users, ArrowLeft, Sparkles, BookOpen } from 'lucide-react';
 
-export default function LoginPortalModal({ onClose, onAdminSuccess, showToast }) {
-  // Roles: 'admin' | 'parents' | 'donors'
+export default function LoginPortalModal({ onClose, onAdminSuccess, onSheikhSelect, showToast }) {
+  // Roles: 'admin' | 'sheikh'
   const [activeRole, setActiveRole] = useState('admin');
 
   // Admin state
@@ -11,10 +11,6 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
-
-  // Parent lookup state
-  const [studentSearch, setStudentSearch] = useState('');
-  const [parentResult, setParentResult] = useState(null);
 
   // 🔑 Close on Escape key and lock body scroll
   useEffect(() => {
@@ -39,11 +35,11 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
     setError('');
 
     if (!password.trim()) {
-      setError('⚠️ يرجى إدخال كلمة المرور بالعربية أو الأرقام');
+      setError('⚠️ يرجى إدخال كلمة المرور');
       return;
     }
 
-    if (password.trim() === targetPassword || password.trim() === 'kuttab2026') {
+    if (password.trim() === targetPassword) {
       if (rememberMe) {
         localStorage.setItem('kuttab_admin_session', 'true');
         localStorage.setItem('kuttab_admin_auth', 'true');
@@ -59,21 +55,6 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
     }
   };
 
-  const handleParentSearch = (e) => {
-    e.preventDefault();
-    if (!studentSearch.trim()) return;
-
-    // Simulation result for parents lookup
-    setParentResult({
-      studentName: studentSearch.trim(),
-      level: 'القرآن كاملاً / الدورة الصيفية 2026',
-      attendance: '98%',
-      lastRating: 'ممتاز مرتفع ⭐️',
-      sheikh: 'الشيخ عبد الله حسن الديهى'
-    });
-    showToast?.('تم جلب تقرير متابعة الطالب بنجاح 🎓', 'success');
-  };
-
   return createPortal(
     <div
       onClick={(e) => {
@@ -85,7 +66,7 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-3xl border-2 border-[#fbbf24]/40 bg-[#062b24] shadow-2xl p-5 sm:p-6 relative overflow-hidden text-slate-100 animate-scaleIn max-h-[90vh] overflow-y-auto my-auto"
+        className="w-full max-w-md rounded-3xl border-2 border-[#fbbf24]/40 bg-[#062b24] shadow-2xl p-5 sm:p-6 relative overflow-hidden text-slate-100 animate-scaleIn my-auto"
       >
         
         {/* Glow background */}
@@ -105,46 +86,34 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
           <div className="w-12 h-12 rounded-2xl bg-[#fbbf24]/20 border border-[#fbbf24]/40 flex items-center justify-center text-[#fbbf24] mx-auto mb-2 shadow-lg">
             <Lock className="w-6 h-6" />
           </div>
-          <h3 className="text-lg font-black text-white">بوابة تسجيل الدخول والمتابعة 🔐</h3>
-          <p className="text-xs text-slate-300">اختر نوع الحساب للوصول إلى الخدمات المخصصة</p>
+          <h3 className="text-lg font-black text-white">تسجيل الدخول للمنظومة 🔐</h3>
+          <p className="text-xs text-slate-300">اختر نوع الدخول المطلوب للمتابعة</p>
         </div>
 
-        {/* ROLE TABS SWITCHER */}
+        {/* ONLY 2 ROLES: ADMIN & SHEIKH */}
         <div className="flex bg-slate-900/80 p-1.5 rounded-2xl border border-emerald-700/40 mb-5 text-xs font-bold">
           <button
             onClick={() => { setActiveRole('admin'); setError(''); }}
-            className={`flex-1 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeRole === 'admin'
                 ? 'bg-[#fbbf24] text-slate-950 font-black shadow-md'
                 : 'text-slate-300 hover:text-white'
             }`}
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            الإدارة والشيوخ
+            <ShieldCheck className="w-4 h-4" />
+            <span>المدير / Admin</span>
           </button>
 
           <button
-            onClick={() => { setActiveRole('parents'); setParentResult(null); }}
-            className={`flex-1 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeRole === 'parents'
+            onClick={() => { setActiveRole('sheikh'); setError(''); }}
+            className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeRole === 'sheikh'
                 ? 'bg-[#fbbf24] text-slate-950 font-black shadow-md'
                 : 'text-slate-300 hover:text-white'
             }`}
           >
-            <Users className="w-3.5 h-3.5" />
-            أولياء الأمور
-          </button>
-
-          <button
-            onClick={() => setActiveRole('donors')}
-            className={`flex-1 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeRole === 'donors'
-                ? 'bg-[#fbbf24] text-slate-950 font-black shadow-md'
-                : 'text-slate-300 hover:text-white'
-            }`}
-          >
-            <HeartHandshake className="w-3.5 h-3.5" />
-            المتبرعون
+            <Users className="w-4 h-4" />
+            <span>الشيخ / المحفظ</span>
           </button>
         </div>
 
@@ -160,14 +129,14 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
 
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                كلمة مرور لوحة تحكم الكُتّاب
+                كلمة مرور لوحة التحكم (Admin Password)
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="أدخل كلمة المرور..."
+                  placeholder="أدخل كلمة مرور الإدارة..."
                   autoFocus
                   className="w-full px-4 py-3 rounded-xl text-sm bg-slate-900 border border-emerald-700/50 text-white placeholder-slate-500 focus:outline-none focus:border-[#fbbf24] transition-all pl-10"
                 />
@@ -200,78 +169,43 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
               className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-900/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <KeyRound className="w-4 h-4" />
-              <span>دخول لوحة تحكم الإدارة</span>
+              <span>دخول لوحة التحكم (Admin Dashboard) 🚀</span>
             </button>
           </form>
         )}
 
-        {/* ROLE 2: PARENTS LOOKUP */}
-        {activeRole === 'parents' && (
-          <div className="space-y-4">
-            <form noValidate onSubmit={handleParentSearch} className="space-y-3">
-              <label className="block text-xs font-bold text-slate-300">
-                استعلام متابعة الطالب باسم الطالب أو كود الـ QR
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={studentSearch}
-                  onChange={(e) => setStudentSearch(e.target.value)}
-                  placeholder="أدخل اسم الطالب..."
-                  className="flex-1 px-4 py-2.5 rounded-xl text-xs bg-slate-900 border border-emerald-700/50 text-white placeholder-slate-500 focus:outline-none focus:border-[#fbbf24]"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer"
-                >
-                  <Search className="w-4 h-4" />
-                  بحث
-                </button>
+        {/* ROLE 2: SHEIKH PORTAL ACCESS */}
+        {activeRole === 'sheikh' && (
+          <div className="space-y-4 text-center py-2 animate-fade-in">
+            <div className="p-4 bg-slate-900/90 rounded-2xl border border-emerald-500/40 space-y-3 text-xs">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center mx-auto border border-emerald-500/30">
+                <BookOpen className="w-6 h-6" />
               </div>
-            </form>
-
-            {parentResult && (
-              <div className="p-4 bg-slate-900/90 rounded-2xl border border-emerald-500/40 space-y-2 text-xs animate-fade-in">
-                <div className="font-bold text-[#fbbf24] text-sm flex items-center justify-between">
-                  <span>🎓 {parentResult.studentName}</span>
-                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950 px-2 py-0.5 rounded border border-emerald-700/40">حساب نشط</span>
-                </div>
-                <div className="text-slate-300">المستوى: {parentResult.level}</div>
-                <div className="text-slate-300">نسبة الحضور: <strong className="text-emerald-400">{parentResult.attendance}</strong></div>
-                <div className="text-slate-300">آخر تقييم: <strong className="text-amber-400">{parentResult.lastRating}</strong></div>
-                <div className="text-slate-400 text-[11px] pt-1 border-t border-emerald-800/40">إشراف: {parentResult.sheikh}</div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ROLE 3: DONORS & VOLUNTEERS */}
-        {activeRole === 'donors' && (
-          <div className="space-y-3 text-xs">
-            <div className="p-4 bg-slate-900/90 rounded-2xl border border-emerald-700/50 space-y-2">
-              <div className="font-bold text-[#fbbf24] text-sm flex items-center gap-2">
-                <HeartHandshake className="w-4 h-4" />
-                بوابة المساهمين والمتبرعين
-              </div>
-              <p className="text-slate-300 leading-relaxed">
-                استعراض التقرير المالي الميداني لمشاريع تجهيز المبنى وشبكة الـ 32 كاميرات ومحطات المياه المبردة.
+              <h4 className="text-sm font-bold text-[#fbbf24]">بوابة مشايخ ومعلمي الكُتّاب</h4>
+              <p className="text-slate-300 leading-relaxed text-[11px]">
+                مرحباً بكم يا أهل القرآن.. يمكنكم تسجيل بياناتكم أو تحديث الفصول والحلقات والمكافآت عبر استمارة المعلمين المعتمدة.
               </p>
-              <div className="pt-2 flex items-center justify-between text-[#fbbf24] font-bold text-[11px]">
-                <span>نسبة تغطية التجهيزات: 90%</span>
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                if (onSheikhSelect) {
+                  onSheikhSelect();
+                } else {
+                  window.location.hash = '/sheikh-form';
+                }
+              }}
+              className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Users className="w-4 h-4" />
+              <span>فتح استمارة تسجيل وتحديث بيانات الشيخ 👳‍♂️</span>
+            </button>
           </div>
         )}
-
-        {/* Footer info */}
-        <div className="mt-5 pt-3 border-t border-emerald-800/40 text-center text-[11px] text-slate-400 flex items-center justify-center gap-1">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>منظومة كُتّاب | البوابة الذكية للمتابعة والأمان</span>
-        </div>
 
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }

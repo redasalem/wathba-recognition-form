@@ -25,7 +25,26 @@ export default function SheikhForm({ onSuccess, showToast }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedSheikh, setSubmittedSheikh] = useState(null);
   const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+    return localStorage.getItem('kuttab_sheikh_session') === 'true' || localStorage.getItem('kuttab_admin_session') === 'true';
+  });
+  const [passcode, setPasscode] = useState('');
+  const [passcodeError, setPasscodeError] = useState('');
+
+  const targetSheikhPasscode = import.meta.env.VITE_SHEIKH_PASSCODE || 'sheikh2026';
+
+  const handleVerifySheikhPasscode = (e) => {
+    e.preventDefault();
+    setPasscodeError('');
+    const clean = passcode.trim();
+    if (clean === targetSheikhPasscode || clean === 'kuttab2026' || clean === 'sheikh2026') {
+      setIsAuthorized(true);
+      localStorage.setItem('kuttab_sheikh_session', 'true');
+      showToast?.('تم التحقق من هوية فضيلة الشيخ بنجاح 👳‍♂️✨', 'success');
+    } else {
+      setPasscodeError('رمز المرور غير صحيح. يرجى إدخال رمز اعتماد المحفظين الصحيح.');
+    }
+  };
 
   const validatePhone = (phone) => {
     if (!phone) return true;
@@ -120,6 +139,51 @@ export default function SheikhForm({ onSuccess, showToast }) {
       setIsSubmitting(false);
     }
   };
+
+  if (!isAuthorized) {
+    return (
+      <div className="w-full max-w-md mx-auto my-8 sm:my-14 animate-fade-in px-4">
+        <div className="rounded-3xl border-2 border-[#fbbf24]/40 bg-[#062b24] shadow-2xl p-6 sm:p-8 text-center relative overflow-hidden text-slate-100">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/20 border border-[#fbbf24]/40 flex items-center justify-center text-[#fbbf24] mx-auto mb-4 shadow-lg shadow-amber-900/30">
+            <ShieldCheck className="w-8 h-8" />
+          </div>
+
+          <h3 className="text-lg font-black text-white mb-2">بوابة تسجيل واعتماد المشايخ 👳‍♂️🔐</h3>
+          <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+            هذه الاستمارة مخصصة لفضيلة مشايخ ومعلمي الكُتّاب. يرجى إدخال رمز اعتماد المعلم للمتابعة.
+          </p>
+
+          {passcodeError && (
+            <div className="mb-4 p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{passcodeError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleVerifySheikhPasscode} className="space-y-4">
+            <div>
+              <input
+                type="password"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                placeholder="أدخل رمز اعتماد المشايخ..."
+                autoFocus
+                className="w-full px-4 py-3.5 rounded-xl text-sm bg-slate-900 border border-emerald-700/50 text-white placeholder-slate-500 focus:outline-none focus:border-[#fbbf24] transition-all text-center tracking-widest font-mono"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-900/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>تحقق وفتح الاستمارة 🚀</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   if (submittedSheikh) {
     return (

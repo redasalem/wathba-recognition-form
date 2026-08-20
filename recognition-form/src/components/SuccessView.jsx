@@ -21,7 +21,7 @@ export default function SuccessView({ studentData, submittedData, onReset, onReg
 
   const studentName = data?.studentName || '';
   const fatherPhone = data?.fatherPhone || '';
-  const waMessage = encodeURIComponent(`السلام عليكم، تم استكمال وتأكيد بيانات الطالب المكرم (${studentName}) لحضور حفلة تكريم الدورة الصيفية 2026 بنجاح في كُتّاب.`);
+  const waMessage = encodeURIComponent(`السلام عليكم، تم استكمال وتأكيد بيانات الطالب المُكَرَّم (${studentName}) لحضور حفل تكريم الدورة الصيفية 2026 بنجاح في كُتّاب.`);
   const waUrl = `https://wa.me/20${(fatherPhone || '').replace(/^0/, '')}?text=${waMessage}`;
 
   const handleRegisterAnother = onReset || onRegisterAnother;

@@ -216,9 +216,10 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         parentName: matchedRecord?.parentName || '',
         fatherPhone: matchedRecord?.fatherPhone || '',
         motherPhone: matchedRecord?.motherPhone || '',
-        fatherStatus: matchedRecord?.fatherStatus || 'الأب على قيد الحياة',
+        fatherStatus: matchedRecord?.fatherStatus || 'نعم (على قيد الحياة)',
         schoolName: matchedRecord?.schoolName || '',
         studyStage: matchedRecord?.studyStage || 'ابتدائي',
+        birthDate: matchedRecord?.birthDate || '',
         studentAge: matchedRecord?.studentAge || '',
         photoUrl: matchedRecord?.photoUrl || '',
         completed: !!matchedRecord?.completed,
@@ -959,7 +960,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   <tr className="bg-[#0c3d34] text-[#fbbf24] font-black border-b border-emerald-700/50">
                     <th className="p-3 text-center rounded-r-xl w-16">الدور #</th>
                     <th className="p-3 text-center w-20">كود الطالب</th>
-                    <th className="p-3">اسم الطالب المكرم</th>
+                    <th className="p-3">اسم الطالب المُكَرَّم</th>
                     <th className="p-3">فئة الجائزة والتكريم</th>
                     <th className="p-3">مستوى الحفظ والدرجة</th>
                     <th className="p-3">المكافأة والجائزة المادية</th>
@@ -1183,11 +1184,11 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                       </td>
                       <td className="p-3">
                         <div className="text-slate-200 font-bold">{r.studyStage || 'ابتدائي'}</div>
-                        <span className="text-[10px] text-slate-400">{r.schoolName || '—'}</span>
+                        <span className="text-[10px] text-slate-400">{r.schoolName ? `${r.schoolName}${r.birthDate ? ` (${r.birthDate})` : ''}` : (r.birthDate ? `مواليد: ${r.birthDate}` : '—')}</span>
                       </td>
                       <td className="p-3">
-                        <div className="text-slate-200 font-bold">{r.parentName || '—'}</div>
-                        <span className="text-[10px] text-emerald-400 font-mono font-bold">{r.fatherPhone || '—'}</span>
+                        <div className="text-emerald-400 font-mono font-bold">{r.fatherPhone || '—'}</div>
+                        <span className="text-[10px] text-amber-200/90 font-bold">{r.fatherStatus || 'على قيد الحياة'}</span>
                       </td>
                       <td className="p-3 text-center">
                         <div className="flex items-center justify-center gap-1.5">

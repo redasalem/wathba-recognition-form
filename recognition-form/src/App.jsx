@@ -7,6 +7,7 @@ import SheikhForm from './components/SheikhForm';
 import SuccessView from './components/SuccessView';
 import AdminDashboard from './components/AdminDashboard';
 import LoginPortalModal from './components/LoginPortalModal';
+import StudentVerificationGate from './components/StudentVerificationGate';
 import { subscribeStudents } from './firebase';
 import { STUDENTS_CATALOG, findStudentInCatalog, normalizeArabic, isStudentMatch } from './data/studentsCatalog';
 
@@ -90,8 +91,20 @@ export default function App() {
       return;
     }
 
-    // 3. Student Smart URL Route (QR Code Scanner or direct link)
+    // 3. Student Verification Gate Route
+    if (hash.includes('student-gate') || path.includes('student-gate') || hash.includes('gate')) {
+      setActiveView('student-gate');
+      return;
+    }
+
+    // 4. Student Smart URL Route (QR Code Scanner or direct link)
     if (idParam || nameParam || codeParam || hash.includes('student') || hash.includes('form')) {
+      // If no query parameter was passed at all (e.g. user clicked on #/student-form directly), redirect to verification gate!
+      if (!idParam && !nameParam && !codeParam) {
+        setActiveView('student-gate');
+        return;
+      }
+
       // Find student in catalog
       const catalogMatch = findStudentInCatalog(idParam || codeParam || nameParam);
 
@@ -103,6 +116,12 @@ export default function App() {
         if (nameParam && isStudentMatch(rec, { name: nameParam })) return true;
         return false;
       });
+
+      if (!catalogMatch && !existingDoc) {
+        // If parameters don't match any official 143 student -> Gatekeeper
+        setActiveView('student-gate');
+        return;
+      }
 
       // Check if student record is already completed
       const isCompleted = existingDoc && (existingDoc.parentName || existingDoc.fatherPhone || existingDoc.completed);
@@ -143,7 +162,7 @@ export default function App() {
       return;
     }
 
-    // 4. Default Landing View
+    // 5. Default Landing View
     if (!hash || hash === '#' || hash === '#/' || hash === '#landing') {
       setActiveView('landing');
     }
@@ -178,12 +197,27 @@ export default function App() {
       window.location.hash = '/sheikh-form';
     } else if (view === 'form') {
       window.location.hash = '/student-form';
+    } else if (view === 'student-gate') {
+      window.location.hash = '/student-gate';
     } else if (view === 'admin') {
       window.location.hash = '/admin';
     } else if (view === 'student-profile' && selectedStudent?.studentId) {
       window.location.hash = `/student?id=${selectedStudent.studentId}`;
     } else {
       window.location.hash = '';
+    }
+  };
+
+  const handleStudentVerified = (verifiedStudent) => {
+    setSelectedStudent(verifiedStudent);
+    if (verifiedStudent.completed) {
+      setActiveView('student-profile');
+      window.location.hash = `/student?id=${verifiedStudent.studentId}`;
+    } else {
+      setInitialStudentData(verifiedStudent);
+      setIsEditMode(false);
+      setActiveView('form');
+      window.location.hash = `/student/form?id=${verifiedStudent.studentId}&name=${encodeURIComponent(verifiedStudent.studentName)}`;
     }
   };
 
@@ -250,11 +284,20 @@ export default function App() {
           <LandingPage onNavigate={handleNavigate} />
         )}
 
+        {activeView === 'student-gate' && (
+          <StudentVerificationGate
+            records={records}
+            onStudentVerified={handleStudentVerified}
+            onGoHome={() => handleNavigate('landing')}
+            showToast={showToast}
+          />
+        )}
+
         {activeView === 'form' && (
           <StudentForm 
             initialStudentData={initialStudentData}
             isEditMode={isEditMode}
-            onCancel={selectedStudent ? () => setActiveView('student-profile') : null}
+            onCancel={selectedStudent ? () => setActiveView('student-profile') : () => handleNavigate('student-gate')}
             onSuccess={handleStudentFormSuccess} 
             showToast={showToast} 
           />
@@ -286,7 +329,7 @@ export default function App() {
             onRegisterAnother={() => {
               setInitialStudentData(null);
               setIsEditMode(false);
-              handleNavigate('form');
+              handleNavigate('student-gate');
             }}
             onGoHome={() => handleNavigate('landing')}
             onViewDashboard={() => handleNavigate('admin')}
@@ -328,6 +371,7 @@ export default function App() {
         <LoginPortalModal
           onClose={() => setIsLoginModalOpen(false)}
           onAdminSuccess={handleAdminLoginSuccess}
+          onSheikhSelect={() => handleNavigate('sheikh-form')}
           showToast={showToast}
         />
       )}
