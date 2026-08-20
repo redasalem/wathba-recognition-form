@@ -441,6 +441,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
 
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
