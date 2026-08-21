@@ -16,15 +16,16 @@ import {
   LogOut,
   Printer,
   ShieldCheck,
-  Building,
-  Sun,
   Gift,
   CheckCircle2,
   AlertCircle,
   ChevronLeft,
   ChevronRight,
   Database,
-  FileSpreadsheet
+  FileSpreadsheet,
+  UserCheck,
+  UserX,
+  LayoutList
 } from 'lucide-react';
 import {
   deleteStudentRecord,
@@ -41,12 +42,8 @@ import StudentEditModal from './StudentEditModal';
 import StudentBadgeModal from './StudentBadgeModal';
 
 export default function AdminDashboard({ records = [], onLogout, showToast }) {
-  // Tab control: 'summer' | 'ceremony' | 'kuttab' | 'sheikhs' | 'families'
-  const [activeTab, setActiveTab] = useState('summer');
-
-  // Scope Filter: 'ALL' (الكُتّاب والدورة) | 'SUMMER_2026' (الدورة الصيفية فقط) | 'KUTTAB_ONLY' (الكُتّاب العام)
-  const [studentScope, setStudentScope] = useState('ALL');
-  const [sheikhScope, setSheikhScope] = useState('ALL');
+  // Tab control: 'all' | 'registered' | 'unregistered' | 'ceremony' | 'sheikhs'
+  const [activeTab, setActiveTab] = useState('all');
 
   // ---------------------------------------------------
   // ⚡ حالة المزامنة مع Firebase (Batch Sync Engine State)
@@ -64,12 +61,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   const [stagePrompterStudent, setStagePrompterStudent] = useState(null);
   const [stagePrompterIndex, setStagePrompterIndex] = useState(0);
   const [badgeModalStudent, setBadgeModalStudent] = useState(null);
-
-  // ---------------------------------------------------
-  // 👨‍👩‍👧‍👦 حالة وبيانات الأسر والأشقاء (Families & Siblings State)
-  // ---------------------------------------------------
-  const [familySearch, setFamilySearch] = useState('');
-  const [familyFilter, setFamilyFilter] = useState('ALL'); // 'ALL' | 'WITH_SIBLINGS' | 'SINGLE_CHILD'
 
   // ---------------------------------------------------
   // 👳‍♂️ حالة الشيوخ والمعلمين (Sheikhs State)
@@ -251,6 +242,16 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     return [...masterStudentsList, ...standaloneRecords];
   }, [masterStudentsList, records]);
 
+  // الطلاب المسجلين (أكملوا البيانات)
+  const registeredStudents = useMemo(() => {
+    return allDisplayStudents.filter(s => s.completed);
+  }, [allDisplayStudents]);
+
+  // الطلاب غير المسجلين (لم يكملوا)
+  const unregisteredStudents = useMemo(() => {
+    return allDisplayStudents.filter(s => !s.completed);
+  }, [allDisplayStudents]);
+
   // الأجزاء المتاحة للفلترة
   const availableParts = useMemo(() => {
     const partsSet = new Set();
@@ -313,10 +314,20 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   }, [masterStudentsList, ceremonyTierFilter, ceremonySearch]);
 
   // ---------------------------------------------------
-  // 📊 تصفية الطلاب للسجل العام والدورة الصيفية
+  // 📊 تصفية الطلاب حسب التاب النشط
   // ---------------------------------------------------
+  const getStudentSourceForTab = () => {
+    if (activeTab === 'registered') return registeredStudents;
+    if (activeTab === 'unregistered') return unregisteredStudents;
+    return allDisplayStudents;
+  };
+
   const filteredStudents = useMemo(() => {
-    return allDisplayStudents.filter((student) => {
+    const source = activeTab === 'registered' ? registeredStudents
+      : activeTab === 'unregistered' ? unregisteredStudents
+      : allDisplayStudents;
+
+    return source.filter((student) => {
       const q = normalizeArabic(studentSearch);
       const matchSearch =
         !studentSearch ||
@@ -325,18 +336,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         (student.fatherPhone && student.fatherPhone.includes(studentSearch)) ||
         normalizeArabic(student.parentName || '').includes(q);
 
-      const matchScope =
-        studentScope === 'ALL' ||
-        (studentScope === 'SUMMER_2026' && (student.isSummerStudent || student.partName)) ||
-        (studentScope === 'KUTTAB_ONLY' && !student.isSummerStudent);
-
       const matchPart =
         studentFilterPart === 'ALL' ||
         (student.partName && student.partName.includes(studentFilterPart));
 
-      return matchSearch && matchScope && matchPart;
+      return matchSearch && matchPart;
     });
-  }, [allDisplayStudents, studentSearch, studentScope, studentFilterPart]);
+  }, [allDisplayStudents, registeredStudents, unregisteredStudents, activeTab, studentSearch, studentFilterPart]);
 
   // ---------------------------------------------------
   // 👳‍♂️ تصفية الشيوخ
@@ -350,75 +356,17 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         (s.phone && s.phone.includes(sheikhSearch)) ||
         normalizeArabic(s.qualification || '').includes(q);
 
-      const matchScope =
-        sheikhScope === 'ALL' ||
-        (sheikhScope === 'SUMMER_2026' && s.participatingSummer?.includes('نعم')) ||
-        (sheikhScope === 'KUTTAB_ONLY' && !s.participatingSummer?.includes('نعم'));
-
-      return matchSearch && matchScope;
+      return matchSearch;
     });
-  }, [sheikhs, sheikhSearch, sheikhScope]);
-
-  // ---------------------------------------------------
-  // 👨‍👩‍👧‍👦 تجميع وإحصائيات الأسر والأشقاء
-  // ---------------------------------------------------
-  const familiesData = useMemo(() => {
-    const familyMap = new Map();
-
-    allDisplayStudents.forEach((student) => {
-      const phoneKey = student.fatherPhone?.trim() || student.parentName?.trim() || student.id;
-      if (!familyMap.has(phoneKey)) {
-        familyMap.set(phoneKey, {
-          key: phoneKey,
-          parentName: student.parentName || 'ولي أمر طالب',
-          fatherPhone: student.fatherPhone || '',
-          motherPhone: student.motherPhone || '',
-          fatherStatus: student.fatherStatus || 'الأب على قيد الحياة',
-          totalChildrenCount: student.totalChildrenCount || 1,
-          kuttabChildrenCount: student.kuttabChildrenCount || 1,
-          students: [],
-          siblingsList: []
-        });
-      }
-
-      const fam = familyMap.get(phoneKey);
-      fam.students.push(student);
-      if (Array.isArray(student.siblings)) {
-        student.siblings.forEach((sib) => {
-          if (!fam.siblingsList.some((s) => s.name === sib.name)) {
-            fam.siblingsList.push(sib);
-          }
-        });
-      }
-    });
-
-    return Array.from(familyMap.values());
-  }, [allDisplayStudents]);
-
-  const filteredFamilies = useMemo(() => {
-    return familiesData.filter((fam) => {
-      const q = normalizeArabic(familySearch);
-      const matchSearch =
-        !familySearch ||
-        normalizeArabic(fam.parentName).includes(q) ||
-        fam.fatherPhone.includes(familySearch) ||
-        fam.students.some((s) => normalizeArabic(s.studentName).includes(q));
-
-      const hasMultiple = fam.students.length > 1 || fam.siblingsList.length > 0 || fam.kuttabChildrenCount > 1;
-      const matchFilter =
-        familyFilter === 'ALL' ||
-        (familyFilter === 'WITH_SIBLINGS' && hasMultiple) ||
-        (familyFilter === 'SINGLE_CHILD' && !hasMultiple);
-
-      return matchSearch && matchFilter;
-    });
-  }, [familiesData, familySearch, familyFilter]);
+  }, [sheikhs, sheikhSearch]);
 
   // ---------------------------------------------------
   // 📊 إحصائيات عامة وسريعة
   // ---------------------------------------------------
   const stats = useMemo(() => {
     const totalHonored = masterStudentsList.length;
+    const totalRegistered = registeredStudents.length;
+    const totalUnregistered = unregisteredStudents.length;
     const tier1Count = masterStudentsList.filter(s => (s.awardTier || '').includes('الأولى') || (s.awardTier || '').includes('تاج الوقار')).length;
     const tier2Count = masterStudentsList.filter(s => (s.awardTier || '').includes('الثانية') || (s.awardTier || '').includes('الأوائل')).length;
     const tier3Count = masterStudentsList.filter(s => (s.awardTier || '').includes('الثالثة') || (s.awardTier || '').includes('التفوق')).length;
@@ -426,14 +374,15 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
     return {
       totalHonored,
+      totalRegistered,
+      totalUnregistered,
       tier1Count,
       tier2Count,
       tier3Count,
       totalAwardsBudgetEgp,
-      totalSheikhs: sheikhs.length,
-      totalFamilies: familiesData.length
+      totalSheikhs: sheikhs.length
     };
-  }, [masterStudentsList, sheikhs, familiesData]);
+  }, [masterStudentsList, registeredStudents, unregisteredStudents, sheikhs]);
 
   // ---------------------------------------------------
   // 📥 دوال تصدير Excel و CSV
@@ -471,7 +420,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
   const exportStudentsToExcel = () => {
     let csvContent = '\uFEFF';
-    csvContent += 'م,كود الطالب,اسم الطالب,السن,المرحلة,المدرسة,فئة التكريم,درجة الاختبار,الجائزة,الشيخ,هاتف الأب,هاتف الأم,حالة الأب\n';
+    csvContent += 'م,كود الطالب,اسم الطالب,السن,المرحلة,المدرسة,فئة التكريم,درجة الاختبار,الجائزة,الشيخ,هاتف الأب,هاتف الأم,حالة الأب,حالة التسجيل\n';
 
     filteredStudents.forEach((r, idx) => {
       const row = [
@@ -487,7 +436,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         `"${r.sheikhName || ''}"`,
         `"${r.fatherPhone || ''}"`,
         `"${r.motherPhone || ''}"`,
-        `"${r.fatherStatus || ''}"`
+        `"${r.fatherStatus || ''}"`,
+        `"${r.completed ? 'مسجل ✅' : 'غير مسجل ❌'}"`
       ];
       csvContent += row.join(',') + '\n';
     });
@@ -496,7 +446,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `سجل_طلاب_الكتاب_${studentScope}_${new Date().toISOString().slice(0, 10)}.csv`);
+    const tabLabel = activeTab === 'registered' ? 'المسجلين' : activeTab === 'unregistered' ? 'غير_المسجلين' : 'كل_الطلاب';
+    link.setAttribute('download', `سجل_طلاب_${tabLabel}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -537,40 +488,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     link.click();
     document.body.removeChild(link);
     showToast?.('تم تصدير سجل الشيوخ بنجاح 📊', 'success');
-  };
-
-  const exportFamiliesToCSV = () => {
-    if (filteredFamilies.length === 0) {
-      showToast?.('لا توجد بيانات أسر لتصديرها', 'error');
-      return;
-    }
-
-    let csvContent = '\uFEFF';
-    csvContent += 'م,اسم ولي الأمر / الأسرة,هاتف الأب,هاتف الأم,حالة الأب,عدد الأبناء بالكتاب,أسماء ومستويات الأبناء\n';
-
-    filteredFamilies.forEach((fam, idx) => {
-      const childrenSummary = fam.students.map(s => `${s.studentName} (${s.partName || 'القرآن'})`).join(' - ');
-      const row = [
-        idx + 1,
-        `"${fam.parentName || ''}"`,
-        `"${fam.fatherPhone || ''}"`,
-        `"${fam.motherPhone || ''}"`,
-        `"${fam.fatherStatus || ''}"`,
-        fam.students.length,
-        `"${childrenSummary}"`
-      ];
-      csvContent += row.join(',') + '\n';
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `سجل_الأسر_والأشقاء_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast?.('تم تصدير سجل الأسر والأشقاء بنجاح 📊', 'success');
   };
 
   // 🗑️ فتح نافذة تأكيد حذف طالب
@@ -679,6 +596,16 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     }
   };
 
+  // ---------------------------------------------------
+  // 🎨 تحديد عنوان ومظهر التاب النشط
+  // ---------------------------------------------------
+  const getTabTitle = () => {
+    if (activeTab === 'all') return `سجل كل الطلاب (${filteredStudents.length} طالب)`;
+    if (activeTab === 'registered') return `الطلاب المسجلين — أكملوا بياناتهم (${filteredStudents.length} طالب)`;
+    if (activeTab === 'unregistered') return `الطلاب غير المسجلين — لم يكملوا (${filteredStudents.length} طالب)`;
+    return '';
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 pb-16 animate-fade-in">
 
@@ -726,18 +653,62 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
           </div>
         </div>
 
-        {/* Luxury Navigation Tabs */}
-        <div className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-2 bg-slate-950/80 p-2 rounded-2xl border border-emerald-700/50 shadow-inner">
+        {/* ═══ KPI Stats Bar ═══ */}
+        <div className="relative z-10 mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-slate-950/60 rounded-2xl p-3 border border-emerald-700/40 text-center">
+            <div className="text-2xl font-black text-[#fbbf24]">{stats.totalHonored}</div>
+            <div className="text-[10px] font-bold text-slate-300 mt-0.5">إجمالي الطلاب</div>
+          </div>
+          <div className="bg-slate-950/60 rounded-2xl p-3 border border-emerald-500/40 text-center">
+            <div className="text-2xl font-black text-emerald-400">{stats.totalRegistered}</div>
+            <div className="text-[10px] font-bold text-slate-300 mt-0.5">✅ أكملوا التسجيل</div>
+          </div>
+          <div className="bg-slate-950/60 rounded-2xl p-3 border border-rose-500/30 text-center">
+            <div className="text-2xl font-black text-rose-400">{stats.totalUnregistered}</div>
+            <div className="text-[10px] font-bold text-slate-300 mt-0.5">❌ لم يكملوا بعد</div>
+          </div>
+          <div className="bg-slate-950/60 rounded-2xl p-3 border border-amber-500/30 text-center">
+            <div className="text-2xl font-black text-amber-300">{stats.totalSheikhs}</div>
+            <div className="text-[10px] font-bold text-slate-300 mt-0.5">👳‍♂️ الشيوخ والمعلمين</div>
+          </div>
+        </div>
+
+        {/* ═══ Navigation Tabs ═══ */}
+        <div className="relative z-10 mt-5 flex flex-wrap items-center justify-center lg:justify-start gap-2 bg-slate-950/80 p-2 rounded-2xl border border-emerald-700/50 shadow-inner">
           <button
-            onClick={() => { setActiveTab('summer'); setStudentScope('SUMMER_2026'); }}
+            onClick={() => setActiveTab('all')}
             className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer ${
-              activeTab === 'summer'
+              activeTab === 'all'
                 ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-lg shadow-amber-500/30 scale-105'
                 : 'text-slate-300 hover:text-white hover:bg-emerald-900/40'
             }`}
           >
-            <Sun className={`w-4 h-4 ${activeTab === 'summer' ? 'text-slate-950' : 'text-amber-400'}`} />
-            <span>الدورة الصيفية ({masterStudentsList.length} طالب)</span>
+            <LayoutList className={`w-4 h-4 ${activeTab === 'all' ? 'text-slate-950' : 'text-amber-400'}`} />
+            <span>كل الطلاب ({allDisplayStudents.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('registered')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer ${
+              activeTab === 'registered'
+                ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/30 scale-105'
+                : 'text-slate-300 hover:text-white hover:bg-emerald-900/40'
+            }`}
+          >
+            <UserCheck className={`w-4 h-4 ${activeTab === 'registered' ? 'text-slate-950' : 'text-emerald-400'}`} />
+            <span>المسجلين ✅ ({registeredStudents.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('unregistered')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer ${
+              activeTab === 'unregistered'
+                ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/30 scale-105'
+                : 'text-slate-300 hover:text-white hover:bg-emerald-900/40'
+            }`}
+          >
+            <UserX className={`w-4 h-4 ${activeTab === 'unregistered' ? 'text-white' : 'text-rose-400'}`} />
+            <span>غير المسجلين ❌ ({unregisteredStudents.length})</span>
           </button>
 
           <button
@@ -749,19 +720,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             }`}
           >
             <Award className="w-4 h-4" />
-            <span>🏆 حفل التكريم والمسرح ({masterStudentsList.length})</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveTab('kuttab'); setStudentScope('KUTTAB_ONLY'); }}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer ${
-              activeTab === 'kuttab'
-                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-slate-950 shadow-lg shadow-blue-500/30 scale-105'
-                : 'text-slate-300 hover:text-white hover:bg-emerald-900/40'
-            }`}
-          >
-            <Building className="w-4 h-4" />
-            <span>الكُتّاب الدائم</span>
+            <span>🏆 حفل التكريم ({masterStudentsList.length})</span>
           </button>
 
           <button
@@ -775,23 +734,11 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             <Users className="w-4 h-4" />
             <span>سجل الشيوخ ({sheikhs.length})</span>
           </button>
-
-          <button
-            onClick={() => setActiveTab('families')}
-            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer ${
-              activeTab === 'families'
-                ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 shadow-lg shadow-teal-400/30 scale-105'
-                : 'text-slate-300 hover:text-white hover:bg-emerald-900/40'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>الأسر والأشقاء ({familiesData.length})</span>
-          </button>
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* 🏆 TAB 2: CEREMONY HUB (حفل التكريم والمسرح ودليل التقديم) */}
+      {/* 🏆 TAB: CEREMONY HUB (حفل التكريم والمسرح ودليل التقديم) */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'ceremony' && (
         <div className="space-y-6 animate-fade-in">
@@ -960,7 +907,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   <tr className="bg-[#0c3d34] text-[#fbbf24] font-black border-b border-emerald-700/50">
                     <th className="p-3 text-center rounded-r-xl w-16">الدور #</th>
                     <th className="p-3 text-center w-20">كود الطالب</th>
-                    <th className="p-3">اسم الطالب المُكَرَّم</th>
+                    <th className="p-3">اسم الطالب المُكَرَّم</th>
                     <th className="p-3">فئة الجائزة والتكريم</th>
                     <th className="p-3">مستوى الحفظ والدرجة</th>
                     <th className="p-3">المكافأة والجائزة المادية</th>
@@ -1040,56 +987,10 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* 🎓 TABS 1 & 3: SUMMER 2026 & KUTTAB DASHBOARD */}
+      {/* 🎓 TABS: ALL / REGISTERED / UNREGISTERED STUDENTS */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      {(activeTab === 'summer' || activeTab === 'kuttab' || activeTab === 'students') && (
+      {(activeTab === 'all' || activeTab === 'registered' || activeTab === 'unregistered') && (
         <div className="space-y-6 animate-fade-in">
-          
-          {/* Scope Filter Pill Bar */}
-          <div className="bg-[#062b24]/90 border border-emerald-700/40 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
-            <div className="flex items-center gap-2 text-xs font-black text-[#fbbf24]">
-              <Filter className="w-4 h-4" />
-              <span>نطاق العرض المعتمد للطلاب:</span>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => setStudentScope('ALL')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-                  studentScope === 'ALL'
-                    ? 'bg-emerald-500 text-slate-950 font-black shadow-md'
-                    : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
-                }`}
-              >
-                <Building className="w-3.5 h-3.5" />
-                <span>الكل (الكُتّاب + الدورة)</span>
-              </button>
-
-              <button
-                onClick={() => setStudentScope('SUMMER_2026')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-                  studentScope === 'SUMMER_2026'
-                    ? 'bg-amber-400 text-slate-950 font-black shadow-md'
-                    : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
-                }`}
-              >
-                <Sun className="w-3.5 h-3.5 text-amber-900" />
-                <span>☀️ طلاب الدورة الصيفية ({masterStudentsList.length})</span>
-              </button>
-
-              <button
-                onClick={() => setStudentScope('KUTTAB_ONLY')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-                  studentScope === 'KUTTAB_ONLY'
-                    ? 'bg-blue-500 text-slate-950 font-black shadow-md'
-                    : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
-                }`}
-              >
-                <Building className="w-3.5 h-3.5" />
-                <span>🏛️ بيانات الكُتّاب الدائم</span>
-              </button>
-            </div>
-          </div>
 
           {/* Controls Bar */}
           <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
@@ -1147,9 +1048,21 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
           <div className="bg-[#062b24]/90 border border-emerald-700/40 rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-4">
             <div className="flex items-center justify-between border-b border-emerald-800/40 pb-4">
               <div className="flex items-center gap-2 font-black text-[#fbbf24] text-base">
-                <Users className="w-5 h-5" />
-                <span>سجل الطلاب المعتمد ({filteredStudents.length} طالب)</span>
+                {activeTab === 'registered' ? <UserCheck className="w-5 h-5 text-emerald-400" /> :
+                 activeTab === 'unregistered' ? <UserX className="w-5 h-5 text-rose-400" /> :
+                 <Users className="w-5 h-5" />}
+                <span>{getTabTitle()}</span>
               </div>
+              {activeTab === 'registered' && (
+                <span className="text-xs font-bold text-emerald-300 bg-emerald-950 px-3.5 py-1 rounded-full border border-emerald-700/40">
+                  أكملوا بيانات التسجيل بالكامل ✅
+                </span>
+              )}
+              {activeTab === 'unregistered' && (
+                <span className="text-xs font-bold text-rose-300 bg-rose-950/60 px-3.5 py-1 rounded-full border border-rose-500/30">
+                  لم يكملوا بياناتهم بعد ❌
+                </span>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -1162,6 +1075,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                     <th className="p-3">فئة التكريم والجائزة</th>
                     <th className="p-3">المرحلة والمدرسة</th>
                     <th className="p-3">ولي الأمر والهاتف</th>
+                    <th className="p-3 text-center w-20">الحالة</th>
                     <th className="p-3 text-center rounded-l-xl w-32">الإجراءات</th>
                   </tr>
                 </thead>
@@ -1188,7 +1102,20 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                       </td>
                       <td className="p-3">
                         <div className="text-emerald-400 font-mono font-bold">{r.fatherPhone || '—'}</div>
-                        <span className="text-[10px] text-amber-200/90 font-bold">{r.fatherStatus || 'على قيد الحياة'}</span>
+                        <span className="text-[10px] text-amber-200/90 font-bold">{r.parentName || '—'}</span>
+                      </td>
+                      <td className="p-3 text-center">
+                        {r.completed ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] font-black">
+                            <CheckCircle2 className="w-3 h-3" />
+                            مسجل
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-black">
+                            <AlertCircle className="w-3 h-3" />
+                            غير مسجل
+                          </span>
+                        )}
                       </td>
                       <td className="p-3 text-center">
                         <div className="flex items-center justify-center gap-1.5">
@@ -1223,12 +1150,23 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 </tbody>
               </table>
             </div>
+
+            {filteredStudents.length === 0 && (
+              <div className="text-center py-12 text-slate-400">
+                <div className="text-4xl mb-3">{activeTab === 'registered' ? '✅' : activeTab === 'unregistered' ? '📋' : '📊'}</div>
+                <p className="text-sm font-bold">
+                  {activeTab === 'registered' ? 'لا يوجد طلاب أكملوا التسجيل بعد' :
+                   activeTab === 'unregistered' ? 'جميع الطلاب أكملوا تسجيلهم! 🎉' :
+                   'لا توجد نتائج مطابقة للبحث'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* 👳‍♂️ TAB 4: SHEIKHS REGISTRY (سجل الشيوخ والمعلمين) */}
+      {/* 👳‍♂️ TAB: SHEIKHS REGISTRY (سجل الشيوخ والمعلمين) */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'sheikhs' && (
         <div className="space-y-6 animate-fade-in">
@@ -1339,63 +1277,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   <div className="flex justify-between">
                     <span className="text-slate-400">الإشراف:</span>
                     <span className="font-bold text-[#fbbf24] truncate max-w-[180px]">{s.summerLevel || '—'}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {/* 👨‍👩‍👧‍👦 TAB 5: FAMILIES & SIBLINGS (الأسر والأشقاء) */}
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {activeTab === 'families' && (
-        <div className="space-y-6 animate-fade-in">
-          <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
-            <div className="relative w-full md:w-80">
-              <Search className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={familySearch}
-                onChange={(e) => setFamilySearch(e.target.value)}
-                placeholder="ابحث باسم الأسرة، ولي الأمر، الهاتف..."
-                className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
-              />
-            </div>
-
-            <button
-              onClick={exportFamiliesToCSV}
-              className="px-4 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all"
-            >
-              <Download className="w-4 h-4" />
-              <span>تصدير كشف الأسر</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {filteredFamilies.map((fam, idx) => (
-              <div key={fam.key || idx} className="bg-[#062b24]/90 border border-emerald-700/40 rounded-3xl p-5 shadow-xl space-y-3">
-                <div className="flex items-center justify-between border-b border-emerald-800/40 pb-2.5">
-                  <div>
-                    <h3 className="font-black text-white text-sm">{fam.parentName}</h3>
-                    <p className="text-xs text-emerald-300 font-mono font-bold">{fam.fatherPhone}</p>
-                  </div>
-                  <span className="px-3 py-1 bg-amber-500/20 text-[#fbbf24] font-black rounded-xl text-xs border border-[#fbbf24]/30">
-                    {fam.students.length} أبناء مقيدين
-                  </span>
-                </div>
-
-                <div className="space-y-2 pt-1">
-                  <p className="text-[11px] text-slate-400 font-bold">الأبناء بالكُتّاب:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {fam.students.map((s, sIdx) => (
-                      <span key={s.id || sIdx} className="px-2.5 py-1 rounded-xl bg-slate-900 border border-emerald-700/40 text-xs font-bold text-white flex items-center gap-1.5">
-                        <Award className="w-3.5 h-3.5 text-[#fbbf24]" />
-                        <span>{s.studentName}</span>
-                        <span className="text-[10px] text-amber-400">({s.partName})</span>
-                      </span>
-                    ))}
                   </div>
                 </div>
               </div>

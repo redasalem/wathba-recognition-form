@@ -44,29 +44,13 @@ export default function LandingPage({ onNavigate }) {
 
         {/* أزرار الإجراءات الرئيسية */}
         <div className="flex flex-wrap items-center justify-center gap-4">
-          <button
-            onClick={() => onNavigate('student-gate')}
-            className="px-6 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 text-sm cursor-pointer"
-          >
-            <Award className="w-5 h-5" />
-            استكمال بيانات طالب مُكَرَّم
-          </button>
-
-          <button
-            onClick={() => onNavigate('sheikh-form')}
-            className="px-6 py-3.5 bg-[#0c3d34] hover:bg-[#114b40] text-emerald-300 font-bold rounded-xl border border-emerald-500/30 transition-all flex items-center gap-2 text-sm cursor-pointer"
-          >
-            <Users className="w-5 h-5" />
-            بوابة تسجيل المعلمين والشيوخ
-          </button>
-
           <a
             href="https://www.facebook.com/profile.php?id=61592682399138"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-5 py-3.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 font-bold rounded-xl border border-blue-500/30 transition-all flex items-center gap-2 text-sm"
+            className="px-6 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 text-sm"
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-5 h-5" />
             صفحة الفيسبوك الرسمية
           </a>
         </div>
@@ -109,7 +93,7 @@ export default function LandingPage({ onNavigate }) {
             </div>
             <div>
               <div className="text-[11px] text-slate-400 font-bold">المكان</div>
-              <div className="text-sm font-black text-white">القاعة الكبرى - مبنى الكُتّاب المطور</div>
+              <div className="text-sm font-black text-white">نادى أبو زينة الرياضى</div>
             </div>
           </div>
 
