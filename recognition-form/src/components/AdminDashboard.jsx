@@ -25,7 +25,14 @@ import {
   FileSpreadsheet,
   UserCheck,
   UserX,
-  LayoutList
+  LayoutList,
+  Copy,
+  MessageCircle,
+  ExternalLink,
+  Phone,
+  School,
+  Calendar,
+  Percent
 } from 'lucide-react';
 import {
   deleteStudentRecord,
@@ -36,10 +43,65 @@ import {
   batchSyncStudentsToFirestore,
   batchSyncSheikhsToFirestore
 } from '../firebase';
-import { STUDENTS_CATALOG, normalizeArabic, isStudentMatch, getMemorizedPartsCount } from '../data/studentsCatalog';
+import {
+  STUDENTS_CATALOG,
+  normalizeArabic,
+  isStudentMatch,
+  getMemorizedPartsCount,
+  AWARD_TIERS
+} from '../data/studentsCatalog';
 import { uploadToCloudinary } from '../services/cloudinary';
 import StudentEditModal from './StudentEditModal';
 import StudentBadgeModal from './StudentBadgeModal';
+
+// ─── Helper: Check if student has entered ALL required registration inputs ───
+export const isStudentFullyRegistered = (student) => {
+  if (!student) return false;
+
+  const name = (student.studentName || student.name || '').trim();
+  if (!name || name.length < 3) return false;
+
+  const phone = (student.fatherPhone || '').trim();
+  const hasValidPhone = /^01[0-9]{9}$/.test(phone);
+  if (!hasValidPhone) return false;
+
+  const hasBirthDate = Boolean((student.birthDate || '').trim());
+  if (!hasBirthDate) return false;
+
+  const hasStudyStage = Boolean((student.studyStage || '').trim());
+  if (!hasStudyStage) return false;
+
+  const school = (student.schoolName || '').trim();
+  if (!school || school.length < 2) return false;
+
+  return true;
+};
+
+// ─── Helper: Get list of missing fields for an incomplete student ────────────
+export const getMissingStudentFields = (student) => {
+  if (!student) return ['جميع البيانات الأساسية'];
+  const missing = [];
+
+  const phone = (student.fatherPhone || '').trim();
+  if (!phone || !/^01[0-9]{9}$/.test(phone)) {
+    missing.push('رقم الهاتف (11 رقماً)');
+  }
+
+  if (!(student.birthDate || '').trim()) {
+    missing.push('تاريخ الميلاد');
+  }
+
+  if (!(student.studyStage || '').trim()) {
+    missing.push('المرحلة الدراسية');
+  }
+
+  const school = (student.schoolName || '').trim();
+  if (!school || school.length < 2) {
+    missing.push('اسم المدرسة');
+  }
+
+  return missing;
+};
 
 export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // Tab control: 'all' | 'registered' | 'unregistered' | 'ceremony' | 'sheikhs'
@@ -90,6 +152,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // ---------------------------------------------------
   const [studentSearch, setStudentSearch] = useState('');
   const [studentFilterPart, setStudentFilterPart] = useState('ALL');
+  const [studentFilterTier, setStudentFilterTier] = useState('ALL');
   const [studentModalOpen, setStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
 
@@ -191,6 +254,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   const masterStudentsList = useMemo(() => {
     return STUDENTS_CATALOG.map((catStudent) => {
       const matchedRecord = records.find((r) => isStudentMatch(r, catStudent));
+      const isComplete = isStudentFullyRegistered(matchedRecord);
 
       return {
         id: matchedRecord?.id || catStudent.studentId,
@@ -202,18 +266,19 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         examScore: matchedRecord?.examScore ?? catStudent.score,
         awardTier: matchedRecord?.awardTier || catStudent.tier,
         gift: matchedRecord?.gift || catStudent.gift,
-        totalParts: catStudent.totalParts || 1,
+        totalParts: catStudent.totalParts || getMemorizedPartsCount(catStudent.part),
         sheikhName: matchedRecord?.sheikhName || 'فضيلة شيوخ الكُتّاب',
         parentName: matchedRecord?.parentName || '',
         fatherPhone: matchedRecord?.fatherPhone || '',
         motherPhone: matchedRecord?.motherPhone || '',
         fatherStatus: matchedRecord?.fatherStatus || 'نعم (على قيد الحياة)',
         schoolName: matchedRecord?.schoolName || '',
-        studyStage: matchedRecord?.studyStage || 'ابتدائي',
+        studyStage: matchedRecord?.studyStage || '',
         birthDate: matchedRecord?.birthDate || '',
         studentAge: matchedRecord?.studentAge || '',
         photoUrl: matchedRecord?.photoUrl || '',
-        completed: !!matchedRecord?.completed || !!(matchedRecord?.fatherPhone && (matchedRecord?.birthDate || matchedRecord?.schoolName || matchedRecord?.parentName)),
+        completed: isComplete,
+        missingFields: getMissingStudentFields(matchedRecord),
         totalChildrenCount: matchedRecord?.totalChildrenCount || 1,
         kuttabChildrenCount: matchedRecord?.kuttabChildrenCount || 1,
         siblings: matchedRecord?.siblings || [],
@@ -228,34 +293,44 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // Combined records for Students Tab
   const allDisplayStudents = useMemo(() => {
     if (records.length === 0) return masterStudentsList;
-    
-    const standaloneRecords = records.filter(r => 
-      !masterStudentsList.some(m => isStudentMatch(r, m))
-    ).map((r, extraIdx) => ({
-      ...r,
-      studentCode: r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#${String(masterStudentsList.length + extraIdx + 1).padStart(3, '0')}`),
-      awardTier: r.awardTier || '✨ فئة متميزة',
-      gift: r.gift || 'مكافأة وهدية التكريم',
-      partName: r.partName || 'القرآن الكريم'
-    }));
+
+    const standaloneRecords = records
+      .filter((r) => !masterStudentsList.some((m) => isStudentMatch(r, m)))
+      .map((r, extraIdx) => {
+        const isComplete = isStudentFullyRegistered(r);
+        return {
+          ...r,
+          studentCode:
+            r.studentCode ||
+            (r.idx
+              ? `#${String(r.idx).padStart(3, '0')}`
+              : `#${String(masterStudentsList.length + extraIdx + 1).padStart(3, '0')}`),
+          awardTier: r.awardTier || '✨ فئة متميزة',
+          gift: r.gift || 'مكافأة وهدية التكريم',
+          partName: r.partName || 'القرآن الكريم',
+          totalParts: getMemorizedPartsCount(r.partName || ''),
+          completed: isComplete,
+          missingFields: getMissingStudentFields(r)
+        };
+      });
 
     return [...masterStudentsList, ...standaloneRecords];
   }, [masterStudentsList, records]);
 
-  // الطلاب المسجلين (أكملوا البيانات)
+  // الطلاب المسجلين (أكملوا جميع الحقول بالكامل)
   const registeredStudents = useMemo(() => {
-    return allDisplayStudents.filter(s => s.completed);
+    return allDisplayStudents.filter((s) => s.completed);
   }, [allDisplayStudents]);
 
-  // الطلاب غير المسجلين (لم يكملوا)
+  // الطلاب غير المسجلين (ينقصهم حقول)
   const unregisteredStudents = useMemo(() => {
-    return allDisplayStudents.filter(s => !s.completed);
+    return allDisplayStudents.filter((s) => !s.completed);
   }, [allDisplayStudents]);
 
   // الأجزاء المتاحة للفلترة
   const availableParts = useMemo(() => {
     const partsSet = new Set();
-    allDisplayStudents.forEach(s => {
+    allDisplayStudents.forEach((s) => {
       if (s.partName) partsSet.add(s.partName);
     });
     return Array.from(partsSet);
@@ -289,26 +364,30 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
     if (ceremonySearch.trim()) {
       const q = normalizeArabic(ceremonySearch);
-      list = list.filter((s) => 
-        normalizeArabic(s.studentName).includes(q) ||
-        (s.studentCode && s.studentCode.includes(ceremonySearch)) ||
-        (s.studentId && s.studentId.toLowerCase().includes(ceremonySearch.toLowerCase())) ||
-        normalizeArabic(s.partName || '').includes(q) ||
-        normalizeArabic(s.sheikhName || '').includes(q)
+      list = list.filter(
+        (s) =>
+          normalizeArabic(s.studentName).includes(q) ||
+          (s.studentCode && s.studentCode.includes(ceremonySearch)) ||
+          (s.studentId && s.studentId.toLowerCase().includes(ceremonySearch.toLowerCase())) ||
+          normalizeArabic(s.partName || '').includes(q) ||
+          normalizeArabic(s.sheikhName || '').includes(q)
       );
     }
 
     list.sort((a, b) => {
+      // 1. فئة التكريم
       const weightA = getTierWeight(a.awardTier);
       const weightB = getTierWeight(b.awardTier);
       if (weightA !== weightB) return weightA - weightB;
 
+      // 2. تناقص الأجزاء (الأكثر حفظاً أولاً)
       const partsA = a.totalParts || getMemorizedPartsCount(a.partName) || 1;
       const partsB = b.totalParts || getMemorizedPartsCount(b.partName) || 1;
       if (partsB !== partsA) {
         return partsB - partsA;
       }
 
+      // 3. درجة الاختبار
       return (b.examScore || 0) - (a.examScore || 0);
     });
 
@@ -316,18 +395,15 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   }, [masterStudentsList, ceremonyTierFilter, ceremonySearch]);
 
   // ---------------------------------------------------
-  // 📊 تصفية الطلاب حسب التاب النشط
+  // 📊 تصفية الطلاب حسب التاب النشط والفلاتر
   // ---------------------------------------------------
-  const getStudentSourceForTab = () => {
-    if (activeTab === 'registered') return registeredStudents;
-    if (activeTab === 'unregistered') return unregisteredStudents;
-    return allDisplayStudents;
-  };
-
   const filteredStudents = useMemo(() => {
-    const source = activeTab === 'registered' ? registeredStudents
-      : activeTab === 'unregistered' ? unregisteredStudents
-      : allDisplayStudents;
+    const source =
+      activeTab === 'registered'
+        ? registeredStudents
+        : activeTab === 'unregistered'
+        ? unregisteredStudents
+        : allDisplayStudents;
 
     return source.filter((student) => {
       const q = normalizeArabic(studentSearch);
@@ -336,15 +412,20 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         normalizeArabic(student.studentName || '').includes(q) ||
         (student.studentCode && student.studentCode.includes(studentSearch)) ||
         (student.fatherPhone && student.fatherPhone.includes(studentSearch)) ||
+        normalizeArabic(student.schoolName || '').includes(q) ||
         normalizeArabic(student.parentName || '').includes(q);
 
       const matchPart =
         studentFilterPart === 'ALL' ||
         (student.partName && student.partName.includes(studentFilterPart));
 
-      return matchSearch && matchPart;
+      const matchTier =
+        studentFilterTier === 'ALL' ||
+        (student.awardTier && student.awardTier.includes(studentFilterTier));
+
+      return matchSearch && matchPart && matchTier;
     });
-  }, [allDisplayStudents, registeredStudents, unregisteredStudents, activeTab, studentSearch, studentFilterPart]);
+  }, [allDisplayStudents, registeredStudents, unregisteredStudents, activeTab, studentSearch, studentFilterPart, studentFilterTier]);
 
   // ---------------------------------------------------
   // 👳‍♂️ تصفية الشيوخ
@@ -363,21 +444,24 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   }, [sheikhs, sheikhSearch]);
 
   // ---------------------------------------------------
-  // 📊 إحصائيات عامة وسريعة
+  // 📊 إحصائيات عامة ودقيقة
   // ---------------------------------------------------
   const stats = useMemo(() => {
     const totalHonored = masterStudentsList.length;
     const totalRegistered = registeredStudents.length;
     const totalUnregistered = unregisteredStudents.length;
-    const tier1Count = masterStudentsList.filter(s => (s.awardTier || '').includes('الأولى') || (s.awardTier || '').includes('تاج الوقار')).length;
-    const tier2Count = masterStudentsList.filter(s => (s.awardTier || '').includes('الثانية') || (s.awardTier || '').includes('الأوائل')).length;
-    const tier3Count = masterStudentsList.filter(s => (s.awardTier || '').includes('الثالثة') || (s.awardTier || '').includes('التفوق')).length;
-    const totalAwardsBudgetEgp = (tier1Count * 2500) + (tier2Count * 1200) + (tier3Count * 600) + (50 * 180) + (67 * 90);
+    const completionPercentage = totalHonored > 0 ? Math.round((totalRegistered / totalHonored) * 100) : 0;
+
+    const tier1Count = masterStudentsList.filter((s) => (s.awardTier || '').includes('الأولى') || (s.awardTier || '').includes('تاج الوقار')).length;
+    const tier2Count = masterStudentsList.filter((s) => (s.awardTier || '').includes('الثانية') || (s.awardTier || '').includes('الأوائل')).length;
+    const tier3Count = masterStudentsList.filter((s) => (s.awardTier || '').includes('الثالثة') || (s.awardTier || '').includes('التفوق')).length;
+    const totalAwardsBudgetEgp = tier1Count * 2500 + tier2Count * 1200 + tier3Count * 600 + 50 * 180 + 67 * 90;
 
     return {
       totalHonored,
       totalRegistered,
       totalUnregistered,
+      completionPercentage,
       tier1Count,
       tier2Count,
       tier3Count,
@@ -387,11 +471,40 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   }, [masterStudentsList, registeredStudents, unregisteredStudents, sheikhs]);
 
   // ---------------------------------------------------
+  // 📋 نسخ رابط الاستمارة المباشر للطالب
+  // ---------------------------------------------------
+  const handleCopyStudentLink = (student) => {
+    const link =
+      student.smartUrl ||
+      `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(student.studentName || student.name || '')}&id=${student.studentId || student.id || ''}`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(link);
+      showToast?.(`تم نسخ رابط استمارة الطالب: ${student.studentName} 📋`, 'success');
+    }
+  };
+
+  // 💬 إرسال رسالة واتساب لولي الأمر للاستكمال
+  const handleSendWhatsAppReminder = (student) => {
+    const link =
+      student.smartUrl ||
+      `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(student.studentName || student.name || '')}&id=${student.studentId || student.id || ''}`;
+
+    const text = `السلام عليكم ورحمة الله وبركاته،\nولي أمر الطالب/ة المبارك: *${student.studentName || student.name}*\nنهنئكم بتفوق ابنكم في الدورة الصيفية لكُتّاب 2026 🏆\nيرجى التكرم باستكمال بيانات كارت وتصريح التكريم الرسمي لحضور الحفل عبر الرابط التالي:\n${link}\n\nإدارة كُتّاب 2026`;
+    const phone = (student.fatherPhone || '').trim().replace(/^0/, '');
+    const waUrl = phone
+      ? `https://wa.me/20${phone}?text=${encodeURIComponent(text)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+
+    window.open(waUrl, '_blank');
+  };
+
+  // ---------------------------------------------------
   // 📥 دوال تصدير Excel و CSV
   // ---------------------------------------------------
   const exportCeremonyToCSV = () => {
     let csvContent = '\uFEFF';
-    csvContent += 'الترتيب,كود الطالب,اسم الطالب المكرم,فئة التكريم,مستوى الحفظ,درجة الاختبار,المكافأة والجائزة المادية,الشيخ المشرف,اسم ولي الأمر,هاتف ولي الأمر\n';
+    csvContent += 'الترتيب,كود الطالب,اسم الطالب المكرم,فئة التكريم,مستوى الحفظ,الأجزاء المحفوظة,درجة الاختبار,المكافأة والجائزة المادية,الشيخ المشرف,اسم ولي الأمر,هاتف ولي الأمر\n';
 
     ceremonyStudents.forEach((s, idx) => {
       const row = [
@@ -400,6 +513,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         `"${s.studentName || ''}"`,
         `"${s.awardTier || ''}"`,
         `"${s.partName || ''}"`,
+        s.totalParts || 1,
         `"${s.examScore || ''}%"`,
         `"${s.gift || ''}"`,
         `"${s.sheikhName || ''}"`,
@@ -422,24 +536,25 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
   const exportStudentsToExcel = () => {
     let csvContent = '\uFEFF';
-    csvContent += 'م,كود الطالب,اسم الطالب,السن,المرحلة,المدرسة,فئة التكريم,درجة الاختبار,الجائزة,الشيخ,هاتف الأب,هاتف الأم,حالة الأب,حالة التسجيل\n';
+    csvContent += 'م,كود الطالب,اسم الطالب,المستوى القرآني,فئة التكريم,درجة الاختبار,الجائزة,تاريخ الميلاد,المرحلة الدراسية,اسم المدرسة,هاتف ولي الأمر,حالة الوالد,حالة استكمال البيانات,الحقول الناقصة\n';
 
     filteredStudents.forEach((r, idx) => {
+      const missingStr = r.completed ? 'لا يوجد (مكتمل بالكامل)' : r.missingFields?.join(' - ') || 'بيانات ناقصة';
       const row = [
         idx + 1,
         `"${r.studentCode || ''}"`,
         `"${r.studentName || ''}"`,
-        r.studentAge || '',
+        `"${r.partName || ''}"`,
+        `"${r.awardTier || ''}"`,
+        `"${r.examScore || ''}%"`,
+        `"${r.gift || ''}"`,
+        `"${r.birthDate || ''}"`,
         `"${r.studyStage || ''}"`,
         `"${r.schoolName || ''}"`,
-        `"${r.partName || ''}"`,
-        `"${r.examScore || ''}"`,
-        `"${r.gift || ''}"`,
-        `"${r.sheikhName || ''}"`,
         `"${r.fatherPhone || ''}"`,
-        `"${r.motherPhone || ''}"`,
         `"${r.fatherStatus || ''}"`,
-        `"${r.completed ? 'مسجل ✅' : 'غير مسجل ❌'}"`
+        `"${r.completed ? 'مسجل ومكتمل بالكامل ✅' : 'غير مكتمل ❌'}"`,
+        `"${missingStr}"`
       ];
       csvContent += row.join(',') + '\n';
     });
@@ -448,7 +563,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    const tabLabel = activeTab === 'registered' ? 'المسجلين' : activeTab === 'unregistered' ? 'غير_المسجلين' : 'كل_الطلاب';
+    const tabLabel = activeTab === 'registered' ? 'المسجلين_مكتملي_البيانات' : activeTab === 'unregistered' ? 'غير_المسجلين_ناقصي_البيانات' : 'كل_الطلاب_الشامل';
     link.setAttribute('download', `سجل_طلاب_${tabLabel}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
@@ -515,7 +630,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // 🗑️ تنفيذ الحذف النهائي من Firebase
   const handleConfirmDelete = async () => {
     if (!deleteConfirmModal.data) return;
-    setDeleteConfirmModal(prev => ({ ...prev, isDeleting: true }));
+    setDeleteConfirmModal((prev) => ({ ...prev, isDeleting: true }));
 
     try {
       if (deleteConfirmModal.type === 'student') {
@@ -588,7 +703,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     setUploadingSheikhPhoto(true);
     try {
       const url = await uploadToCloudinary(file);
-      setSheikhFormData(prev => ({ ...prev, photoUrl: url }));
+      setSheikhFormData((prev) => ({ ...prev, photoUrl: url }));
       showToast?.('تم رفع صورة الشيخ بنجاح 📸', 'success');
     } catch (err) {
       console.error('Sheikh photo upload error:', err);
@@ -602,14 +717,14 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // 🎨 تحديد عنوان ومظهر التاب النشط
   // ---------------------------------------------------
   const getTabTitle = () => {
-    if (activeTab === 'all') return `سجل كل الطلاب (${filteredStudents.length} طالب)`;
-    if (activeTab === 'registered') return `الطلاب المسجلين — أكملوا بياناتهم (${filteredStudents.length} طالب)`;
-    if (activeTab === 'unregistered') return `الطلاب غير المسجلين — لم يكملوا (${filteredStudents.length} طالب)`;
+    if (activeTab === 'all') return `سجل كل الطلاب الشامل (${filteredStudents.length} معروض من ${allDisplayStudents.length})`;
+    if (activeTab === 'registered') return `الطلاب المسجلين — مكتملو البيانات بالكامل 100% (${filteredStudents.length} طالب)`;
+    if (activeTab === 'unregistered') return `الطلاب غير المسجلين — ينقصهم بيانات بالاستمارة (${filteredStudents.length} طالب)`;
     return '';
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 pb-16 animate-fade-in">
+    <div className="w-full max-w-7xl mx-auto space-y-6 pb-16 animate-fade-in text-slate-100">
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* 👑 TOP HEADER & MAIN CONTROLS */}
@@ -629,7 +744,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
               منظومة كُتّاب <span className="text-[#fbbf24]">| قاعدة البيانات وحفل التكريم</span>
             </h1>
             <p className="text-xs text-emerald-200/80 font-medium max-w-xl">
-              إدارة بروتوكول التكريم المباشر، ترتيب صعود الطلاب الـ 143 على المسرح، ومزامنة البيانات في Firebase.
+              إدارة بروتوكول التكريم المباشر، فرز الطلاب المسجلين بالكامل، وترتيب صعود المسرح بنادى أبو زينة الرياضى.
             </p>
           </div>
 
@@ -655,28 +770,62 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
           </div>
         </div>
 
-        {/* ═══ KPI Stats Bar ═══ */}
-        <div className="relative z-10 mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-slate-950/60 rounded-2xl p-3 border border-emerald-700/40 text-center">
-            <div className="text-2xl font-black text-[#fbbf24]">{stats.totalHonored}</div>
-            <div className="text-[10px] font-bold text-slate-300 mt-0.5">إجمالي الطلاب</div>
+        {/* ═══ KPI Stats Bar with Real-time Progress ═══ */}
+        <div className="relative z-10 mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+          
+          {/* Card 1: Total Students */}
+          <div className="bg-slate-950/70 rounded-2xl p-4 border border-emerald-700/40 text-center shadow-lg relative overflow-hidden">
+            <div className="text-2xl sm:text-3xl font-black text-[#fbbf24]">{stats.totalHonored}</div>
+            <div className="text-xs font-bold text-slate-300 mt-0.5">إجمالي الطلاب المعتمدين</div>
+            <div className="text-[10px] text-amber-300/80 font-mono mt-1">100% من الكشوف الرسمية</div>
           </div>
-          <div className="bg-slate-950/60 rounded-2xl p-3 border border-emerald-500/40 text-center">
-            <div className="text-2xl font-black text-emerald-400">{stats.totalRegistered}</div>
-            <div className="text-[10px] font-bold text-slate-300 mt-0.5">✅ أكملوا التسجيل</div>
+
+          {/* Card 2: Fully Registered Students */}
+          <div className="bg-slate-950/70 rounded-2xl p-4 border border-emerald-500/40 text-center shadow-lg relative overflow-hidden">
+            <div className="text-2xl sm:text-3xl font-black text-emerald-400">{stats.totalRegistered}</div>
+            <div className="text-xs font-bold text-emerald-200 mt-0.5">✅ أكملوا التسجيل كاملاً</div>
+            <div className="text-[10px] text-emerald-400/90 font-bold mt-1">
+              نسبة الإنجاز: {stats.completionPercentage}%
+            </div>
           </div>
-          <div className="bg-slate-950/60 rounded-2xl p-3 border border-rose-500/30 text-center">
-            <div className="text-2xl font-black text-rose-400">{stats.totalUnregistered}</div>
-            <div className="text-[10px] font-bold text-slate-300 mt-0.5">❌ لم يكملوا بعد</div>
+
+          {/* Card 3: Unregistered / Incomplete Students */}
+          <div className="bg-slate-950/70 rounded-2xl p-4 border border-rose-500/40 text-center shadow-lg relative overflow-hidden">
+            <div className="text-2xl sm:text-3xl font-black text-rose-400">{stats.totalUnregistered}</div>
+            <div className="text-xs font-bold text-rose-200 mt-0.5">❌ لم يستكملوا بعد</div>
+            <div className="text-[10px] text-rose-300/80 font-bold mt-1">ينقصهم بيانات بالاستمارة</div>
           </div>
-          <div className="bg-slate-950/60 rounded-2xl p-3 border border-amber-500/30 text-center">
-            <div className="text-2xl font-black text-amber-300">{stats.totalSheikhs}</div>
-            <div className="text-[10px] font-bold text-slate-300 mt-0.5">👳‍♂️ الشيوخ والمعلمين</div>
+
+          {/* Card 4: Total Sheikhs */}
+          <div className="bg-slate-950/70 rounded-2xl p-4 border border-teal-500/40 text-center shadow-lg relative overflow-hidden">
+            <div className="text-2xl sm:text-3xl font-black text-teal-300">{stats.totalSheikhs}</div>
+            <div className="text-xs font-bold text-teal-200 mt-0.5">👳‍♂️ الشيوخ والمحفظون</div>
+            <div className="text-[10px] text-teal-400/80 font-bold mt-1">الكوادر المشرفة</div>
+          </div>
+        </div>
+
+        {/* ═══ Registration Progress Bar ═══ */}
+        <div className="relative z-10 mt-4 p-3 bg-slate-950/80 rounded-2xl border border-emerald-800/50 space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+            <span className="flex items-center gap-1.5 text-emerald-300">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>اكتمال بيانات الطلاب (هاتف ولي الأمر، تاريخ الميلاد، المرحلة والمدرسة):</span>
+            </span>
+            <span className="font-mono text-[#fbbf24] font-black">
+              {stats.totalRegistered} من {stats.totalHonored} طالب ({stats.completionPercentage}%)
+            </span>
+          </div>
+          <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden border border-emerald-700/40">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-[#fbbf24] transition-all duration-500 rounded-full"
+              style={{ width: `${stats.completionPercentage}%` }}
+            ></div>
           </div>
         </div>
 
         {/* ═══ Navigation Tabs ═══ */}
-        <div className="relative z-10 mt-5 flex flex-wrap items-center justify-center lg:justify-start gap-2 bg-slate-950/80 p-2 rounded-2xl border border-emerald-700/50 shadow-inner">
+        <div className="relative z-10 mt-5 flex flex-wrap items-center justify-center lg:justify-start gap-2 bg-slate-950/90 p-2 rounded-2xl border border-emerald-700/50 shadow-inner">
+          
           <button
             onClick={() => setActiveTab('all')}
             className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer ${
@@ -698,7 +847,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             }`}
           >
             <UserCheck className={`w-4 h-4 ${activeTab === 'registered' ? 'text-slate-950' : 'text-emerald-400'}`} />
-            <span>المسجلين ✅ ({registeredStudents.length})</span>
+            <span>المسجلين بالكامل ✅ ({registeredStudents.length})</span>
           </button>
 
           <button
@@ -722,7 +871,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             }`}
           >
             <Award className="w-4 h-4" />
-            <span>🏆 حفل التكريم ({masterStudentsList.length})</span>
+            <span>🏆 حفل التكريم والمسرح ({masterStudentsList.length})</span>
           </button>
 
           <button
@@ -896,10 +1045,10 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             <div className="flex items-center justify-between border-b border-emerald-800/40 pb-4">
               <div className="flex items-center gap-2.5 font-black text-[#fbbf24] text-base">
                 <Award className="w-5 h-5" />
-                <span>كشف ترتيب صعود المسرح المعتمد ({ceremonyStudents.length} طالب معروض)</span>
+                <span>كشف ترتيب صعود المسرح المعتمد بنادى أبو زينة ({ceremonyStudents.length} طالب معروض)</span>
               </div>
               <span className="text-xs font-bold text-emerald-300 bg-emerald-950 px-3.5 py-1 rounded-full border border-emerald-700/40">
-                مرتب حسب فئات التكريم وحفظ القرآن ⭐
+                مرتب حسب فئات التكريم وتناقص الأجزاء المحفوظة ⭐
               </span>
             </div>
 
@@ -911,7 +1060,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                     <th className="p-3 text-center w-20">كود الطالب</th>
                     <th className="p-3">اسم الطالب المُكَرَّم</th>
                     <th className="p-3">فئة الجائزة والتكريم</th>
-                    <th className="p-3">مستوى الحفظ والدرجة</th>
+                    <th className="p-3">مستوى الحفظ والأجزاء</th>
                     <th className="p-3">المكافأة والجائزة المادية</th>
                     <th className="p-3 text-center rounded-l-xl w-36">إجراءات المسرح</th>
                   </tr>
@@ -920,11 +1069,17 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   {ceremonyStudents.map((student, idx) => (
                     <tr key={student.id || idx} className="hover:bg-emerald-900/30 transition-colors">
                       <td className="p-3 text-center font-black">
-                        <span className={`inline-block w-7 h-7 rounded-full leading-7 text-center text-xs ${
-                          idx === 0 ? 'bg-amber-400 text-slate-950 font-black shadow-lg' :
-                          idx === 1 ? 'bg-slate-300 text-slate-950 font-black' :
-                          idx === 2 ? 'bg-amber-700 text-white font-black' : 'bg-slate-900 text-slate-300 border border-emerald-800/40'
-                        }`}>
+                        <span
+                          className={`inline-block w-7 h-7 rounded-full leading-7 text-center text-xs ${
+                            idx === 0
+                              ? 'bg-amber-400 text-slate-950 font-black shadow-lg'
+                              : idx === 1
+                              ? 'bg-slate-300 text-slate-950 font-black'
+                              : idx === 2
+                              ? 'bg-amber-700 text-white font-black'
+                              : 'bg-slate-900 text-slate-300 border border-emerald-800/40'
+                          }`}
+                        >
                           {idx + 1}
                         </span>
                       </td>
@@ -948,9 +1103,16 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
                       <td className="p-3">
                         <div className="font-bold text-emerald-300">{student.partName}</div>
-                        {student.examScore && (
-                          <span className="text-[10px] text-amber-400 font-mono font-bold">الدرجة: {student.examScore}%</span>
-                        )}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] text-slate-400">
+                            {student.totalParts ? `${student.totalParts} أجزاء` : '—'}
+                          </span>
+                          {student.examScore && (
+                            <span className="text-[10px] text-amber-400 font-mono font-bold">
+                              {student.examScore}%
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="p-3">
@@ -994,18 +1156,18 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {(activeTab === 'all' || activeTab === 'registered' || activeTab === 'unregistered') && (
         <div className="space-y-6 animate-fade-in">
 
-          {/* Controls Bar */}
-          <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
+          {/* Controls Bar: Search & Filters & Exports */}
+          <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-4 shadow-lg">
             
-            {/* Search Input & Part Filter */}
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <div className="relative w-full sm:w-72">
+            {/* Search Input & Part/Tier Filter */}
+            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+              <div className="relative w-full sm:w-64">
                 <Search className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={studentSearch}
                   onChange={(e) => setStudentSearch(e.target.value)}
-                  placeholder="ابحث بالاسم، الكود، الهاتف..."
+                  placeholder="ابحث بالاسم، الكود، الهاتف، المدرسة..."
                   className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
                 />
               </div>
@@ -1016,18 +1178,34 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 onChange={(e) => setStudentFilterPart(e.target.value)}
                 className="px-3 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white focus:outline-none focus:border-[#fbbf24]"
               >
-                <option value="ALL">جميع الأجزاء والمستويات</option>
+                <option value="ALL">جميع المستويات والأجزاء</option>
                 {availableParts.map((part) => (
-                  <option key={part} value={part}>{part}</option>
+                  <option key={part} value={part}>
+                    {part}
+                  </option>
                 ))}
+              </select>
+
+              {/* Tier Filter Dropdown */}
+              <select
+                value={studentFilterTier}
+                onChange={(e) => setStudentFilterTier(e.target.value)}
+                className="px-3 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white focus:outline-none focus:border-[#fbbf24]"
+              >
+                <option value="ALL">جميع فئات التكريم</option>
+                <option value="الأولى">👑 الأولى (تاج الوقار)</option>
+                <option value="الثانية">🌟 الثانية (الأوائل 100%)</option>
+                <option value="الثالثة">✨ الثالثة (المتميزون)</option>
+                <option value="الرابعة">📜 الرابعة (الإجادة)</option>
+                <option value="الخامسة">🎁 الخامسة (التشجيع)</option>
               </select>
             </div>
 
             {/* Actions: Export Excel & Add Student */}
-            <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
+            <div className="flex items-center gap-2.5 w-full lg:w-auto justify-end">
               <button
                 onClick={exportStudentsToExcel}
-                className="px-4 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all"
+                className="px-4 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all shadow"
               >
                 <Download className="w-4 h-4" />
                 <span>تصدير Excel</span>
@@ -1038,7 +1216,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   setEditingStudent(null);
                   setStudentModalOpen(true);
                 }}
-                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all shadow-md"
+                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all shadow-md active:scale-95"
               >
                 <Plus className="w-4 h-4" />
                 <span>إضافة طالب جديد</span>
@@ -1046,101 +1224,186 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             </div>
           </div>
 
-          {/* Students Table */}
+          {/* Students Table Container */}
           <div className="bg-[#062b24]/90 border border-emerald-700/40 rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-emerald-800/40 pb-4">
+            
+            {/* Header info */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-emerald-800/40 pb-4">
               <div className="flex items-center gap-2 font-black text-[#fbbf24] text-base">
-                {activeTab === 'registered' ? <UserCheck className="w-5 h-5 text-emerald-400" /> :
-                 activeTab === 'unregistered' ? <UserX className="w-5 h-5 text-rose-400" /> :
-                 <Users className="w-5 h-5" />}
+                {activeTab === 'registered' ? (
+                  <UserCheck className="w-5 h-5 text-emerald-400" />
+                ) : activeTab === 'unregistered' ? (
+                  <UserX className="w-5 h-5 text-rose-400" />
+                ) : (
+                  <LayoutList className="w-5 h-5 text-amber-400" />
+                )}
                 <span>{getTabTitle()}</span>
               </div>
+
               {activeTab === 'registered' && (
-                <span className="text-xs font-bold text-emerald-300 bg-emerald-950 px-3.5 py-1 rounded-full border border-emerald-700/40">
-                  أكملوا بيانات التسجيل بالكامل ✅
+                <span className="text-xs font-bold text-emerald-300 bg-emerald-950 px-3.5 py-1 rounded-full border border-emerald-700/40 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>أدخلوا كافة الحقول (الهاتف، تاريخ الميلاد، المرحلة والمدرسة) ✅</span>
                 </span>
               )}
               {activeTab === 'unregistered' && (
-                <span className="text-xs font-bold text-rose-300 bg-rose-950/60 px-3.5 py-1 rounded-full border border-rose-500/30">
-                  لم يكملوا بياناتهم بعد ❌
+                <span className="text-xs font-bold text-rose-300 bg-rose-950/60 px-3.5 py-1 rounded-full border border-rose-500/30 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+                  <span>ينقصهم استكمال بعض حقول الاستمارة ❌</span>
                 </span>
               )}
             </div>
 
+            {/* Main Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-right border-collapse text-xs">
                 <thead>
                   <tr className="bg-[#0c3d34] text-[#fbbf24] font-black border-b border-emerald-700/50">
-                    <th className="p-3 text-center rounded-r-xl w-14">م</th>
+                    <th className="p-3 text-center rounded-r-xl w-12">م</th>
                     <th className="p-3 text-center w-24 whitespace-nowrap">كود الطالب</th>
-                    <th className="p-3">اسم الطالب</th>
+                    <th className="p-3">اسم الطالب والمستوى</th>
                     <th className="p-3">فئة التكريم والجائزة</th>
                     <th className="p-3">المرحلة والمدرسة</th>
-                    <th className="p-3">ولي الأمر والهاتف</th>
-                    <th className="p-3 text-center w-20">الحالة</th>
-                    <th className="p-3 text-center rounded-l-xl w-32">الإجراءات</th>
+                    <th className="p-3">بيانات التواصل (ولي الأمر)</th>
+                    <th className="p-3 text-center w-36">حالة التسجيل</th>
+                    <th className="p-3 text-center rounded-l-xl w-40">الإجراءات</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-emerald-800/30">
                   {filteredStudents.map((r, idx) => (
                     <tr key={r.id || idx} className="hover:bg-emerald-900/30 transition-colors">
                       <td className="p-3 text-center text-slate-400 font-bold">{idx + 1}</td>
+
+                      {/* Code Badge */}
                       <td className="p-3 text-center">
                         <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-500/40 text-amber-400 font-mono font-black text-xs whitespace-nowrap inline-block">
                           {r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#${String(idx + 1).padStart(3, '0')}`)}
                         </span>
                       </td>
+
+                      {/* Name & Quran Part */}
                       <td className="p-3">
                         <div className="font-bold text-white text-sm">{r.studentName}</div>
-                        <span className="text-[10px] text-emerald-300 font-semibold">{r.partName || 'القرآن الكريم'}</span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[11px] text-emerald-300 font-semibold">{r.partName || 'القرآن الكريم'}</span>
+                          {r.examScore !== undefined && (
+                            <span className="text-[10px] text-amber-300/80 font-mono">({r.examScore}%)</span>
+                          )}
+                        </div>
                       </td>
+
+                      {/* Award Tier & Gift */}
                       <td className="p-3">
                         <div className="text-amber-300 font-bold text-[11px]">{r.awardTier || '✨ فئة متميزة'}</div>
                         <div className="text-slate-400 text-[10px] truncate max-w-xs">{r.gift}</div>
                       </td>
+
+                      {/* Stage & School */}
                       <td className="p-3">
-                        <div className="text-slate-200 font-bold">{r.studyStage || 'ابتدائي'}</div>
-                        <span className="text-[10px] text-slate-400">{r.schoolName ? `${r.schoolName}${r.birthDate ? ` (${r.birthDate})` : ''}` : (r.birthDate ? `مواليد: ${r.birthDate}` : '—')}</span>
-                      </td>
-                      <td className="p-3">
-                        <div className="text-emerald-400 font-mono font-bold">{r.fatherPhone || '—'}</div>
-                        <span className="text-[10px] text-amber-200/90 font-bold">{r.parentName || '—'}</span>
-                      </td>
-                      <td className="p-3 text-center">
-                        {r.completed ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] font-black">
-                            <CheckCircle2 className="w-3 h-3" />
-                            مسجل
-                          </span>
+                        {r.studyStage || r.schoolName ? (
+                          <>
+                            <div className="text-slate-200 font-bold">{r.studyStage || '—'}</div>
+                            <div className="text-[10px] text-slate-400 truncate max-w-[160px]">
+                              {r.schoolName || 'لم تُحدد المدرسة'}
+                            </div>
+                          </>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-black">
-                            <AlertCircle className="w-3 h-3" />
-                            غير مسجل
+                          <span className="text-rose-400/90 text-[11px] font-semibold flex items-center gap-1">
+                            <School className="w-3 h-3" />
+                            <span>غير مسجلة</span>
                           </span>
                         )}
                       </td>
+
+                      {/* Contact & Phone */}
+                      <td className="p-3">
+                        {r.fatherPhone ? (
+                          <div>
+                            <div className="text-emerald-400 font-mono font-bold text-xs flex items-center gap-1">
+                              <Phone className="w-3 h-3 text-emerald-400" />
+                              <span>{r.fatherPhone}</span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 block truncate max-w-[140px]">
+                              {r.birthDate ? `مواليد: ${r.birthDate}` : (r.parentName ? `ولي الأمر: ${r.parentName}` : '—')}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-rose-400/90 text-[11px] font-semibold flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            <span>لا يوجد هاتف</span>
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Registration Status & Missing Fields list */}
                       <td className="p-3 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                        {r.completed ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-black shadow-sm">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>مكتمل 100%</span>
+                          </span>
+                        ) : (
+                          <div className="space-y-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-black">
+                              <AlertCircle className="w-3 h-3" />
+                              <span>غير مكتمل</span>
+                            </span>
+                            {r.missingFields && r.missingFields.length > 0 && (
+                              <div className="text-[9px] text-rose-300/80 leading-tight">
+                                ناقص: {r.missingFields.slice(0, 2).join('، ')}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Action Buttons */}
+                      <td className="p-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          
+                          {/* WhatsApp Reminder Button */}
+                          <button
+                            onClick={() => handleSendWhatsAppReminder(r)}
+                            className="p-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 rounded-lg transition-all cursor-pointer"
+                            title="إرسال رابط الاستمارة لولي الأمر عبر الواتساب"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Copy Link Button */}
+                          <button
+                            onClick={() => handleCopyStudentLink(r)}
+                            className="p-1.5 bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-lg transition-all cursor-pointer"
+                            title="نسخ رابط الاستمارة المباشر"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* View Badge */}
                           <button
                             onClick={() => setBadgeModalStudent(r)}
-                            className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl transition-all cursor-pointer"
+                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-lg transition-all cursor-pointer border border-emerald-700/40"
                             title="معاينة كارت التكريم والـ QR"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
+
+                          {/* Edit Full Record */}
                           <button
                             onClick={() => {
                               setEditingStudent(r);
                               setStudentModalOpen(true);
                             }}
-                            className="p-2 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-xl transition-all cursor-pointer"
-                            title="تعديل البيانات"
+                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg transition-all cursor-pointer border border-emerald-700/40"
+                            title="استكمال أو تعديل بيانات الطالب"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
+
+                          {/* Delete */}
                           <button
                             onClick={() => handleRequestDeleteStudent(r)}
-                            className="p-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-xl transition-all cursor-pointer"
+                            className="p-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-lg transition-all cursor-pointer border border-rose-500/30"
                             title="حذف الطالب من السجل"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1155,11 +1418,15 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
             {filteredStudents.length === 0 && (
               <div className="text-center py-12 text-slate-400">
-                <div className="text-4xl mb-3">{activeTab === 'registered' ? '✅' : activeTab === 'unregistered' ? '📋' : '📊'}</div>
+                <div className="text-4xl mb-3">
+                  {activeTab === 'registered' ? '✅' : activeTab === 'unregistered' ? '📋' : '📊'}
+                </div>
                 <p className="text-sm font-bold">
-                  {activeTab === 'registered' ? 'لا يوجد طلاب أكملوا التسجيل بعد' :
-                   activeTab === 'unregistered' ? 'جميع الطلاب أكملوا تسجيلهم! 🎉' :
-                   'لا توجد نتائج مطابقة للبحث'}
+                  {activeTab === 'registered'
+                    ? 'لا يوجد طلاب أكملوا كافة حقول الاستمارة حتى الآن'
+                    : activeTab === 'unregistered'
+                    ? 'تهانينا! جميع الطلاب الـ 143 أكملوا بياناتهم بالكامل 🎉'
+                    : 'لا توجد نتائج مطابقة لشروط البحث والفلاتر'}
                 </p>
               </div>
             )}
@@ -1187,7 +1454,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
               <button
                 onClick={exportSheikhsToCSV}
-                className="px-4 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all"
+                className="px-4 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all shadow"
               >
                 <Download className="w-4 h-4" />
                 <span>تصدير كشف الشيوخ</span>
@@ -1195,7 +1462,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
               <button
                 onClick={handleExecuteSyncSheikhs}
-                className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-[#fbbf24]/50 text-[#fbbf24] rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all"
+                className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-[#fbbf24]/50 text-[#fbbf24] rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all shadow"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>استيراد الكوادر المعتمدة</span>
@@ -1220,7 +1487,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   });
                   setSheikhModalOpen(true);
                 }}
-                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all shadow-md"
+                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all shadow-md active:scale-95"
               >
                 <Plus className="w-4 h-4" />
                 <span>إضافة محفظ جديد</span>
@@ -1230,7 +1497,10 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredSheikhs.map((s) => (
-              <div key={s.id} className="bg-[#062b24]/90 border border-emerald-700/40 rounded-3xl p-5 shadow-xl space-y-4 relative hover:border-[#fbbf24]/50 transition-all">
+              <div
+                key={s.id}
+                className="bg-[#062b24]/90 border border-emerald-700/40 rounded-3xl p-5 shadow-xl space-y-4 relative hover:border-[#fbbf24]/50 transition-all"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {s.photoUrl ? (
@@ -1242,7 +1512,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                     )}
                     <div>
                       <h3 className="text-sm font-black text-white">{s.name}</h3>
-                      <p className="text-[11px] text-amber-300 font-medium">{s.adminRole === 'SUPER_ADMIN' ? '👑 المشرف العام' : (s.adminRole === 'DEPUTY_ADMIN' ? '⭐ المشرف الأكاديمي' : '📘 محفظ ومعلم')}</p>
+                      <p className="text-[11px] text-amber-300 font-medium">
+                        {s.adminRole === 'SUPER_ADMIN'
+                          ? '👑 المشرف العام'
+                          : s.adminRole === 'DEPUTY_ADMIN'
+                          ? '⭐ المشرف الأكاديمي'
+                          : '📘 محفظ ومعلم'}
+                      </p>
                     </div>
                   </div>
 
@@ -1290,204 +1566,214 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* ⚡ MODAL 1: FIREBASE BATCH SYNC ENGINE MODAL */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      {syncModalOpen && createPortal(
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !isSyncing) {
-              setSyncModalOpen(false);
-            }
-          }}
-          className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
-        >
+      {syncModalOpen &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative bg-[#041915] rounded-3xl border-2 border-[#fbbf24]/50 max-w-lg w-full p-5 sm:p-6 text-slate-100 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !isSyncing) {
+                setSyncModalOpen(false);
+              }
+            }}
+            className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
           >
-            <div className="flex items-center justify-between border-b border-emerald-800/40 pb-3">
-              <div className="flex items-center gap-2 text-[#fbbf24] font-black text-base">
-                <Database className="w-5 h-5" />
-                <span>محرك المزامنة التلقائي مع Firebase</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => !isSyncing && setSyncModalOpen(false)}
-                disabled={isSyncing}
-                className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer disabled:opacity-30"
-                title="إغلاق"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
-              <p>
-                سيقوم هذا المحرك بتعيين وحفظ كافة بيانات الطلاب الـ <strong>143 طالباً</strong> المسجلين في قاعدة بيانات <strong className="text-[#fbbf24]">kuttab_master_database.xlsx</strong> مباشرة في قاعدة بيانات Firebase Firestore مع فئات التكريم والجوائز ورموز الـ QR.
-              </p>
-
-              <div className="p-3.5 bg-emerald-950/60 rounded-2xl border border-emerald-700/40 text-emerald-300 text-xs space-y-1">
-                <p className="font-bold flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-[#fbbf24]" />
-                  <span>دمج آمن ومحمي (Safe Upsert & Merge):</span>
-                </p>
-                <p className="text-[11px] text-slate-300">
-                  لن يتم حذف أي بيانات أو أرقام هواتف أو صور أدخلها أولياء الأمور مسبقاً، وسيتم دمج البيانات بدقة.
-                </p>
-              </div>
-
-              {isSyncing && (
-                <div className="space-y-2 pt-2">
-                  <div className="flex justify-between text-xs font-bold text-amber-300">
-                    <span>جاري المزامنة مع Firebase Firestore...</span>
-                    <span>{syncProgress.percentage}% ({syncProgress.processed} / {syncProgress.total})</span>
-                  </div>
-                  <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-amber-500/40">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-300"
-                      style={{ width: `${syncProgress.percentage}%` }}
-                    ></div>
-                  </div>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-[#041915] rounded-3xl border-2 border-[#fbbf24]/50 max-w-lg w-full p-5 sm:p-6 text-slate-100 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto"
+            >
+              <div className="flex items-center justify-between border-b border-emerald-800/40 pb-3">
+                <div className="flex items-center gap-2 text-[#fbbf24] font-black text-base">
+                  <Database className="w-5 h-5" />
+                  <span>محرك المزامنة التلقائي مع Firebase</span>
                 </div>
-              )}
-
-              {syncResult?.success && (
-                <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-xl font-bold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>تمت مزامنة وحفظ {syncResult.count} طالباً بنجاح في Firebase! 🎉</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-emerald-800/40">
-              <button
-                type="button"
-                onClick={() => setSyncModalOpen(false)}
-                disabled={isSyncing}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer transition-all"
-              >
-                إلغاء
-              </button>
-
-              <button
-                type="button"
-                onClick={handleExecuteSyncStudents}
-                disabled={isSyncing}
-                className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg flex items-center gap-2 disabled:opacity-50 transition-all active:scale-95"
-              >
-                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span>{isSyncing ? 'جاري المزامنة...' : 'بدء المزامنة الآن ⚡'}</span>
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* 🎤 MODAL 2: STAGE LIVE PROMPTER MODAL */}
-      {stagePrompterStudent && createPortal(
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setStagePrompterStudent(null);
-            }
-          }}
-          className="fixed inset-0 z-[99999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative bg-gradient-to-b from-[#062b24] via-[#041915] to-[#02100d] rounded-3xl border-2 border-[#fbbf24]/50 max-w-2xl w-full p-5 sm:p-6 text-slate-100 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto"
-          >
-            <div className="flex items-center justify-between border-b border-[#fbbf24]/30 pb-3">
-              <div className="flex items-center gap-2 text-[#fbbf24] font-black">
-                <Sparkles className="w-5 h-5" />
-                <span className="text-sm sm:text-base">منصة التكريم | النداء المباشر على المسرح 🎙️</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-slate-900 border border-[#fbbf24]/40 text-[#fbbf24] text-xs font-mono font-black">
-                  #{stagePrompterIndex + 1} من {ceremonyStudents.length}
-                </span>
                 <button
                   type="button"
-                  onClick={() => setStagePrompterStudent(null)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                  onClick={() => !isSyncing && setSyncModalOpen(false)}
+                  disabled={isSyncing}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer disabled:opacity-30"
+                  title="إغلاق"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-            </div>
 
-            <div className="text-center space-y-4 py-2">
-              <div className="inline-block px-4 py-1 rounded-full bg-[#fbbf24]/20 border border-[#fbbf24]/50 text-[#fbbf24] font-mono font-black text-sm">
-                كود التكريم: {stagePrompterStudent.studentCode}
-              </div>
-              <h2 className="text-2xl sm:text-4xl font-black text-white drop-shadow tracking-wide">
-                {stagePrompterStudent.studentName || stagePrompterStudent.name}
-              </h2>
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black">
-                  {stagePrompterStudent.awardTier || stagePrompterStudent.tier}
-                </span>
-                <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
-                  {stagePrompterStudent.partName || stagePrompterStudent.part}
-                </span>
-              </div>
-
-              <div className="p-4 bg-slate-950/90 rounded-2xl border border-emerald-700/40 text-right space-y-2">
-                <p className="text-xs sm:text-sm text-slate-100 leading-relaxed font-semibold">
-                  "بسم الله الرحمن الرحيم .. ويتفضل الآن لصعود منصة التكريم الطالب الحافظ / <strong className="text-[#fbbf24] text-sm sm:text-base">{stagePrompterStudent.studentName || stagePrompterStudent.name}</strong> .. الحاصل على <strong className="text-emerald-300">{stagePrompterStudent.awardTier || stagePrompterStudent.tier}</strong> بمستوى <strong className="text-white">{stagePrompterStudent.partName || stagePrompterStudent.part}</strong> .. تحت إشراف فضيلة الشيخ / <strong className="text-amber-300">{stagePrompterStudent.sheikhName || 'شيوخ الكُتّاب'}</strong>."
+              <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
+                <p>
+                  سيقوم هذا المحرك بتعيين وحفظ كافة بيانات الطلاب الـ <strong>143 طالباً</strong> المسجلين في قاعدة بيانات{' '}
+                  <strong className="text-[#fbbf24]">كُتّاب 2026</strong> مباشرة في Firebase Firestore مع فئات التكريم والجوائز ورموز الـ QR وتناقص الأجزاء المحفوظة.
                 </p>
+
+                <div className="p-3.5 bg-emerald-950/60 rounded-2xl border border-emerald-700/40 text-emerald-300 text-xs space-y-1">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-[#fbbf24]" />
+                    <span>دمج آمن ومحمي (Safe Upsert & Merge):</span>
+                  </p>
+                  <p className="text-[11px] text-slate-300">
+                    لن يتم حذف أي بيانات أو أرقام هواتف أو صور أدخلها أولياء الأمور مسبقاً، وسيتم دمج البيانات بدقة.
+                  </p>
+                </div>
+
+                {isSyncing && (
+                  <div className="space-y-2 pt-2">
+                    <div className="flex justify-between text-xs font-bold text-amber-300">
+                      <span>جاري المزامنة مع Firebase Firestore...</span>
+                      <span>
+                        {syncProgress.percentage}% ({syncProgress.processed} / {syncProgress.total})
+                      </span>
+                    </div>
+                    <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-amber-500/40">
+                      <div
+                        className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-300"
+                        style={{ width: `${syncProgress.percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                {syncResult?.success && (
+                  <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-xl font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>تمت مزامنة وحفظ {syncResult.count} طالباً بنجاح في Firebase! 🎉</span>
+                  </div>
+                )}
               </div>
 
-              <div className="p-4 bg-gradient-to-r from-amber-500/20 via-[#062b24] to-amber-500/20 rounded-2xl border border-[#fbbf24]/50 text-center space-y-1">
-                <div className="text-xs font-bold text-emerald-300">🎁 الجائزة المستحقة للتسليم على المسرح:</div>
-                <div className="text-sm sm:text-base font-black text-[#fbbf24]">{stagePrompterStudent.gift || 'مكافأة تكريم خاصة'}</div>
+              <div className="flex justify-end gap-3 pt-3 border-t border-emerald-800/40">
+                <button
+                  type="button"
+                  onClick={() => setSyncModalOpen(false)}
+                  disabled={isSyncing}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer transition-all"
+                >
+                  إلغاء
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExecuteSyncStudents}
+                  disabled={isSyncing}
+                  className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg flex items-center gap-2 disabled:opacity-50 transition-all active:scale-95"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span>{isSyncing ? 'جاري المزامنة...' : 'بدء المزامنة الآن ⚡'}</span>
+                </button>
               </div>
             </div>
+          </div>,
+          document.body
+        )}
 
-            {/* Bottom Navigator Buttons */}
-            <div className="flex items-center justify-between pt-3 border-t border-[#fbbf24]/20">
-              <button
-                type="button"
-                onClick={handlePrevPrompterStudent}
-                disabled={stagePrompterIndex === 0}
-                className="px-3.5 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 font-bold rounded-xl flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all text-xs sm:text-sm"
-              >
-                <ChevronRight className="w-4 h-4" />
-                <span>السابق</span>
-              </button>
+      {/* 🎤 MODAL 2: STAGE LIVE PROMPTER MODAL */}
+      {stagePrompterStudent &&
+        createPortal(
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setStagePrompterStudent(null);
+              }
+            }}
+            className="fixed inset-0 z-[99999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-gradient-to-b from-[#062b24] via-[#041915] to-[#02100d] rounded-3xl border-2 border-[#fbbf24]/50 max-w-2xl w-full p-5 sm:p-6 text-slate-100 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto"
+            >
+              <div className="flex items-center justify-between border-b border-[#fbbf24]/30 pb-3">
+                <div className="flex items-center gap-2 text-[#fbbf24] font-black">
+                  <Sparkles className="w-5 h-5" />
+                  <span className="text-sm sm:text-base">منصة التكريم | النداء المباشر على المسرح 🎙️</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full bg-slate-900 border border-[#fbbf24]/40 text-[#fbbf24] text-xs font-mono font-black">
+                    #{stagePrompterIndex + 1} من {ceremonyStudents.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setStagePrompterStudent(null)}
+                    className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => setBadgeModalStudent(stagePrompterStudent)}
-                className="px-3 sm:px-4 py-2 bg-[#fbbf24]/20 hover:bg-[#fbbf24]/30 border border-[#fbbf24]/40 text-[#fbbf24] font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-all"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>معاينة الكارت</span>
-              </button>
+              <div className="text-center space-y-4 py-2">
+                <div className="inline-block px-4 py-1 rounded-full bg-[#fbbf24]/20 border border-[#fbbf24]/50 text-[#fbbf24] font-mono font-black text-sm">
+                  كود التكريم: {stagePrompterStudent.studentCode}
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-black text-white drop-shadow tracking-wide">
+                  {stagePrompterStudent.studentName || stagePrompterStudent.name}
+                </h2>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black">
+                    {stagePrompterStudent.awardTier || stagePrompterStudent.tier}
+                  </span>
+                  <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
+                    {stagePrompterStudent.partName || stagePrompterStudent.part}
+                  </span>
+                </div>
 
-              <button
-                type="button"
-                onClick={handleNextPrompterStudent}
-                disabled={stagePrompterIndex === ceremonyStudents.length - 1}
-                className="px-3.5 sm:px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 text-slate-950 font-black rounded-xl flex items-center gap-1.5 sm:gap-2 cursor-pointer shadow-lg transition-all text-xs sm:text-sm"
-              >
-                <span>التالي</span>
-                <ChevronLeft className="w-4 h-4" />
-              </button>
+                <div className="p-4 bg-slate-950/90 rounded-2xl border border-emerald-700/40 text-right space-y-2">
+                  <p className="text-xs sm:text-sm text-slate-100 leading-relaxed font-semibold">
+                    "بسم الله الرحمن الرحيم .. ويتفضل الآن لصعود منصة التكريم الطالب الحافظ /{' '}
+                    <strong className="text-[#fbbf24] text-sm sm:text-base">
+                      {stagePrompterStudent.studentName || stagePrompterStudent.name}
+                    </strong>{' '}
+                    .. الحاصل على{' '}
+                    <strong className="text-emerald-300">{stagePrompterStudent.awardTier || stagePrompterStudent.tier}</strong> بمستوى{' '}
+                    <strong className="text-white">{stagePrompterStudent.partName || stagePrompterStudent.part}</strong> .. تحت إشراف فضيلة الشيخ /{' '}
+                    <strong className="text-amber-300">{stagePrompterStudent.sheikhName || 'شيوخ الكُتّاب'}</strong>."
+                  </p>
+                </div>
+
+                <div className="p-4 bg-gradient-to-r from-amber-500/20 via-[#062b24] to-amber-500/20 rounded-2xl border border-[#fbbf24]/50 text-center space-y-1">
+                  <div className="text-xs font-bold text-emerald-300">🎁 الجائزة المستحقة للتسليم على المسرح:</div>
+                  <div className="text-sm sm:text-base font-black text-[#fbbf24]">
+                    {stagePrompterStudent.gift || 'مكافأة تكريم خاصة'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Navigator Buttons */}
+              <div className="flex items-center justify-between pt-3 border-t border-[#fbbf24]/20">
+                <button
+                  type="button"
+                  onClick={handlePrevPrompterStudent}
+                  disabled={stagePrompterIndex === 0}
+                  className="px-3.5 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 font-bold rounded-xl flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all text-xs sm:text-sm"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                  <span>السابق</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBadgeModalStudent(stagePrompterStudent)}
+                  className="px-3 sm:px-4 py-2 bg-[#fbbf24]/20 hover:bg-[#fbbf24]/30 border border-[#fbbf24]/40 text-[#fbbf24] font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>معاينة الكارت</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleNextPrompterStudent}
+                  disabled={stagePrompterIndex === ceremonyStudents.length - 1}
+                  className="px-3.5 sm:px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 text-slate-950 font-black rounded-xl flex items-center gap-1.5 sm:gap-2 cursor-pointer shadow-lg transition-all text-xs sm:text-sm"
+                >
+                  <span>التالي</span>
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* 🎫 MODAL 3: STUDENT BADGE & VIP PASS MODAL */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {badgeModalStudent && (
-        <StudentBadgeModal
-          student={badgeModalStudent}
-          onClose={() => setBadgeModalStudent(null)}
-        />
+        <StudentBadgeModal student={badgeModalStudent} onClose={() => setBadgeModalStudent(null)} />
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
@@ -1507,198 +1793,213 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* 👳‍♂️ MODAL 5: ADD / EDIT SHEIKH MODAL */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      {sheikhModalOpen && createPortal(
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setSheikhModalOpen(false);
-            }
-          }}
-          className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
-        >
+      {sheikhModalOpen &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative bg-[#062b24] p-5 sm:p-6 rounded-3xl border-2 border-[#fbbf24]/50 max-w-xl w-full text-right space-y-4 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setSheikhModalOpen(false);
+              }
+            }}
+            className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-emerald-800/40">
-              <h3 className="text-base font-black text-white">
-                {editingSheikh ? 'تعديل بيانات المحفظ / المشرف' : 'تسجيل شيخ ومحفظ جديد'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setSheikhModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
-                title="إغلاق"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveSheikh} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-slate-200 mb-1">اسم الشيخ / المحفظ *</label>
-                <input
-                  type="text"
-                  required
-                  value={sheikhFormData.name}
-                  onChange={(e) => setSheikhFormData({ ...sheikhFormData, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-200 mb-1">رقم التليفون *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={sheikhFormData.phone}
-                    onChange={(e) => setSheikhFormData({ ...sheikhFormData, phone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-200 mb-1">المؤهل العلمي</label>
-                  <input
-                    type="text"
-                    value={sheikhFormData.qualification}
-                    onChange={(e) => setSheikhFormData({ ...sheikhFormData, qualification: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-200 mb-1">المستوى المشرف عليه بالدورة</label>
-                <input
-                  type="text"
-                  value={sheikhFormData.summerLevel}
-                  onChange={(e) => setSheikhFormData({ ...sheikhFormData, summerLevel: e.target.value })}
-                  placeholder="مثال: إشراف عام وفصول القرآن كاملاً"
-                  className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-200 mb-1">صورة الشيخ الشخصية</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleSheikhPhotoUpload}
-                  className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-3 file:rounded-xl file:border-0 file:bg-emerald-700 file:text-white cursor-pointer"
-                />
-                {uploadingSheikhPhoto && <p className="text-[11px] text-amber-400 mt-1">جاري رفع الصورة...</p>}
-              </div>
-
-              <div className="flex justify-end gap-3 pt-3 border-t border-emerald-800/40">
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-[#062b24] p-5 sm:p-6 rounded-3xl border-2 border-[#fbbf24]/50 max-w-xl w-full text-right space-y-4 shadow-2xl text-slate-100 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-emerald-800/40">
+                <h3 className="text-base font-black text-white">
+                  {editingSheikh ? 'تعديل بيانات المحفظ / المشرف' : 'تسجيل شيخ ومحفظ جديد'}
+                </h3>
                 <button
                   type="button"
                   onClick={() => setSheikhModalOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                  title="إغلاق"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveSheikh} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-200 mb-1">اسم الشيخ / المحفظ *</label>
+                  <input
+                    type="text"
+                    required
+                    value={sheikhFormData.name}
+                    onChange={(e) => setSheikhFormData({ ...sheikhFormData, name: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-200 mb-1">رقم التليفون *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={sheikhFormData.phone}
+                      onChange={(e) => setSheikhFormData({ ...sheikhFormData, phone: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-200 mb-1">المؤهل العلمي</label>
+                    <input
+                      type="text"
+                      value={sheikhFormData.qualification}
+                      onChange={(e) => setSheikhFormData({ ...sheikhFormData, qualification: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-200 mb-1">المستوى المشرف عليه بالدورة</label>
+                  <input
+                    type="text"
+                    value={sheikhFormData.summerLevel}
+                    onChange={(e) => setSheikhFormData({ ...sheikhFormData, summerLevel: e.target.value })}
+                    placeholder="مثال: إشراف عام وفصول القرآن كاملاً"
+                    className="w-full px-3.5 py-2.5 bg-slate-900/90 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#fbbf24]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-200 mb-1">صورة الشيخ الشخصية</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSheikhPhotoUpload}
+                    className="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-3 file:rounded-xl file:border-0 file:bg-emerald-700 file:text-white cursor-pointer"
+                  />
+                  {uploadingSheikhPhoto && <p className="text-[11px] text-amber-400 mt-1">جاري رفع الصورة...</p>}
+                </div>
+
+                <div className="flex justify-end gap-3 pt-3 border-t border-emerald-800/40">
+                  <button
+                    type="button"
+                    onClick={() => setSheikhModalOpen(false)}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer transition-all"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={uploadingSheikhPhoto}
+                    className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg transition-all active:scale-95"
+                  >
+                    حفظ البيانات 🌟
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* 🗑️ MODAL 6: CUSTOM DELETE CONFIRMATION MODAL */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {deleteConfirmModal.isOpen &&
+        createPortal(
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !deleteConfirmModal.isDeleting) {
+                setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false });
+              }
+            }}
+            className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-[#081f1b] border-2 border-rose-500/50 rounded-3xl max-w-md w-full p-5 sm:p-6 text-slate-100 shadow-2xl space-y-4 animate-scaleIn my-auto"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-rose-500/30">
+                <div className="flex items-center gap-2 text-rose-400 font-black text-base">
+                  <Trash2 className="w-5 h-5 text-rose-400" />
+                  <span>
+                    {deleteConfirmModal.type === 'student'
+                      ? 'تأكيد حذف سجل الطالب ⚠️'
+                      : 'تأكيد حذف المحفظ / الشيخ ⚠️'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false })
+                  }
+                  disabled={deleteConfirmModal.isDeleting}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                  title="إغلاق"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs text-slate-300">
+                <p className="leading-relaxed">
+                  هل أنت متأكد من رغبتك في حذف{' '}
+                  <strong className="text-white text-sm font-black">
+                    {deleteConfirmModal.type === 'student'
+                      ? deleteConfirmModal.data?.studentName || deleteConfirmModal.data?.name
+                      : deleteConfirmModal.data?.name}
+                  </strong>{' '}
+                  من قاعدة البيانات؟
+                </p>
+
+                {deleteConfirmModal.type === 'student' && (
+                  <div className="p-3 bg-slate-900/80 rounded-2xl border border-rose-500/20 text-slate-300 space-y-1">
+                    <div className="flex justify-between">
+                      <span>كود التكريم:</span>
+                      <span className="font-mono text-amber-400 font-bold">
+                        {deleteConfirmModal.data?.studentCode ||
+                          (deleteConfirmModal.data?.idx
+                            ? `#${String(deleteConfirmModal.data.idx).padStart(3, '0')}`
+                            : '#NEW')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>المستوى:</span>
+                      <span className="text-emerald-300 font-bold">
+                        {deleteConfirmModal.data?.partName || deleteConfirmModal.data?.part || 'القرآن الكريم'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-[11px] font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>تنبيه: لا يمكن التراجع عن هذا الإجراء بعد تنفيذه.</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-rose-500/20">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false })
+                  }
+                  disabled={deleteConfirmModal.isDeleting}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer transition-all"
                 >
                   إلغاء
                 </button>
                 <button
-                  type="submit"
-                  disabled={uploadingSheikhPhoto}
-                  className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg transition-all active:scale-95"
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={deleteConfirmModal.isDeleting}
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl cursor-pointer shadow-lg flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                 >
-                  حفظ البيانات 🌟
+                  <Trash2 className="w-4 h-4" />
+                  <span>{deleteConfirmModal.isDeleting ? 'جاري الحذف...' : 'تأكيد الحذف النهائي'}</span>
                 </button>
               </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {/* 🗑️ MODAL 6: CUSTOM DELETE CONFIRMATION MODAL */}
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {deleteConfirmModal.isOpen && createPortal(
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !deleteConfirmModal.isDeleting) {
-              setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false });
-            }
-          }}
-          className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative bg-[#081f1b] border-2 border-rose-500/50 rounded-3xl max-w-md w-full p-5 sm:p-6 text-slate-100 shadow-2xl space-y-4 animate-scaleIn my-auto"
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-rose-500/30">
-              <div className="flex items-center gap-2 text-rose-400 font-black text-base">
-                <Trash2 className="w-5 h-5 text-rose-400" />
-                <span>
-                  {deleteConfirmModal.type === 'student' ? 'تأكيد حذف سجل الطالب ⚠️' : 'تأكيد حذف المحفظ / الشيخ ⚠️'}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false })}
-                disabled={deleteConfirmModal.isDeleting}
-                className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
-                title="إغلاق"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
-
-            <div className="space-y-3 text-xs text-slate-300">
-              <p className="leading-relaxed">
-                هل أنت متأكد من رغبتك في حذف{' '}
-                <strong className="text-white text-sm font-black">
-                  {deleteConfirmModal.type === 'student'
-                    ? deleteConfirmModal.data?.studentName || deleteConfirmModal.data?.name
-                    : deleteConfirmModal.data?.name}
-                </strong>{' '}
-                من قاعدة البيانات؟
-              </p>
-
-              {deleteConfirmModal.type === 'student' && (
-                <div className="p-3 bg-slate-900/80 rounded-2xl border border-rose-500/20 text-slate-300 space-y-1">
-                  <div className="flex justify-between">
-                    <span>كود التكريم:</span>
-                    <span className="font-mono text-amber-400 font-bold">{deleteConfirmModal.data?.studentCode || (deleteConfirmModal.data?.idx ? `#${String(deleteConfirmModal.data.idx).padStart(3, '0')}` : '#NEW')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>المستوى:</span>
-                    <span className="text-emerald-300 font-bold">{deleteConfirmModal.data?.partName || deleteConfirmModal.data?.part || 'القرآن الكريم'}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-[11px] font-semibold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>تنبيه: لا يمكن التراجع عن هذا الإجراء بعد تنفيذه.</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-rose-500/20">
-              <button
-                type="button"
-                onClick={() => setDeleteConfirmModal({ isOpen: false, type: null, data: null, isDeleting: false })}
-                disabled={deleteConfirmModal.isDeleting}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer transition-all"
-              >
-                إلغاء
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={deleteConfirmModal.isDeleting}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl cursor-pointer shadow-lg flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>{deleteConfirmModal.isDeleting ? 'جاري الحذف...' : 'تأكيد الحذف النهائي'}</span>
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )}
 
     </div>
   );

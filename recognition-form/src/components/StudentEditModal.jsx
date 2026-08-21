@@ -189,10 +189,19 @@ export default function StudentEditModal({ student, onClose, showToast }) {
     setIsSubmitting(true);
 
     try {
+      const isComplete = Boolean(
+        formData.studentName &&
+        formData.birthDate &&
+        formData.studyStage &&
+        formData.schoolName &&
+        formData.fatherPhone &&
+        /^01[0-9]{9}$/.test(formData.fatherPhone.trim())
+      );
+
       const payload = {
         ...formData,
         examScore: formData.examScore !== '' ? Number(formData.examScore) : 0,
-        completed: true
+        completed: isComplete
       };
 
       if (student?.id || student?.studentId) {
