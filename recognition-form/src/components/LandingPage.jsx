@@ -83,7 +83,7 @@ export default function LandingPage({ onNavigate }) {
             </div>
             <div>
               <div className="text-[11px] text-slate-400 font-bold">موعد الحفل</div>
-              <div className="text-sm font-black text-white">الجمعة 28 أغسطس 2026</div>
+              <div className="text-sm font-black text-white">الخميس 27 أغسطس 2026</div>
             </div>
           </div>
 
