@@ -36,7 +36,7 @@ import {
   batchSyncStudentsToFirestore,
   batchSyncSheikhsToFirestore
 } from '../firebase';
-import { STUDENTS_CATALOG, normalizeArabic, isStudentMatch } from '../data/studentsCatalog';
+import { STUDENTS_CATALOG, normalizeArabic, isStudentMatch, getMemorizedPartsCount } from '../data/studentsCatalog';
 import { uploadToCloudinary } from '../services/cloudinary';
 import StudentEditModal from './StudentEditModal';
 import StudentBadgeModal from './StudentBadgeModal';
@@ -213,7 +213,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         birthDate: matchedRecord?.birthDate || '',
         studentAge: matchedRecord?.studentAge || '',
         photoUrl: matchedRecord?.photoUrl || '',
-        completed: !!matchedRecord?.completed,
+        completed: !!matchedRecord?.completed || !!(matchedRecord?.fatherPhone && (matchedRecord?.birthDate || matchedRecord?.schoolName || matchedRecord?.parentName)),
         totalChildrenCount: matchedRecord?.totalChildrenCount || 1,
         kuttabChildrenCount: matchedRecord?.kuttabChildrenCount || 1,
         siblings: matchedRecord?.siblings || [],
@@ -303,8 +303,10 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       const weightB = getTierWeight(b.awardTier);
       if (weightA !== weightB) return weightA - weightB;
 
-      if ((b.totalParts || 0) !== (a.totalParts || 0)) {
-        return (b.totalParts || 0) - (a.totalParts || 0);
+      const partsA = a.totalParts || getMemorizedPartsCount(a.partName) || 1;
+      const partsB = b.totalParts || getMemorizedPartsCount(b.partName) || 1;
+      if (partsB !== partsA) {
+        return partsB - partsA;
       }
 
       return (b.examScore || 0) - (a.examScore || 0);
