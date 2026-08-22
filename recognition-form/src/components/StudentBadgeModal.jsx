@@ -47,7 +47,8 @@ export default function StudentBadgeModal({ student, onClose }) {
     window.open(url, '_blank');
   };
 
-  const studentQrUrl = student.smartUrl || student.qrCodeUrl || `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(student.studentName || student.name || '')}&id=${student.studentId || student.id || ''}`;
+  const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://wathba-kuttab.vercel.app';
+  const studentQrUrl = student.smartUrl || student.qrCodeUrl || `${origin}/#/student/form?name=${encodeURIComponent(student.studentName || student.name || '')}&id=${student.studentId || student.id || ''}`;
 
   return createPortal(
     <div

@@ -51,7 +51,8 @@ import {
   QURAN_PARTS_ORDER,
   normalizeArabic,
   isStudentMatch,
-  getMemorizedPartsCount
+  getMemorizedPartsCount,
+  matchesStudentSearch
 } from '../data/studentsCatalog';
 import { uploadToCloudinary } from '../services/cloudinary';
 import StudentEditModal from './StudentEditModal';
@@ -84,6 +85,11 @@ export const isStudentFullyRegistered = (student) => {
 export const getMissingStudentFields = (student) => {
   if (!student) return ['جميع البيانات الأساسية'];
   const missing = [];
+
+  const name = (student.studentName || student.name || '').trim();
+  if (!name || name.length < 3) {
+    missing.push('اسم الطالب ثلاثياً');
+  }
 
   const phone = (student.fatherPhone || '').trim();
   if (!phone || !/^01[0-9]{9}$/.test(phone)) {
@@ -364,17 +370,9 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       });
     }
 
-    // فلترة البحث
+    // فلترة البحث الشاملة
     if (ceremonySearch.trim()) {
-      const q = normalizeArabic(ceremonySearch);
-      list = list.filter(
-        (s) =>
-          normalizeArabic(s.studentName).includes(q) ||
-          (s.studentCode && s.studentCode.includes(ceremonySearch)) ||
-          (s.studentId && s.studentId.toLowerCase().includes(ceremonySearch.toLowerCase())) ||
-          normalizeArabic(s.partName || '').includes(q) ||
-          normalizeArabic(s.sheikhName || '').includes(q)
-      );
+      list = list.filter(s => matchesStudentSearch(s, ceremonySearch));
     }
 
     // الترتيب: حسب رتبة الجزء ثم بالدرجة تنازلياً داخل كل جزء
@@ -392,15 +390,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // 📊 تصفية الطلاب في السجل العام
   // ---------------------------------------------------
   const filteredStudents = useMemo(() => {
-    const filtered = allDisplayStudents.filter((student) => {
-      const q = normalizeArabic(studentSearch);
-      const matchSearch =
-        !studentSearch ||
-        normalizeArabic(student.studentName || '').includes(q) ||
-        (student.studentCode && student.studentCode.includes(studentSearch)) ||
-        (student.fatherPhone && student.fatherPhone.includes(studentSearch)) ||
-        normalizeArabic(student.schoolName || '').includes(q) ||
-        normalizeArabic(student.parentName || '').includes(q);
+    let filtered = allDisplayStudents.filter((student) => {
+      const matchSearch = !studentSearch || matchesStudentSearch(student, studentSearch);
 
       const matchPart =
         studentFilterPart === 'ALL' ||
@@ -424,15 +415,17 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // 👳‍♂️ تصفية الشيوخ
   // ---------------------------------------------------
   const filteredSheikhs = useMemo(() => {
+    if (!sheikhSearch.trim()) return sheikhs;
+    const q = normalizeArabic(sheikhSearch);
     return sheikhs.filter((s) => {
-      const q = normalizeArabic(sheikhSearch);
-      const matchSearch =
-        !sheikhSearch ||
+      return (
         normalizeArabic(s.name || '').includes(q) ||
-        (s.phone && s.phone.includes(sheikhSearch)) ||
-        normalizeArabic(s.qualification || '').includes(q);
-
-      return matchSearch;
+        normalizeArabic(s.phone || '').includes(q) ||
+        normalizeArabic(s.qualification || '').includes(q) ||
+        normalizeArabic(s.summerLevel || '').includes(q) ||
+        normalizeArabic(s.ijazat || '').includes(q) ||
+        normalizeArabic(s.address || '').includes(q)
+      );
     });
   }, [sheikhs, sheikhSearch]);
 
@@ -443,14 +436,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     let list = allDisplayStudents.filter(s => s.completed === true);
 
     if (registeredSearch.trim()) {
-      const q = normalizeArabic(registeredSearch);
-      list = list.filter(s =>
-        normalizeArabic(s.studentName || '').includes(q) ||
-        (s.studentCode && s.studentCode.includes(registeredSearch)) ||
-        (s.fatherPhone && s.fatherPhone.includes(registeredSearch)) ||
-        normalizeArabic(s.schoolName || '').includes(q) ||
-        normalizeArabic(s.parentName || '').includes(q)
-      );
+      list = list.filter(s => matchesStudentSearch(s, registeredSearch));
     }
 
     list.sort((a, b) => {
@@ -470,12 +456,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     let list = allDisplayStudents.filter(s => s.completed !== true);
 
     if (unregisteredSearch.trim()) {
-      const q = normalizeArabic(unregisteredSearch);
-      list = list.filter(s =>
-        normalizeArabic(s.studentName || '').includes(q) ||
-        (s.studentCode && s.studentCode.includes(unregisteredSearch)) ||
-        (s.fatherPhone && s.fatherPhone.includes(unregisteredSearch))
-      );
+      list = list.filter(s => matchesStudentSearch(s, unregisteredSearch));
     }
 
     list.sort((a, b) => {
@@ -511,23 +492,27 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // ---------------------------------------------------
   // 📋 نسخ رابط الاستمارة المباشر للطالب
   // ---------------------------------------------------
-  const handleCopyStudentLink = (student) => {
-    const link =
+  const getStudentDirectUrl = (student) => {
+    const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://wathba-kuttab.vercel.app';
+    return (
       student.smartUrl ||
-      `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(student.studentName || student.name || '')}&id=${student.studentId || student.id || ''}`;
+      student.qrCodeUrl ||
+      `${origin}/#/student/form?name=${encodeURIComponent(student.studentName || student.name || '')}&id=${student.studentId || student.id || ''}`
+    );
+  };
+
+  const handleCopyStudentLink = (student) => {
+    const link = getStudentDirectUrl(student);
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(link);
-      showToast?.(`تم نسخ رابط استمارة الطالب: ${student.studentName} 📋`, 'success');
+      showToast?.(`تم نسخ رابط استمارة الطالب: ${student.studentName || student.name} 📋`, 'success');
     }
   };
 
   // 💬 إرسال رسالة واتساب لولي الأمر للاستكمال
   const handleSendWhatsAppReminder = (student) => {
-    const link =
-      student.smartUrl ||
-      `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(student.studentName || student.name || '')}&id=${student.studentId || student.id || ''}`;
-
+    const link = getStudentDirectUrl(student);
     const text = `السلام عليكم ورحمة الله وبركاته،\nولي أمر الطالب/ة المبارك: *${student.studentName || student.name}*\nنهنئكم بتفوق ابنكم في الدورة الصيفية لكُتّاب 2026 🏆\nيرجى التكرم باستكمال بيانات كارت وتصريح التكريم الرسمي لحضور الحفل عبر الرابط التالي:\n${link}\n\nإدارة كُتّاب 2026`;
     const phone = (student.fatherPhone || '').trim().replace(/^0/, '');
     const waUrl = phone
@@ -896,9 +881,18 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   type="text"
                   value={ceremonySearch}
                   onChange={(e) => setCeremonySearch(e.target.value)}
-                  placeholder="ابحث بالاسم، الكود، الجزء، الشيخ..."
-                  className="w-full pr-10 pl-4 py-2.5 bg-slate-950/80 border border-emerald-700/50 rounded-2xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
+                  placeholder="ابحث بالاسم، الكود، الجزء، الهاتف، الشيخ..."
+                  className="w-full pr-10 pl-8 py-2.5 bg-slate-950/80 border border-emerald-700/50 rounded-2xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
                 />
+                {ceremonySearch && (
+                  <button
+                    onClick={() => setCeremonySearch('')}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 cursor-pointer"
+                    title="مسح البحث"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center gap-2 w-full md:w-auto justify-end">
@@ -1097,9 +1091,18 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 type="text"
                 value={registeredSearch}
                 onChange={(e) => setRegisteredSearch(e.target.value)}
-                placeholder="ابحث بالاسم، الكود، الهاتف، المدرسة..."
-                className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400"
+                placeholder="ابحث بالاسم، الكود (#001)، الهاتف، المدرسة، الجزء..."
+                className="w-full pr-10 pl-8 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400"
               />
+              {registeredSearch && (
+                <button
+                  onClick={() => setRegisteredSearch('')}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 cursor-pointer"
+                  title="مسح البحث"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
@@ -1263,9 +1266,18 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 type="text"
                 value={unregisteredSearch}
                 onChange={(e) => setUnregisteredSearch(e.target.value)}
-                placeholder="ابحث بالاسم، الكود، الهاتف..."
-                className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-amber-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400"
+                placeholder="ابحث بالاسم، الكود (#067)، الهاتف، الجزء، الشيخ..."
+                className="w-full pr-10 pl-8 py-2 bg-slate-950/80 border border-amber-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400"
               />
+              {unregisteredSearch && (
+                <button
+                  onClick={() => setUnregisteredSearch('')}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 cursor-pointer"
+                  title="مسح البحث"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
@@ -1403,8 +1415,17 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 value={sheikhSearch}
                 onChange={(e) => setSheikhSearch(e.target.value)}
                 placeholder="ابحث باسم الشيخ، المؤهل، الهاتف..."
-                className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
+                className="w-full pr-10 pl-8 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
               />
+              {sheikhSearch && (
+                <button
+                  onClick={() => setSheikhSearch('')}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 cursor-pointer"
+                  title="مسح البحث"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">

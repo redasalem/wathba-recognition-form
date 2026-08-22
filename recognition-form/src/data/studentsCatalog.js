@@ -200,23 +200,86 @@ export const QURAN_PARTS_ORDER = [
 ];
 
 // دالة لتوليد رابط ذكي ورمز QR لكل طالب
+const defaultCatalogBaseUrl = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://wathba-kuttab.vercel.app';
 STUDENTS_CATALOG.forEach(s => {
-  s.smart_url = `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(s.name)}&id=${s.studentId}`;
+  s.smart_url = `${defaultCatalogBaseUrl}/#/student/form?name=${encodeURIComponent(s.name)}&id=${s.studentId}`;
   s.qr_code_url = s.smart_url;
   s.qr_img_url = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(s.smart_url)}&color=041915&bgcolor=ffffff`;
 });
 
-// دالة لتنظيف وتوحيد النصوص العربية للبحث والمطابقة
+// دالة لتنظيف وتوحيد النصوص والأرقام العربية للبحث والمطابقة
 export function normalizeArabic(text) {
   if (!text) return '';
-  return text
+  const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  return String(text)
     .trim()
     .toLowerCase()
+    .replace(/[٠-٩]/g, (w) => String(arabicNumbers.indexOf(w))) // تحويل الأرقام العربية إلى إنجليزية
     .replace(/[ًٌٍَُِّْـ]/g, '') // حذف التشكيل والتطويل
-    .replace(/[أإآ]/g, 'ا') // توحيد الألف
+    .replace(/[أإآٱ]/g, 'ا') // توحيد الألف
     .replace(/ة/g, 'ه') // توحيد التاء المربوطة
     .replace(/ى/g, 'ي') // توحيد الياء
+    .replace(/[\u200B-\u200D\uFEFF]/g, '') // حذف الحروف المخفية
     .replace(/\s+/g, ' '); // توحيد المسافات
+}
+
+// دالة الفحص والبحث الشامل للطلاب (اسم، كود، معرف، جزء، هاتف، شيخ، مدرسة)
+export function matchesStudentSearch(student, searchStr) {
+  if (!searchStr || !searchStr.trim()) return true;
+  if (!student) return false;
+
+  const rawQuery = searchStr.trim();
+  const normQuery = normalizeArabic(rawQuery);
+  const cleanCodeQuery = normQuery.replace(/^#/, '');
+
+  // 1. مطابقة الاسم
+  const normName = normalizeArabic(student.studentName || student.name || '');
+  if (normName.includes(normQuery)) return true;
+
+  // 2. مطابقة الكود التكريمي (مثال: #001، 001، 1، ٠٠١)
+  const studentCodeRaw = String(student.studentCode || student.code || '');
+  const cleanStudentCode = normalizeArabic(studentCodeRaw).replace(/^#/, '');
+  if (cleanStudentCode && (
+    cleanStudentCode.includes(cleanCodeQuery) ||
+    (parseInt(cleanStudentCode, 10) === parseInt(cleanCodeQuery, 10) && !isNaN(parseInt(cleanCodeQuery, 10)))
+  )) {
+    return true;
+  }
+  if (studentCodeRaw.toLowerCase().includes(rawQuery.toLowerCase())) return true;
+
+  // 3. مطابقة المعرف الرقمي STU-2026-XXX
+  const studentId = String(student.studentId || student.id || '').toLowerCase();
+  if (studentId.includes(rawQuery.toLowerCase()) || studentId.includes(normQuery)) return true;
+
+  // 4. مطابقة رقم الهاتف
+  const phone = normalizeArabic(student.fatherPhone || student.phone || '');
+  if (phone && (phone.includes(normQuery) || phone.includes(cleanCodeQuery))) return true;
+
+  // 5. مطابقة اسم الجزء والمستوى القرآني
+  const part = normalizeArabic(student.partName || student.part || '');
+  if (part && (part.includes(normQuery) || normQuery.includes(part))) return true;
+
+  // 6. مطابقة اسم الشيخ المشرف
+  const sheikh = normalizeArabic(student.sheikhName || '');
+  if (sheikh && sheikh.includes(normQuery)) return true;
+
+  // 7. مطابقة اسم المدرسة
+  const school = normalizeArabic(student.schoolName || '');
+  if (school && school.includes(normQuery)) return true;
+
+  // 8. مطابقة اسم ولي الأمر
+  const parent = normalizeArabic(student.parentName || student.fatherName || '');
+  if (parent && parent.includes(normQuery)) return true;
+
+  // 9. مطابقة الكلمات المتعددة بالاسم المركب
+  const qWords = normQuery.split(' ').filter(Boolean);
+  if (qWords.length >= 2) {
+    const sWords = normName.split(' ').filter(Boolean);
+    const matchedCount = qWords.filter(qw => sWords.some(sw => sw.includes(qw) || qw.includes(sw))).length;
+    if (matchedCount === qWords.length) return true;
+  }
+
+  return false;
 }
 
 // دالة البحث الذكي عن الطالب في الكتالوج
