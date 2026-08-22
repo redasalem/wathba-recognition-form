@@ -118,7 +118,7 @@ function getPartOrderRank(partName) {
 }
 
 export default function AdminDashboard({ records = [], onLogout, showToast }) {
-  // Navigation Tabs: 'ceremony' | 'summer2026' | 'permanent' | 'sheikhs' | 'families'
+  // Navigation Tabs: 'ceremony' | 'registered' | 'unregistered' | 'sheikhs'
   const [activeTab, setActiveTab] = useState('ceremony');
 
   // Ceremony Hub States
@@ -167,6 +167,10 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   const [studentModalOpen, setStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
 
+  // Registered / Unregistered Tab Search
+  const [registeredSearch, setRegisteredSearch] = useState('');
+  const [unregisteredSearch, setUnregisteredSearch] = useState('');
+
   // Custom Delete Modal State
   const [deleteConfirmModal, setDeleteConfirmModal] = useState({
     isOpen: false,
@@ -174,10 +178,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     data: null,
     isDeleting: false
   });
-
-  // Families Tab State
-  const [familySearch, setFamilySearch] = useState('');
-  const [familyFilterSiblings, setFamilyFilterSiblings] = useState('ALL'); // 'ALL' | 'HAS_SIBLINGS' | 'SINGLE'
 
   // Close any active modal on Escape key press
   useEffect(() => {
@@ -437,54 +437,56 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   }, [sheikhs, sheikhSearch]);
 
   // ---------------------------------------------------
-  // 👨‍👩‍👧‍👦 بيانات شبكة الأسر والأشقاء (Families Aggregation)
+  // ✅ الطلاب المسجلون (بيانات كاملة)
   // ---------------------------------------------------
-  const familiesData = useMemo(() => {
-    const map = new Map();
+  const registeredStudents = useMemo(() => {
+    let list = allDisplayStudents.filter(s => s.completed === true);
 
-    allDisplayStudents.forEach((student) => {
-      const phone = (student.fatherPhone || '').trim();
-      const parentName = (student.parentName || student.fatherName || '').trim();
-      const key = phone || (parentName ? `name:${normalizeArabic(parentName)}` : `single:${student.studentId || student.id}`);
-
-      if (!map.has(key)) {
-        map.set(key, {
-          familyKey: key,
-          parentName: parentName || 'ولي أمر غير مسجل',
-          fatherPhone: phone || 'غير مسجل',
-          motherPhone: student.motherPhone || '',
-          address: student.address || '',
-          students: []
-        });
-      }
-
-      map.get(key).students.push(student);
-    });
-
-    let result = Array.from(map.values());
-
-    // Filter by siblings
-    if (familyFilterSiblings === 'HAS_SIBLINGS') {
-      result = result.filter(f => f.students.length > 1);
-    } else if (familyFilterSiblings === 'SINGLE') {
-      result = result.filter(f => f.students.length === 1);
-    }
-
-    // Filter by search
-    if (familySearch.trim()) {
-      const q = normalizeArabic(familySearch);
-      result = result.filter(f => 
-        normalizeArabic(f.parentName).includes(q) ||
-        f.fatherPhone.includes(familySearch) ||
-        f.students.some(s => normalizeArabic(s.studentName).includes(q))
+    if (registeredSearch.trim()) {
+      const q = normalizeArabic(registeredSearch);
+      list = list.filter(s =>
+        normalizeArabic(s.studentName || '').includes(q) ||
+        (s.studentCode && s.studentCode.includes(registeredSearch)) ||
+        (s.fatherPhone && s.fatherPhone.includes(registeredSearch)) ||
+        normalizeArabic(s.schoolName || '').includes(q) ||
+        normalizeArabic(s.parentName || '').includes(q)
       );
     }
 
-    // Sort by largest families first
-    result.sort((a, b) => b.students.length - a.students.length);
+    list.sort((a, b) => {
+      const rankA = getPartOrderRank(a.partName);
+      const rankB = getPartOrderRank(b.partName);
+      if (rankA !== rankB) return rankA - rankB;
+      return (b.examScore || 0) - (a.examScore || 0);
+    });
 
-    return result;
-  }, [allDisplayStudents, familyFilterSiblings, familySearch]);
+    return list;
+  }, [allDisplayStudents, registeredSearch]);
+
+  // ---------------------------------------------------
+  // ⏳ الطلاب الذين لم يسجلوا بعد (بيانات ناقصة)
+  // ---------------------------------------------------
+  const unregisteredStudents = useMemo(() => {
+    let list = allDisplayStudents.filter(s => s.completed !== true);
+
+    if (unregisteredSearch.trim()) {
+      const q = normalizeArabic(unregisteredSearch);
+      list = list.filter(s =>
+        normalizeArabic(s.studentName || '').includes(q) ||
+        (s.studentCode && s.studentCode.includes(unregisteredSearch)) ||
+        (s.fatherPhone && s.fatherPhone.includes(unregisteredSearch))
+      );
+    }
+
+    list.sort((a, b) => {
+      const rankA = getPartOrderRank(a.partName);
+      const rankB = getPartOrderRank(b.partName);
+      if (rankA !== rankB) return rankA - rankB;
+      return (b.examScore || 0) - (a.examScore || 0);
+    });
+
+    return list;
+  }, [allDisplayStudents, unregisteredSearch]);
 
   // ---------------------------------------------------
   // 📊 إحصائيات عامة ودقيقة
@@ -493,15 +495,18 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     const totalHonored = masterStudentsList.length;
     const topScorersCount = masterStudentsList.filter(s => (s.examScore || 0) >= 90).length;
     const totalPartsCount = QURAN_PARTS_ORDER.length;
+    const totalRegistered = allDisplayStudents.filter(s => s.completed === true).length;
+    const totalUnregistered = allDisplayStudents.filter(s => s.completed !== true).length;
 
     return {
       totalHonored,
       topScorersCount,
       totalPartsCount,
       totalSheikhs: sheikhs.length,
-      totalFamilies: familiesData.length
+      totalRegistered,
+      totalUnregistered
     };
-  }, [masterStudentsList, sheikhs, familiesData]);
+  }, [masterStudentsList, sheikhs, allDisplayStudents]);
 
   // ---------------------------------------------------
   // 📋 نسخ رابط الاستمارة المباشر للطالب
@@ -630,32 +635,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     document.body.removeChild(link);
   };
 
-  const exportFamiliesToCSV = () => {
-    let csvContent = '\uFEFF';
-    csvContent += 'م,اسم ولي الأمر,رقم هاتف ولي الأمر,عدد الأبناء المسجلين,أسماء الطلاب ومستوياتهم,العنوان\n';
 
-    familiesData.forEach((f, idx) => {
-      const studentsList = f.students.map(s => `${s.studentName} (${s.partName || 'القرآن'})`).join(' - ');
-      const row = [
-        idx + 1,
-        `"${f.parentName}"`,
-        `"${f.fatherPhone}"`,
-        f.students.length,
-        `"${studentsList}"`,
-        `"${f.address}"`
-      ];
-      csvContent += row.join(',') + '\n';
-    });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `سجل_الأسر_والأشقاء_كتاب_2026_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   // ---------------------------------------------------
   // 🗑️ معالجة طلبات الحذف الآمنة (Custom Delete Modal)
@@ -834,27 +815,27 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
           </button>
 
           <button
-            onClick={() => setActiveTab('summer2026')}
+            onClick={() => setActiveTab('registered')}
             className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'summer2026'
-                ? 'bg-gradient-to-r from-[#fbbf24] to-amber-500 text-slate-950 shadow-lg scale-105'
+              activeTab === 'registered'
+                ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg scale-105'
                 : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
             }`}
           >
-            <Sun className="w-4 h-4" />
-            <span>☀️ الدورة الصيفية ({masterStudentsList.length})</span>
+            <UserCheck className="w-4 h-4" />
+            <span>✅ الطلاب المسجلون ({stats.totalRegistered})</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('permanent')}
+            onClick={() => setActiveTab('unregistered')}
             className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'permanent'
-                ? 'bg-gradient-to-r from-[#fbbf24] to-amber-500 text-slate-950 shadow-lg scale-105'
+              activeTab === 'unregistered'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg scale-105'
                 : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
             }`}
           >
-            <Building className="w-4 h-4" />
-            <span>🏛️ الكُتّاب الدائم</span>
+            <UserX className="w-4 h-4" />
+            <span>⏳ لم يسجلوا بعد ({stats.totalUnregistered})</span>
           </button>
 
           <button
@@ -866,19 +847,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>سجل الشيوخ ({sheikhs.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('families')}
-            className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === 'families'
-                ? 'bg-gradient-to-r from-[#fbbf24] to-amber-500 text-slate-950 shadow-lg scale-105'
-                : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>الأسر والأشقاء ({familiesData.length})</span>
+            <span>👳‍♂️ سجل الشيوخ ({sheikhs.length})</span>
           </button>
         </div>
       </div>
@@ -897,22 +866,24 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
               <div className="text-[10px] text-amber-300 mt-1 font-semibold">100% معتمدون بحفل التكريم</div>
             </div>
 
+            <div className="bg-[#062b24]/90 border border-emerald-500/50 p-4 rounded-3xl shadow-lg relative overflow-hidden">
+              <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+              <span className="text-[11px] font-bold text-slate-400 block">✅ الطلاب المسجلون (بيانات كاملة)</span>
+              <div className="text-2xl font-black text-emerald-400 mt-1">{stats.totalRegistered} <span className="text-xs font-normal text-emerald-300">طالب</span></div>
+              <div className="text-[10px] text-emerald-300 mt-1 font-semibold">استمارة مكتملة بالكامل</div>
+            </div>
+
+            <div className="bg-[#062b24]/90 border border-amber-500/50 p-4 rounded-3xl shadow-lg relative overflow-hidden">
+              <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+              <span className="text-[11px] font-bold text-slate-400 block">⏳ لم يسجلوا بعد (بيانات ناقصة)</span>
+              <div className="text-2xl font-black text-amber-400 mt-1">{stats.totalUnregistered} <span className="text-xs font-normal text-amber-300">طالب</span></div>
+              <div className="text-[10px] text-amber-200 mt-1 font-semibold">في انتظار استكمال البيانات عبر QR</div>
+            </div>
+
             <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-3xl shadow-lg relative overflow-hidden">
               <span className="text-[11px] font-bold text-slate-400 block">🌟 الطلاب المتفوقون (≥90%)</span>
               <div className="text-2xl font-black text-amber-300 mt-1">{stats.topScorersCount} <span className="text-xs font-normal text-emerald-400">طلاب</span></div>
               <div className="text-[10px] text-emerald-300 mt-1 font-semibold">درجات الامتياز والتفوق</div>
-            </div>
-
-            <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-3xl shadow-lg relative overflow-hidden">
-              <span className="text-[11px] font-bold text-slate-400 block">📖 مستويات الحفظ والأجزاء</span>
-              <div className="text-2xl font-black text-emerald-300 mt-1">{stats.totalPartsCount} <span className="text-xs font-normal text-slate-400">مستويات</span></div>
-              <div className="text-[10px] text-amber-300 mt-1 font-semibold">من القرآن كاملاً حتى جزء عم</div>
-            </div>
-
-            <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-3xl shadow-lg relative overflow-hidden">
-              <span className="text-[11px] font-bold text-slate-400 block">👳‍♂️ المشرفون والمعلمون المعتمدون</span>
-              <div className="text-2xl font-black text-white mt-1">{stats.totalSheikhs} <span className="text-xs font-normal text-emerald-400">محفظاً</span></div>
-              <div className="text-[10px] text-emerald-300 mt-1 font-semibold">كوادر وإشراف الكُتّاب 2026</div>
             </div>
           </div>
 
@@ -1095,41 +1066,42 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* ☀️ TAB 2: SUMMER 2026 REGISTRY (سجل الدورة الصيفية) */}
+      {/* ✅ TAB 2: REGISTERED STUDENTS (الطلاب المسجلون - بيانات كاملة) */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      {(activeTab === 'summer2026' || activeTab === 'permanent') && (
+      {activeTab === 'registered' && (
         <div className="space-y-6 animate-fade-in">
           
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-emerald-900/80 via-[#062b24] to-emerald-900/80 border border-emerald-500/40 p-5 rounded-3xl shadow-xl">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
+                  <UserCheck className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-white">✅ الطلاب المسجلون</h2>
+                  <p className="text-xs text-emerald-300">طلاب أكملوا جميع بيانات الاستمارة بالكامل — جاهزون للحفل والتكريم</p>
+                </div>
+              </div>
+              <div className="px-4 py-2 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-sm font-black">
+                {registeredStudents.length} طالب مسجل
+              </div>
+            </div>
+          </div>
+
           {/* Filter Bar */}
           <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
-            
-            {/* Search Input & Part Filter */}
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={studentSearch}
-                  onChange={(e) => setStudentSearch(e.target.value)}
-                  placeholder="ابحث بالاسم، الكود، الهاتف..."
-                  className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
-                />
-              </div>
-
-              {/* Part Filter Dropdown */}
-              <select
-                value={studentFilterPart}
-                onChange={(e) => setStudentFilterPart(e.target.value)}
-                className="px-3 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white focus:outline-none focus:border-[#fbbf24]"
-              >
-                <option value="ALL">جميع الأجزاء والمستويات</option>
-                {availableParts.map((part) => (
-                  <option key={part} value={part}>{part}</option>
-                ))}
-              </select>
+            <div className="relative w-full md:w-80">
+              <Search className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={registeredSearch}
+                onChange={(e) => setRegisteredSearch(e.target.value)}
+                placeholder="ابحث بالاسم، الكود، الهاتف، المدرسة..."
+                className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400"
+              />
             </div>
 
-            {/* Actions: Export Excel & Add Student */}
             <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
               <button
                 onClick={exportStudentsToExcel}
@@ -1144,6 +1116,164 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   setEditingStudent(null);
                   setStudentModalOpen(true);
                 }}
+                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all shadow-md"
+              >
+                <Plus className="w-4 h-4" />
+                <span>إضافة طالب جديد</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Registered Students Table */}
+          <div className="bg-[#062b24]/90 border border-emerald-500/30 rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-emerald-800/40 pb-4">
+              <div className="flex items-center gap-2 font-black text-emerald-400 text-base">
+                <CheckCircle2 className="w-5 h-5" />
+                <span>سجل الطلاب المسجلين ({registeredStudents.length} طالب)</span>
+              </div>
+              <span className="text-xs font-bold text-emerald-300 bg-emerald-950 px-3.5 py-1 rounded-full border border-emerald-700/40">
+                بيانات كاملة ✅
+              </span>
+            </div>
+
+            {registeredStudents.length === 0 ? (
+              <div className="text-center py-16 space-y-3">
+                <UserCheck className="w-12 h-12 text-emerald-500/30 mx-auto" />
+                <p className="text-slate-400 text-sm font-bold">لا يوجد طلاب مسجلين بعد</p>
+                <p className="text-slate-500 text-xs">سيظهر الطلاب هنا بعد استكمال بياناتهم عبر QR Code</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-right border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-emerald-900/50 text-emerald-300 font-black border-b border-emerald-700/50">
+                      <th className="p-3 text-center rounded-r-xl w-14">م</th>
+                      <th className="p-3 text-center w-24 whitespace-nowrap">كود الطالب</th>
+                      <th className="p-3">اسم الطالب</th>
+                      <th className="p-3">المستوى القرآني</th>
+                      <th className="p-3">المرحلة والمدرسة</th>
+                      <th className="p-3">ولي الأمر والهاتف</th>
+                      <th className="p-3 text-center rounded-l-xl w-36">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-emerald-800/30">
+                    {registeredStudents.map((r, idx) => (
+                      <tr key={r.id || idx} className="hover:bg-emerald-900/30 transition-colors">
+                        <td className="p-3 text-center text-slate-400 font-bold">{idx + 1}</td>
+                        <td className="p-3 text-center">
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-950 border border-emerald-500/40 text-emerald-400 font-mono font-black text-xs whitespace-nowrap inline-block">
+                            {r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#${String(idx + 1).padStart(3, '0')}`)}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="font-bold text-white text-sm">{r.studentName}</div>
+                          <span className="text-[10px] text-emerald-300 font-semibold">{r.gift || r.awardTier}</span>
+                        </td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold text-[11px]">
+                            {r.partName || 'القرآن الكريم'}
+                          </span>
+                          {r.examScore && (
+                            <span className="text-amber-400 font-mono font-bold mr-2 text-[10px]">
+                              ({r.examScore}%)
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <div className="text-slate-200 font-bold">{r.studyStage || 'ابتدائي'}</div>
+                          <span className="text-[10px] text-slate-400">{r.schoolName ? `${r.schoolName}${r.birthDate ? ` (${r.birthDate})` : ''}` : (r.birthDate ? `مواليد: ${r.birthDate}` : '—')}</span>
+                        </td>
+                        <td className="p-3">
+                          <div className="text-emerald-400 font-mono font-bold">{r.fatherPhone || '—'}</div>
+                          <span className="text-[10px] text-amber-200/90 font-bold">{r.parentName || r.fatherStatus || ''}</span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => setBadgeModalStudent(r)}
+                              className="p-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-xl transition-all cursor-pointer"
+                              title="معاينة كارت التكريم والـ QR"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleCopyStudentLink(r)}
+                              className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl transition-all cursor-pointer"
+                              title="نسخ رابط QR"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingStudent(r);
+                                setStudentModalOpen(true);
+                              }}
+                              className="p-2 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-xl transition-all cursor-pointer"
+                              title="تعديل البيانات"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleRequestDeleteStudent(r)}
+                              className="p-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-xl transition-all cursor-pointer"
+                              title="حذف الطالب من السجل"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ⏳ TAB 3: UNREGISTERED STUDENTS (لم يسجلوا بعد - بيانات ناقصة) */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'unregistered' && (
+        <div className="space-y-6 animate-fade-in">
+          
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-amber-900/60 via-[#062b24] to-amber-900/60 border border-amber-500/40 p-5 rounded-3xl shadow-xl">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                  <UserX className="w-6 h-6 text-amber-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-white">⏳ لم يسجلوا بعد</h2>
+                  <p className="text-xs text-amber-300">طلاب لديهم بيانات في النظام لكن ينقصهم حقل واحد على الأقل — يحتاجون لاستكمال البيانات عبر QR Code</p>
+                </div>
+              </div>
+              <div className="px-4 py-2 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-sm font-black flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                {unregisteredStudents.length} طالب بانتظار التسجيل
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Bar */}
+          <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
+            <div className="relative w-full md:w-80">
+              <Search className="w-4 h-4 text-amber-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={unregisteredSearch}
+                onChange={(e) => setUnregisteredSearch(e.target.value)}
+                placeholder="ابحث بالاسم، الكود، الهاتف..."
+                className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-amber-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400"
+              />
+            </div>
+
+            <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
+              <button
+                onClick={() => {
+                  setEditingStudent(null);
+                  setStudentModalOpen(true);
+                }}
                 className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all shadow-md"
               >
                 <Plus className="w-4 h-4" />
@@ -1152,92 +1282,110 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             </div>
           </div>
 
-          {/* Students Table */}
-          <div className="bg-[#062b24]/90 border border-emerald-700/40 rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-emerald-800/40 pb-4">
-              <div className="flex items-center gap-2 font-black text-[#fbbf24] text-base">
-                <Users className="w-5 h-5" />
-                <span>سجل الطلاب المعتمد ({filteredStudents.length} طالب)</span>
+          {/* Unregistered Students Table */}
+          <div className="bg-[#062b24]/90 border border-amber-500/30 rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-amber-800/40 pb-4">
+              <div className="flex items-center gap-2 font-black text-amber-400 text-base">
+                <AlertCircle className="w-5 h-5" />
+                <span>الطلاب الذين لم يستكملوا التسجيل ({unregisteredStudents.length} طالب)</span>
               </div>
+              <span className="text-xs font-bold text-amber-300 bg-amber-950/60 px-3.5 py-1 rounded-full border border-amber-700/40">
+                بيانات ناقصة ⏳
+              </span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-right border-collapse text-xs">
-                <thead>
-                  <tr className="bg-[#0c3d34] text-[#fbbf24] font-black border-b border-emerald-700/50">
-                    <th className="p-3 text-center rounded-r-xl w-14">م</th>
-                    <th className="p-3 text-center w-24 whitespace-nowrap">كود الطالب</th>
-                    <th className="p-3">اسم الطالب</th>
-                    <th className="p-3">المستوى القرآني</th>
-                    <th className="p-3">المرحلة والمدرسة</th>
-                    <th className="p-3">ولي الأمر والهاتف</th>
-                    <th className="p-3 text-center rounded-l-xl w-32">الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-emerald-800/30">
-                  {filteredStudents.map((r, idx) => (
-                    <tr key={r.id || idx} className="hover:bg-emerald-900/30 transition-colors">
-                      <td className="p-3 text-center text-slate-400 font-bold">{idx + 1}</td>
-                      <td className="p-3 text-center">
-                        <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-500/40 text-amber-400 font-mono font-black text-xs whitespace-nowrap inline-block">
-                          {r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#${String(idx + 1).padStart(3, '0')}`)}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <div className="font-bold text-white text-sm">{r.studentName}</div>
-                        <span className="text-[10px] text-emerald-300 font-semibold">{r.gift || r.awardTier}</span>
-                      </td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold text-[11px]">
-                          {r.partName || 'القرآن الكريم'}
-                        </span>
-                        {r.examScore && (
-                          <span className="text-amber-400 font-mono font-bold mr-2 text-[10px]">
-                            ({r.examScore}%)
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <div className="text-slate-200 font-bold">{r.studyStage || 'ابتدائي'}</div>
-                        <span className="text-[10px] text-slate-400">{r.schoolName ? `${r.schoolName}${r.birthDate ? ` (${r.birthDate})` : ''}` : (r.birthDate ? `مواليد: ${r.birthDate}` : '—')}</span>
-                      </td>
-                      <td className="p-3">
-                        <div className="text-emerald-400 font-mono font-bold">{r.fatherPhone || '—'}</div>
-                        <span className="text-[10px] text-amber-200/90 font-bold">{r.fatherStatus || 'على قيد الحياة'}</span>
-                      </td>
-                      <td className="p-3 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => setBadgeModalStudent(r)}
-                            className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl transition-all cursor-pointer"
-                            title="معاينة كارت التكريم والـ QR"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingStudent(r);
-                              setStudentModalOpen(true);
-                            }}
-                            className="p-2 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-xl transition-all cursor-pointer"
-                            title="تعديل البيانات"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleRequestDeleteStudent(r)}
-                            className="p-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-xl transition-all cursor-pointer"
-                            title="حذف الطالب من السجل"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
+            {unregisteredStudents.length === 0 ? (
+              <div className="text-center py-16 space-y-3">
+                <CheckCircle2 className="w-12 h-12 text-emerald-500/50 mx-auto" />
+                <p className="text-emerald-400 text-sm font-bold">🎉 جميع الطلاب سجلوا بياناتهم بالكامل!</p>
+                <p className="text-slate-500 text-xs">لا يوجد طلاب بحاجة لاستكمال البيانات</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-right border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-amber-900/30 text-amber-300 font-black border-b border-amber-700/50">
+                      <th className="p-3 text-center rounded-r-xl w-14">م</th>
+                      <th className="p-3 text-center w-24 whitespace-nowrap">كود الطالب</th>
+                      <th className="p-3">اسم الطالب</th>
+                      <th className="p-3">المستوى القرآني</th>
+                      <th className="p-3">الحقول الناقصة</th>
+                      <th className="p-3 text-center rounded-l-xl w-44">الإجراءات</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-amber-800/20">
+                    {unregisteredStudents.map((r, idx) => (
+                      <tr key={r.id || idx} className="hover:bg-amber-900/20 transition-colors">
+                        <td className="p-3 text-center text-slate-400 font-bold">{idx + 1}</td>
+                        <td className="p-3 text-center">
+                          <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-500/40 text-amber-400 font-mono font-black text-xs whitespace-nowrap inline-block">
+                            {r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#${String(idx + 1).padStart(3, '0')}`)}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="font-bold text-white text-sm">{r.studentName}</div>
+                          <span className="text-[10px] text-slate-400 font-semibold">{r.sheikhName || 'شيوخ الكُتّاب'}</span>
+                        </td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold text-[11px]">
+                            {r.partName || 'القرآن الكريم'}
+                          </span>
+                          {r.examScore && (
+                            <span className="text-amber-400 font-mono font-bold mr-2 text-[10px]">
+                              ({r.examScore}%)
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex flex-wrap gap-1">
+                            {(r.missingFields || getMissingStudentFields(r)).map((field, fi) => (
+                              <span key={fi} className="px-2 py-0.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-bold whitespace-nowrap">
+                                ❌ {field}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => handleCopyStudentLink(r)}
+                              className="p-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-xl transition-all cursor-pointer border border-amber-500/30"
+                              title="نسخ رابط QR لاستكمال البيانات"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleSendWhatsAppReminder(r)}
+                              className="p-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-xl transition-all cursor-pointer border border-emerald-500/30"
+                              title="إرسال تذكير واتساب لولي الأمر"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingStudent(r);
+                                setStudentModalOpen(true);
+                              }}
+                              className="p-2 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-xl transition-all cursor-pointer"
+                              title="تعديل البيانات من الداشبورد"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleRequestDeleteStudent(r)}
+                              className="p-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-xl transition-all cursor-pointer"
+                              title="حذف الطالب"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1366,82 +1514,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {/* 👨‍👩‍👧‍👦 TAB 5: FAMILIES & SIBLINGS NETWORK (الأسر والأشقاء) */}
-      {/* ══════════════════════════════════════════════════════════════ */}
-      {activeTab === 'families' && (
-        <div className="space-y-6 animate-fade-in">
-          
-          {/* Controls Bar */}
-          <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-emerald-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={familySearch}
-                  onChange={(e) => setFamilySearch(e.target.value)}
-                  placeholder="ابحث باسم ولي الأمر، الهاتف، اسم الطالب..."
-                  className="w-full pr-10 pl-4 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
-                />
-              </div>
 
-              {/* Sibling Filter */}
-              <select
-                value={familyFilterSiblings}
-                onChange={(e) => setFamilyFilterSiblings(e.target.value)}
-                className="px-3 py-2 bg-slate-950/80 border border-emerald-700/50 rounded-xl text-xs text-white focus:outline-none focus:border-[#fbbf24]"
-              >
-                <option value="ALL">جميع الأسر ({familiesData.length})</option>
-                <option value="HAS_SIBLINGS">الأسر التي لديها أشقاء (أكثر من طالب)</option>
-                <option value="SINGLE">الأسر ذات الطالب الواحد</option>
-              </select>
-            </div>
 
-            <button
-              onClick={exportFamiliesToCSV}
-              className="px-4 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all"
-            >
-              <Download className="w-4 h-4" />
-              <span>تصدير كشف الأسر</span>
-            </button>
-          </div>
-
-          {/* Families Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {familiesData.map((f, idx) => (
-              <div key={f.familyKey || idx} className="bg-[#062b24]/90 border border-emerald-700/40 rounded-3xl p-5 shadow-xl space-y-3 relative hover:border-[#fbbf24]/50 transition-all">
-                <div className="flex items-center justify-between border-b border-emerald-800/40 pb-2.5">
-                  <div>
-                    <h3 className="text-sm font-black text-white">{f.parentName}</h3>
-                    <span className="text-[11px] text-emerald-400 font-mono">{f.fatherPhone}</span>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-xl text-xs font-black ${f.students.length > 1 ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-300'}`}>
-                    {f.students.length > 1 ? `👨‍👩‍👧‍👦 ${f.students.length} أشقاء` : '👤 طالب واحد'}
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  <span className="text-[10px] font-bold text-slate-400 block">الأبناء المسجلون:</span>
-                  <div className="space-y-1.5">
-                    {f.students.map((st) => (
-                      <div key={st.id || st.studentId} className="flex items-center justify-between p-2 rounded-xl bg-slate-950/70 border border-emerald-800/30 text-xs">
-                        <div>
-                          <div className="font-bold text-white">{st.studentName}</div>
-                          <span className="text-[10px] text-emerald-300">{st.partName || 'القرآن الكريم'}</span>
-                        </div>
-                        <span className="px-2 py-0.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono font-bold text-[10px]">
-                          {st.studentCode}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* ⚡ MODAL 1: FIREBASE BATCH SYNC ENGINE MODAL */}

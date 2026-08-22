@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Lock, KeyRound, X, AlertCircle, Eye, EyeOff, ShieldCheck, Users, ArrowLeft, Sparkles, BookOpen } from 'lucide-react';
+import { Lock, KeyRound, X, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
-export default function LoginPortalModal({ onClose, onAdminSuccess, onSheikhSelect, showToast }) {
-  // Roles: 'admin' | 'sheikh'
-  const [activeRole, setActiveRole] = useState('admin');
-
+export default function LoginPortalModal({ onClose, onAdminSuccess, showToast }) {
   // Admin state
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -88,123 +85,69 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, onSheikhSele
             <Lock className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-black text-white">تسجيل الدخول للمنظومة 🔐</h3>
-          <p className="text-xs text-slate-300">اختر نوع الدخول المطلوب للمتابعة</p>
+          <p className="text-xs text-slate-300">أدخل كلمة المرور للوصول إلى لوحة التحكم الإدارية</p>
         </div>
 
-        {/* ONLY 2 ROLES: ADMIN & SHEIKH */}
-        <div className="flex bg-slate-900/80 p-1.5 rounded-2xl border border-emerald-700/40 mb-5 text-xs font-bold">
-          <button
-            onClick={() => { setActiveRole('admin'); setError(''); }}
-            className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeRole === 'admin'
-                ? 'bg-[#fbbf24] text-slate-950 font-black shadow-md'
-                : 'text-slate-300 hover:text-white'
-            }`}
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span>المدير / Admin</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveRole('sheikh'); setError(''); }}
-            className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeRole === 'sheikh'
-                ? 'bg-[#fbbf24] text-slate-950 font-black shadow-md'
-                : 'text-slate-300 hover:text-white'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>الشيخ / المحفظ</span>
-          </button>
+        {/* Admin Badge */}
+        <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2.5 rounded-2xl bg-[#fbbf24]/10 border border-[#fbbf24]/30 text-[#fbbf24] text-xs font-black">
+          <ShieldCheck className="w-4 h-4" />
+          <span>بوابة دخول الإدارة المركزية | Admin Only</span>
         </div>
 
-        {/* ROLE 1: ADMIN LOGIN */}
-        {activeRole === 'admin' && (
-          <form noValidate onSubmit={handleAdminSubmit} className="space-y-4">
-            {error && (
-              <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-bold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                كلمة مرور لوحة التحكم (Admin Password)
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="أدخل كلمة مرور الإدارة..."
-                  autoFocus
-                  className="w-full px-4 py-3 rounded-xl text-sm bg-slate-900 border border-emerald-700/50 text-white placeholder-slate-500 focus:outline-none focus:border-[#fbbf24] transition-all pl-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
+        {/* ADMIN LOGIN FORM */}
+        <form noValidate onSubmit={handleAdminSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
             </div>
+          )}
 
-            {/* Remember Me Checkbox */}
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer select-none">
+          <div>
+            <label className="block text-xs font-bold text-slate-300 mb-1.5">
+              كلمة مرور لوحة التحكم (Admin Password)
+            </label>
+            <div className="relative">
               <input
-                type="checkbox"
-                id="rememberMe"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-emerald-700 bg-slate-900 text-[#fbbf24] focus:ring-[#fbbf24] cursor-pointer"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="أدخل كلمة مرور الإدارة..."
+                autoFocus
+                className="w-full px-4 py-3 rounded-xl text-sm bg-slate-900 border border-emerald-700/50 text-white placeholder-slate-500 focus:outline-none focus:border-[#fbbf24] transition-all pl-10"
               />
-              <label htmlFor="rememberMe" className="cursor-pointer text-slate-200 hover:text-white">
-                تذكر تسجيل الدخول على هذا الجهاز (Remember Me)
-              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
-
-            <button
-              type="submit"
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-900/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <KeyRound className="w-4 h-4" />
-              <span>دخول لوحة التحكم (Admin Dashboard) 🚀</span>
-            </button>
-          </form>
-        )}
-
-        {/* ROLE 2: SHEIKH PORTAL ACCESS */}
-        {activeRole === 'sheikh' && (
-          <div className="space-y-4 text-center py-2 animate-fade-in">
-            <div className="p-4 bg-slate-900/90 rounded-2xl border border-emerald-500/40 space-y-3 text-xs">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center mx-auto border border-emerald-500/30">
-                <BookOpen className="w-6 h-6" />
-              </div>
-              <h4 className="text-sm font-bold text-[#fbbf24]">بوابة مشايخ ومعلمي الكُتّاب</h4>
-              <p className="text-slate-300 leading-relaxed text-[11px]">
-                مرحباً بكم يا أهل القرآن.. يمكنكم تسجيل بياناتكم أو تحديث الفصول والحلقات والمكافآت عبر استمارة المعلمين المعتمدة.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                if (onSheikhSelect) {
-                  onSheikhSelect();
-                } else {
-                  window.location.hash = '/sheikh-form';
-                }
-              }}
-              className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Users className="w-4 h-4" />
-              <span>فتح استمارة تسجيل وتحديث بيانات الشيخ 👳‍♂️</span>
-            </button>
           </div>
-        )}
+
+          {/* Remember Me Checkbox */}
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded border-emerald-700 bg-slate-900 text-[#fbbf24] focus:ring-[#fbbf24] cursor-pointer"
+            />
+            <label htmlFor="rememberMe" className="cursor-pointer text-slate-200 hover:text-white">
+              تذكر تسجيل الدخول على هذا الجهاز (Remember Me)
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-900/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>دخول لوحة التحكم (Admin Dashboard) 🚀</span>
+          </button>
+        </form>
 
       </div>
     </div>,

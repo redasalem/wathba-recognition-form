@@ -5,7 +5,7 @@ import StudentForm from './components/StudentForm';
 import StudentProfileView from './components/StudentProfileView';
 import SheikhForm from './components/SheikhForm';
 import SuccessView from './components/SuccessView';
-import AdminDashboard from './components/AdminDashboard';
+import AdminDashboard, { isStudentFullyRegistered } from './components/AdminDashboard';
 import LoginPortalModal from './components/LoginPortalModal';
 import StudentVerificationGate from './components/StudentVerificationGate';
 import { subscribeStudents } from './firebase';
@@ -74,14 +74,18 @@ export default function App() {
   }, []);
 
   // 🔗 SMART URL ROUTING & STATE EVALUATOR
-  const evaluateRoute = useCallback((currentRecords) => {
+  const evaluateRoute = useCallback((currentRecords, adminLoggedIn) => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const { idParam, nameParam, codeParam, modeParam } = extractUrlParams();
 
-    // 1. Sheikh Form Route
+    // 1. Sheikh Form Route → Requires admin login, redirect to admin
     if (hash.includes('sheikh-form') || path.includes('sheikh-form')) {
-      setActiveView('sheikh-form');
+      if (isAdminLoggedIn) {
+        setActiveView('admin');
+      } else {
+        setActiveView('admin');
+      }
       return;
     }
 
@@ -124,10 +128,7 @@ export default function App() {
       }
 
       // Check if student record is already completed with all inputs
-      const isCompleted = existingDoc && (
-        existingDoc.completed === true || 
-        (existingDoc.fatherPhone && /^01[0-9]{9}$/.test(existingDoc.fatherPhone.trim()) && existingDoc.birthDate && existingDoc.schoolName)
-      );
+      const isCompleted = isStudentFullyRegistered(existingDoc);
 
       if (isCompleted && modeParam !== 'edit') {
         // Show verified student profile card
@@ -173,11 +174,11 @@ export default function App() {
 
   // URL Hash Listener
   useEffect(() => {
-    evaluateRoute(records);
-    const handleHashChange = () => evaluateRoute(records);
+    evaluateRoute(records, isAdminLoggedIn);
+    const handleHashChange = () => evaluateRoute(records, isAdminLoggedIn);
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [records, evaluateRoute]);
+  }, [records, evaluateRoute, isAdminLoggedIn]);
 
   // Realtime Firebase Listener for Students
   useEffect(() => {
@@ -213,7 +214,8 @@ export default function App() {
 
   const handleStudentVerified = (verifiedStudent) => {
     setSelectedStudent(verifiedStudent);
-    if (verifiedStudent.completed) {
+    const isCompleted = isStudentFullyRegistered(verifiedStudent);
+    if (isCompleted) {
       setActiveView('student-profile');
       window.location.hash = `/student?id=${verifiedStudent.studentId}`;
     } else {
@@ -247,6 +249,7 @@ export default function App() {
 
   const handleSheikhFormSuccess = (sheikhRecord) => {
     showToast('تم تسجيل بيانات الشيخ بنجاح 🌟', 'success');
+    handleNavigate('admin');
   };
 
   const handleEditStudentFromProfile = (student) => {
@@ -374,7 +377,6 @@ export default function App() {
         <LoginPortalModal
           onClose={() => setIsLoginModalOpen(false)}
           onAdminSuccess={handleAdminLoginSuccess}
-          onSheikhSelect={() => handleNavigate('sheikh-form')}
           showToast={showToast}
         />
       )}
