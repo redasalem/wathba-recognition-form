@@ -286,39 +286,54 @@ export function matchesStudentSearch(student, searchStr) {
 export function findStudentInCatalog(identifier) {
   if (!identifier) return null;
   const rawId = String(identifier).trim();
+  if (!rawId) return null;
   const normalizedQuery = normalizeArabic(rawId);
 
   // 1. مطابقة بمعرف الطالب STU-2026-XXX
   let match = STUDENTS_CATALOG.find(s => 
-    s.studentId.toUpperCase() === rawId.toUpperCase()
+    s.studentId && s.studentId.toUpperCase() === rawId.toUpperCase()
   );
   if (match) return match;
 
-  // 2. مطابقة بالكود التكريمي مثل #001 أو 001 أو 1
-  const cleanCode = rawId.replace(/^#/, '');
-  match = STUDENTS_CATALOG.find(s => {
-    const sCode = s.code.replace(/^#/, '');
-    return sCode === cleanCode || parseInt(sCode, 10) === parseInt(cleanCode, 10);
-  });
-  if (match) return match;
+  // 2. مطابقة بالكود التكريمي مثل #001 أو 001 أو 1 (فقط إذا كان رقماً)
+  const cleanCode = rawId.replace(/^#/, '').trim();
+  const parsedCodeNum = parseInt(cleanCode, 10);
+  if (!isNaN(parsedCodeNum) && parsedCodeNum > 0 && parsedCodeNum <= 200 && /^\d+$/.test(cleanCode)) {
+    match = STUDENTS_CATALOG.find(s => {
+      const sCode = s.code.replace(/^#/, '');
+      const sNum = parseInt(sCode, 10);
+      return sCode === cleanCode || sNum === parsedCodeNum;
+    });
+    if (match) return match;
+  }
 
-  // 3. مطابقة بالاسم العربي (مطابقة تامة أو متضمنة)
+  // 3. مطابقة بالاسم العربي التام
   match = STUDENTS_CATALOG.find(s => {
     const sNorm = normalizeArabic(s.name);
-    return sNorm === normalizedQuery || sNorm.includes(normalizedQuery) || normalizedQuery.includes(sNorm);
+    return sNorm === normalizedQuery;
   });
   if (match) return match;
 
-  // 4. مطابقة ذكية بالأجزاء والكلمات (مثل كتابة الاسم رباعي أو خماسي)
+  // 4. مطابقة الاسم المتضمن (إذا كان الاستعلام طويلاً بما يكفي >= 3 أحرف)
+  if (normalizedQuery.length >= 3) {
+    match = STUDENTS_CATALOG.find(s => {
+      const sNorm = normalizeArabic(s.name);
+      return sNorm.includes(normalizedQuery);
+    });
+    if (match) return match;
+  }
+
+  // 5. مطابقة ذكية بالكلمات للألقاب والأسماء (مع اشتراط تطابق الاسم الأول دائماً)
   const qWords = normalizedQuery.split(' ').filter(Boolean);
   if (qWords.length >= 2) {
     match = STUDENTS_CATALOG.find(s => {
       const sWords = normalizeArabic(s.name).split(' ').filter(Boolean);
       if (sWords.length < 2) return false;
       const firstMatch = sWords[0] === qWords[0];
+      if (!firstMatch) return false;
       const lastMatch = sWords[sWords.length - 1] === qWords[qWords.length - 1];
       const matchedWordsCount = sWords.filter(w => qWords.includes(w)).length;
-      return (firstMatch && lastMatch) || (firstMatch && matchedWordsCount >= 2) || (matchedWordsCount >= 3);
+      return lastMatch || matchedWordsCount >= 2;
     });
     if (match) return match;
   }
@@ -326,45 +341,54 @@ export function findStudentInCatalog(identifier) {
   return null;
 }
 
-// دالة فحص مطابقة سجل طالب مع طالب في الكتالوج
+// دالة فحص مطابقة سجل طالب مع طالب في الكتالوج (Strict Matching)
 export function isStudentMatch(rec, catStudent) {
   if (!rec || !catStudent) return false;
 
-  // 1. مطابقة بمعرف الطالب
-  if (rec.studentId && catStudent.studentId && rec.studentId.toUpperCase() === catStudent.studentId.toUpperCase()) {
-    return true;
+  // 1. مطابقة بمعرف الطالب المعتمد STU-2026-XXX
+  if (rec.studentId && catStudent.studentId) {
+    if (String(rec.studentId).trim().toUpperCase() === String(catStudent.studentId).trim().toUpperCase()) {
+      return true;
+    }
   }
-  if (rec.id && catStudent.studentId && rec.id.toUpperCase() === catStudent.studentId.toUpperCase()) {
-    return true;
-  }
-
-  // 2. مطابقة بالكود التكريمي
-  if (rec.studentCode && catStudent.code) {
-    const cleanRec = String(rec.studentCode).replace(/^#/, '').trim();
-    const cleanCat = String(catStudent.code).replace(/^#/, '').trim();
-    if (cleanRec && cleanCat && (cleanRec === cleanCat || parseInt(cleanRec, 10) === parseInt(cleanCat, 10))) {
+  if (rec.id && catStudent.studentId) {
+    if (String(rec.id).trim().toUpperCase() === String(catStudent.studentId).trim().toUpperCase()) {
       return true;
     }
   }
 
-  // 3. مطابقة بالاسم الموحد
+  // 2. مطابقة بالكود التكريمي (#001)
+  if (rec.studentCode && catStudent.code) {
+    const cleanRec = String(rec.studentCode).replace(/^#/, '').trim();
+    const cleanCat = String(catStudent.code).replace(/^#/, '').trim();
+    const numRec = parseInt(cleanRec, 10);
+    const numCat = parseInt(cleanCat, 10);
+    if (cleanRec && cleanCat) {
+      if (cleanRec === cleanCat) return true;
+      if (!isNaN(numRec) && !isNaN(numCat) && numRec === numCat && /^\d+$/.test(cleanRec) && /^\d+$/.test(cleanCat)) {
+        return true;
+      }
+    }
+  }
+
+  // 3. مطابقة بالاسم الموحد التام
   const recName = normalizeArabic(rec.studentName || rec.name || '');
   const catName = normalizeArabic(catStudent.name || '');
-  if (!recName || !catName) return false;
-
-  if (recName === catName) {
+  if (recName && catName && recName === catName) {
     return true;
   }
 
-  // 4. مطابقة ذكية بالكلمات للألقاب والأسماء المركبة
+  // 4. مطابقة ذكية مشددة: يجب تطابق الاسم الأول واسم العائلة
   const rWords = recName.split(' ').filter(Boolean);
   const cWords = catName.split(' ').filter(Boolean);
-  if (rWords.length >= 2 && cWords.length >= 2) {
+  if (rWords.length >= 3 && cWords.length >= 3) {
     const firstMatch = rWords[0] === cWords[0];
     const lastMatch = rWords[rWords.length - 1] === cWords[cWords.length - 1];
-    const matchedCount = cWords.filter(w => rWords.includes(w)).length;
-    if ((firstMatch && lastMatch && matchedCount >= 2) || matchedCount >= 3) {
-      return true;
+    if (firstMatch && lastMatch) {
+      const commonWords = cWords.filter(w => rWords.includes(w)).length;
+      if (commonWords >= Math.min(rWords.length, cWords.length) - 1) {
+        return true;
+      }
     }
   }
 
@@ -430,11 +454,7 @@ export function matchesQuranPartCanonical(studentPart, targetPart) {
   const normStudent = normalizeArabic(studentPart);
   const normTarget = normalizeArabic(targetPart);
 
-  return (
-    normStudent === normTarget ||
-    (normStudent.length >= 4 && normTarget.includes(normStudent)) ||
-    (normTarget.length >= 4 && normStudent.includes(normTarget))
-  );
+  return normStudent === normTarget;
 }
 
 // ترتيب الأجزاء بالأرقام للفرز حسب القائمة الرسمية المعتمدة
@@ -447,7 +467,7 @@ export function getPartOrderRank(partName) {
   const normPart = normalizeArabic(partName);
   const fallbackIdx = QURAN_PARTS_ORDER.findIndex((p) => {
     const normP = normalizeArabic(p);
-    return normP === normPart || normP.includes(normPart) || normPart.includes(normP);
+    return normP === normPart;
   });
   return fallbackIdx !== -1 ? fallbackIdx : 999;
 }

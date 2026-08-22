@@ -231,23 +231,37 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     const list = STUDENTS_CATALOG.map((cat, index) => {
       const matchedRecord = records.find((rec) => isStudentMatch(rec, cat));
       
-      // Values in Firestore record take precedence over catalog base values
       const merged = {
+        // Base official catalog properties (Immutable baseline)
         ...cat,
-        ...(matchedRecord || {}),
+        idx: cat.idx || index + 1,
+        studentId: cat.studentId || `STU-2026-${String(index + 1).padStart(3, '0')}`,
+        studentCode: cat.code || `#${String(cat.idx || index + 1).padStart(3, '0')}`,
+        studentName: (matchedRecord?.studentName && matchedRecord.studentName.trim()) || cat.name,
+        partName: cat.part,
+        part: cat.part,
+        examScore: cat.score !== undefined ? Number(cat.score) : 0,
+        score: cat.score !== undefined ? Number(cat.score) : 0,
+        awardTier: cat.tier || '✨ فئة التفوق',
+        gift: cat.gift || 'شهادة تقدير وتكريم الكُتّاب',
+        totalParts: cat.totalParts || getMemorizedPartsCount(cat.part),
+
+        // Live Registration fields from Firestore
         id: matchedRecord?.id || cat.studentId,
-        studentCode: matchedRecord?.studentCode || cat.code || `#${String(cat.idx || index + 1).padStart(3, '0')}`,
-        studentId: matchedRecord?.studentId || cat.studentId,
-        studentName: (matchedRecord?.studentName || matchedRecord?.name || cat.name || '').trim(),
-        partName: (matchedRecord?.partName || matchedRecord?.part || cat.part || '').trim(),
-        examScore: matchedRecord?.examScore !== undefined && matchedRecord?.examScore !== '' 
-          ? Number(matchedRecord.examScore) 
-          : (cat.score !== undefined ? Number(cat.score) : 0),
-        awardTier: matchedRecord?.awardTier || cat.tier || '✨ فئة التفوق',
-        gift: matchedRecord?.gift || cat.gift || 'شهادة تقدير وتكريم الكُتّاب',
-        totalParts: matchedRecord?.totalParts || cat.totalParts || 1,
+        fatherPhone: matchedRecord?.fatherPhone || matchedRecord?.phone || '',
+        birthDate: matchedRecord?.birthDate || '',
+        studyStage: matchedRecord?.studyStage || '',
+        schoolName: matchedRecord?.schoolName || matchedRecord?.school || '',
+        fatherStatus: matchedRecord?.fatherStatus || 'نعم (على قيد الحياة)',
+        parentName: matchedRecord?.parentName || '',
+        photoUrl: matchedRecord?.photoUrl || '',
         sheikhName: matchedRecord?.sheikhName || 'شيوخ الكُتّاب',
-        idx: matchedRecord?.idx || cat.idx || index + 1
+        notes: matchedRecord?.notes || '',
+        smartUrl: cat.smart_url || matchedRecord?.smartUrl || '',
+        qrCodeUrl: cat.qr_code_url || matchedRecord?.qrCodeUrl || '',
+        qrImgUrl: cat.qr_img_url || matchedRecord?.qrImgUrl || '',
+        updatedAt: matchedRecord?.updatedAt || null,
+        createdAt: matchedRecord?.createdAt || null
       };
 
       const isComplete = isStudentFullyRegistered(merged);
@@ -414,6 +428,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     const unregistered = allDisplayStudents.filter(s => s.completed !== true);
     return sortStudents(filterStudents(unregistered));
   }, [allDisplayStudents, filterStudents, sortStudents]);
+
+  // 🎯 Active Tab Current Students List
+  const currentTabStudents = useMemo(() => {
+    if (activeTab === 'registered') return registeredStudents;
+    if (activeTab === 'unregistered') return unregisteredStudents;
+    return ceremonyStudents;
+  }, [activeTab, ceremonyStudents, registeredStudents, unregisteredStudents]);
 
   // 👳‍♂️ 4. Filtered Sheikhs
   const filteredSheikhs = useMemo(() => {
@@ -788,14 +809,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     return () => window.removeEventListener('keydown', handlePrompterKeys);
   }, [stagePrompterStudent, stagePrompterIndex, ceremonyStudents]);
 
-  // Current active students list based on active tab
-  const currentTabStudents = useMemo(() => {
-    if (activeTab === 'ceremony') return ceremonyStudents;
-    if (activeTab === 'registered') return registeredStudents;
-    if (activeTab === 'unregistered') return unregisteredStudents;
-    return [];
-  }, [activeTab, ceremonyStudents, registeredStudents, unregisteredStudents]);
-
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 text-slate-100 px-3 sm:px-6 py-4 animate-fade-in font-sans">
       
@@ -1055,11 +1068,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                     : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
                 }`}
               >
-                جميع الأجزاء ({activeTab === 'ceremony' ? masterStudentsList.length : allDisplayStudents.length})
+                جميع الأجزاء ({activeTab === 'ceremony' ? masterStudentsList.length : (activeTab === 'registered' ? stats.totalRegistered : stats.totalUnregistered)})
               </button>
 
               {QURAN_PARTS_ORDER.map((part) => {
-                const baseList = activeTab === 'ceremony' ? masterStudentsList : allDisplayStudents;
+                const baseList = activeTab === 'ceremony'
+                  ? masterStudentsList
+                  : (activeTab === 'registered' ? allDisplayStudents.filter(s => s.completed === true) : allDisplayStudents.filter(s => s.completed !== true));
                 const count = baseList.filter(s => matchesQuranPartCanonical(s.partName, part)).length;
                 return (
                   <button
