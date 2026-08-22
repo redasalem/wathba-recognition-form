@@ -392,3 +392,63 @@ export function getMemorizedPartsCount(partName) {
   if (p.includes('عم')) return 1;
   return 1;
 }
+
+// دالة توحيد اسم الجزء إلى المسمى القياسي المعتمد
+export function getCanonicalPartName(rawPart) {
+  if (!rawPart) return 'القرآن الكريم';
+  const norm = normalizeArabic(rawPart);
+
+  if (norm.includes('كامل') || norm.includes('30')) return 'القرآن كاملاً';
+  if (norm.includes('اعراف')) return 'جزء الأعراف';
+  if (norm.includes('توبه')) return 'جزء التوبة';
+  if (norm.includes('يوسف')) return 'جزء يوسف';
+  if (norm.includes('كهف')) return 'جزء الكهف';
+  if (norm.includes('انبياء')) return 'جزء الأنبياء';
+  if (norm.includes('فرقان')) return 'جزء الفرقان';
+  if (norm.includes('عنكبوت')) return 'جزء العنكبوت';
+  if (norm.includes('يس')) return 'جزء يس';
+  if (norm.includes('شوري')) return 'جزء الشورى';
+  if (norm.includes('احقاف')) return 'جزء الاحقاف';
+  if (norm.includes('ذاريات')) return 'جزء الذاريات';
+  if (norm.includes('قد سمع') || norm.includes('سمع')) return 'جزء قد سمع';
+  if (norm.includes('تبارك')) return 'جزء تبارك';
+  if (norm.includes('عم')) return 'جزء عم وقصار السور';
+
+  return rawPart;
+}
+
+// دالة المطابقة القياسية الدقيقة للأجزاء القرآنية لتجنب الأخطاء
+export function matchesQuranPartCanonical(studentPart, targetPart) {
+  if (!targetPart || targetPart === 'ALL') return true;
+  if (!studentPart) return false;
+
+  const studentCanonical = getCanonicalPartName(studentPart);
+  const targetCanonical = getCanonicalPartName(targetPart);
+
+  if (studentCanonical === targetCanonical) return true;
+
+  const normStudent = normalizeArabic(studentPart);
+  const normTarget = normalizeArabic(targetPart);
+
+  return (
+    normStudent === normTarget ||
+    (normStudent.length >= 4 && normTarget.includes(normStudent)) ||
+    (normTarget.length >= 4 && normStudent.includes(normTarget))
+  );
+}
+
+// ترتيب الأجزاء بالأرقام للفرز حسب القائمة الرسمية المعتمدة
+export function getPartOrderRank(partName) {
+  if (!partName) return 999;
+  const canonical = getCanonicalPartName(partName);
+  const idx = QURAN_PARTS_ORDER.indexOf(canonical);
+  if (idx !== -1) return idx;
+
+  const normPart = normalizeArabic(partName);
+  const fallbackIdx = QURAN_PARTS_ORDER.findIndex((p) => {
+    const normP = normalizeArabic(p);
+    return normP === normPart || normP.includes(normPart) || normPart.includes(normP);
+  });
+  return fallbackIdx !== -1 ? fallbackIdx : 999;
+}
+
