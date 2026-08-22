@@ -25,9 +25,9 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
   };
 
   // Smart URL for this student
-  const studentSmartUrl = student.studentId 
-    ? `${window.location.origin}/#/student?id=${student.studentId}`
-    : window.location.href;
+  const studentSmartUrl = student.smartUrl || student.qrCodeUrl || (student.studentId 
+    ? `${window.location.origin}/#/student/form?name=${encodeURIComponent(student.studentName || '')}&id=${student.studentId}`
+    : window.location.href);
 
   const handleShareWhatsApp = () => {
     const text = `🎉 كارت تكريم الطالب المُكَرَّم في كُتّاب: ${student.studentName}\nكود التكريم: ${student.studentCode || ''}\nالمستوى القرآني: ${student.partName || student.part || 'القرآن الكريم'}\n\nرابط بطاقة وكارت التكريم الرسمي:\n${studentSmartUrl}`;

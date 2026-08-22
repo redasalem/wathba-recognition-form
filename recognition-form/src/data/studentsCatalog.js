@@ -307,3 +307,25 @@ export function isStudentMatch(rec, catStudent) {
 
   return false;
 }
+
+// دالة حساب عدد الأجزاء المحفوظة بناءً على اسم الجزء أو المستوى
+export function getMemorizedPartsCount(partName) {
+  if (!partName) return 1;
+  const p = normalizeArabic(partName);
+  if (p.includes('كامل') || p.includes('30')) return 30;
+  if (p.includes('اعراف')) return 24;
+  if (p.includes('توبه')) return 21;
+  if (p.includes('يوسف')) return 18;
+  if (p.includes('كهف')) return 15;
+  if (p.includes('انبياء')) return 14;
+  if (p.includes('فرقان')) return 12;
+  if (p.includes('عنكبوت')) return 10;
+  if (p.includes('يس')) return 8;
+  if (p.includes('شوري')) return 6;
+  if (p.includes('احقاف')) return 5;
+  if (p.includes('ذاريات')) return 4;
+  if (p.includes('قد سمع') || p.includes('سمع')) return 3;
+  if (p.includes('تبارك')) return 2;
+  if (p.includes('عم')) return 1;
+  return 1;
+}

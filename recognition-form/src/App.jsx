@@ -123,8 +123,11 @@ export default function App() {
         return;
       }
 
-      // Check if student record is already completed
-      const isCompleted = existingDoc && (existingDoc.parentName || existingDoc.fatherPhone || existingDoc.completed);
+      // Check if student record is already completed with all inputs
+      const isCompleted = existingDoc && (
+        existingDoc.completed === true || 
+        (existingDoc.fatherPhone && /^01[0-9]{9}$/.test(existingDoc.fatherPhone.trim()) && existingDoc.birthDate && existingDoc.schoolName)
+      );
 
       if (isCompleted && modeParam !== 'edit') {
         // Show verified student profile card
