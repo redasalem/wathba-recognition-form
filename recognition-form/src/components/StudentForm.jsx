@@ -283,13 +283,15 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
       };
 
       let savedRecord;
-      if (initialStudentData?.id) {
-        // Updating existing document
-        await updateStudentRecord(initialStudentData.id, studentPayload);
-        savedRecord = { id: initialStudentData.id, ...studentPayload };
-        showToast?.('تم تحديث وتأكيد بيانات الطالب بنجاح 🌟', 'success');
+      const targetDocId = initialStudentData?.id || initialStudentData?.studentId || studentPayload.studentId;
+
+      if (targetDocId) {
+        // Updating or upserting official document
+        await updateStudentRecord(targetDocId, studentPayload);
+        savedRecord = { id: targetDocId, ...studentPayload };
+        showToast?.('تم حفظ وتأكيد بيانات الطالب بنجاح 🌟', 'success');
       } else {
-        // Creating new document
+        // Creating new standalone document
         const newDocId = await addStudentRecord(studentPayload);
         savedRecord = { id: newDocId, ...studentPayload };
         showToast?.('تم تسجيل وحفظ بيانات الطالب بنجاح 🎉', 'success');
