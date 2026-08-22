@@ -186,13 +186,11 @@ export default function StudentBadgeModal({ student, onClose }) {
               )}
             </div>
 
-            {/* Gift Description */}
-            {(student.gift || student.rewardEgp) && (
-              <div className="p-2.5 bg-gradient-to-r from-amber-500/15 via-[#062b24] to-amber-500/15 rounded-xl border border-[#fbbf24]/30 text-amber-300 text-xs font-black flex items-center justify-center gap-2">
-                <Gift className="w-4 h-4 text-[#fbbf24]" />
-                <span>{student.gift || `مكافأة مالية: ${student.rewardEgp} ج.م`}</span>
-              </div>
-            )}
+            {/* Recognition Gift & Certificate Description */}
+            <div className="p-2.5 bg-gradient-to-r from-amber-500/15 via-[#062b24] to-amber-500/15 rounded-xl border border-[#fbbf24]/30 text-amber-300 text-xs font-black flex items-center justify-center gap-2">
+              <Award className="w-4 h-4 text-[#fbbf24]" />
+              <span>{student.gift || 'شهادة تقدير وتكريم الكُتّاب'}</span>
+            </div>
           </div>
 
           {/* Details Grid */}

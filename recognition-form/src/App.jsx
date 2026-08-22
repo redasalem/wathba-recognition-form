@@ -118,7 +118,7 @@ export default function App() {
       });
 
       if (!catalogMatch && !existingDoc) {
-        // If parameters don't match any official 143 student -> Gatekeeper
+        // If parameters don't match any official student -> Gatekeeper
         setActiveView('student-gate');
         return;
       }

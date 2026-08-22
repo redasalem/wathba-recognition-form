@@ -49,14 +49,14 @@ export default function StudentVerificationGate({ records = [], onStudentVerifie
         partName: catalogMatch ? catalogMatch.part : (existingDoc.partName || 'القرآن الكريم'),
         awardTier: catalogMatch ? catalogMatch.tier : (existingDoc.awardTier || '✨ فئة متميزة'),
         examScore: catalogMatch ? catalogMatch.score : (existingDoc.examScore || ''),
-        gift: catalogMatch ? catalogMatch.gift : (existingDoc.gift || 'مكافأة وهدية التكريم'),
+        gift: catalogMatch ? catalogMatch.gift : (existingDoc.gift || 'شهادة تقدير وتكريم الكُتّاب'),
         totalParts: catalogMatch ? catalogMatch.totalParts : (existingDoc.totalParts || 1)
       };
       setFoundStudent(merged);
       setSearchError('');
     } else {
       setFoundStudent(null);
-      setSearchError('عذراً، لم يتم العثور على هذا الاسم أو الكود ضمن قائمة الـ 143 طالباً المعتمدين لتكريم الدورة الصيفية 2026. يرجى التأكد من الكود المكتوب على كارت الدعوة.');
+      setSearchError('عذراً، لم يتم العثور على هذا الاسم أو الكود ضمن قائمة الطلاب المعتمدين لتكريم الدورة الصيفية 2026. يرجى التأكد من الكود المكتوب على كارت الدعوة.');
     }
   };
 
@@ -84,7 +84,7 @@ export default function StudentVerificationGate({ records = [], onStudentVerifie
           </h2>
 
           <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-            الاستمارة مخصصة حصرياً لأبنائنا الطلاب الـ 143 المعتمدين في حفل تكريم الدورة الصيفية. يرجى كتابة كود الطالب أو اسمه للتحقق.
+            الاستمارة مخصصة حصرياً لأبنائنا الطلاب المعتمدين في حفل تكريم الدورة الصيفية. يرجى كتابة كود الطالب أو اسمه للتحقق.
           </p>
         </div>
 
@@ -113,7 +113,7 @@ export default function StudentVerificationGate({ records = [], onStudentVerifie
 
           <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 font-medium">
             <span>💡 مثال للبحث: <strong className="text-amber-300">#001</strong> أو <strong className="text-amber-300">تسنيم أحمد</strong></span>
-            <span className="text-emerald-400">143 طالباً معتمداً</span>
+            <span className="text-emerald-400">قاعدة البيانات المعتمدة</span>
           </div>
         </form>
 
@@ -152,7 +152,7 @@ export default function StudentVerificationGate({ records = [], onStudentVerifie
           </div>
         )}
 
-        {/* Result 2: Error / Not Found in 143 Catalog */}
+        {/* Result 2: Error / Not Found */}
         {searchError && (
           <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs font-bold space-y-2 animate-fade-in">
             <div className="flex items-start gap-2.5">

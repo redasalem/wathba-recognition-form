@@ -101,7 +101,7 @@ export const deleteStudentRecord = async (id) => {
 };
 
 // ---------------------------------------------------
-// ⚡ محرك مزامنة الطلاب الـ 143 مع Firebase دفعة واحدة (Batch Sync Engine)
+// ⚡ محرك مزامنة وإعادة تهيئة الطلاب مع Firebase (Batch & Reset Sync Engine)
 // ---------------------------------------------------
 export const batchSyncStudentsToFirestore = async (customCatalog = null, onProgress = null) => {
   if (!db) throw new Error("Firestore is not initialized");
@@ -110,7 +110,6 @@ export const batchSyncStudentsToFirestore = async (customCatalog = null, onProgr
   const total = catalogToSync.length;
   let processed = 0;
 
-  // Firestore allows up to 500 operations per batch
   const chunkSize = 400;
   for (let i = 0; i < total; i += chunkSize) {
     const chunk = catalogToSync.slice(i, i + chunkSize);
@@ -127,8 +126,8 @@ export const batchSyncStudentsToFirestore = async (customCatalog = null, onProgr
         studentName: student.name,
         partName: student.part,
         examScore: Number(student.score) || 0,
-        awardTier: student.tier || "✨ الفئة الثالثة (درجات التفوق 90%-99%)",
-        gift: student.gift || "مكافأة مالية + شهادة تقدير",
+        awardTier: student.tier || "✨ فئة التفوق",
+        gift: student.gift || "شهادة تقدير وتكريم الكُتّاب",
         totalParts: Number(student.totalParts) || 1,
         smartUrl: student.smart_url || `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(student.name)}&id=${docId}`,
         qrCodeUrl: student.qr_code_url || student.smart_url,
@@ -138,8 +137,69 @@ export const batchSyncStudentsToFirestore = async (customCatalog = null, onProgr
         updatedAt: serverTimestamp()
       };
 
-      // Use setDoc with merge: true to avoid deleting existing phone numbers or photos
       batch.set(docRef, studentPayload, { merge: true });
+      processed++;
+      if (onProgress) onProgress(processed, total);
+    }
+
+    await batch.commit();
+  }
+
+  return { success: true, count: processed };
+};
+
+// 🗑️⚡ مسح وإعادة ضبط قاعدة بيانات الطلاب بالكامل من الكتالوج المعتمد الجديد
+export const resetAndWipeStudentsFirestore = async (customCatalog = null, onProgress = null) => {
+  if (!db) throw new Error("Firestore is not initialized");
+
+  const colRef = collection(db, 'students');
+  const snapshot = await getDocs(colRef);
+  
+  // 1. Delete existing documents in batches
+  const existingDocs = snapshot.docs;
+  const deleteChunkSize = 400;
+  for (let i = 0; i < existingDocs.length; i += deleteChunkSize) {
+    const chunk = existingDocs.slice(i, i + deleteChunkSize);
+    const batch = writeBatch(db);
+    for (const docSnap of chunk) {
+      batch.delete(docSnap.ref);
+    }
+    await batch.commit();
+  }
+
+  // 2. Freshly seed from catalog
+  const catalogToSync = customCatalog || STUDENTS_CATALOG;
+  const total = catalogToSync.length;
+  let processed = 0;
+
+  for (let i = 0; i < total; i += deleteChunkSize) {
+    const chunk = catalogToSync.slice(i, i + deleteChunkSize);
+    const batch = writeBatch(db);
+
+    for (const student of chunk) {
+      const docId = student.studentId || `STU-2026-${String(student.idx).padStart(3, '0')}`;
+      const docRef = doc(db, 'students', docId);
+
+      const studentPayload = {
+        idx: student.idx,
+        studentId: docId,
+        studentCode: student.code || `#${String(student.idx).padStart(3, '0')}`,
+        studentName: student.name,
+        partName: student.part,
+        examScore: Number(student.score) || 0,
+        awardTier: student.tier || "✨ فئة التفوق",
+        gift: student.gift || "شهادة تقدير وتكريم الكُتّاب",
+        totalParts: Number(student.totalParts) || 1,
+        smartUrl: student.smart_url || `https://wathba-kuttab.vercel.app/#/student/form?name=${encodeURIComponent(student.name)}&id=${docId}`,
+        qrCodeUrl: student.qr_code_url || student.smart_url,
+        qrImgUrl: student.qr_img_url || "",
+        isSummerStudent: true,
+        accountStatus: "ACTIVE",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      batch.set(docRef, studentPayload);
       processed++;
       if (onProgress) onProgress(processed, total);
     }

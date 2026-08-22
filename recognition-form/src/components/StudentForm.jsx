@@ -262,10 +262,10 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
         }
       }
 
-      // Security check: Must belong to official 143 catalog or existing document
+      // Security check: Must belong to official catalog or existing document
       if (!resolvedCode && !initialStudentData?.id) {
-        setErrorMessage('⚠️ عذراً، لم يتم العثور على اسم الطالب في قائمة الطلاب الـ 143 المعتمدين بالدورة الصيفية 2026. يرجى مراجعة إدارة الكُتّاب.');
-        showToast?.('اسم الطالب غير مسجل ضمن كشوفات الـ 143 المعتمدين', 'error');
+        setErrorMessage('⚠️ عذراً، لم يتم العثور على اسم الطالب في قائمة الطلاب المعتمدين بالدورة الصيفية 2026. يرجى مراجعة إدارة الكُتّاب.');
+        showToast?.('اسم الطالب غير مسجل ضمن كشوفات الطلاب المعتمدين', 'error');
         setIsSubmitting(false);
         return;
       }

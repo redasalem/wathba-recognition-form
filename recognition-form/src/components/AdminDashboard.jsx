@@ -33,9 +33,10 @@ import {
   updateSheikhRecord,
   deleteSheikhRecord,
   batchSyncStudentsToFirestore,
-  batchSyncSheikhsToFirestore
+  batchSyncSheikhsToFirestore,
+  resetAndWipeStudentsFirestore
 } from '../firebase';
-import { STUDENTS_CATALOG, normalizeArabic, isStudentMatch } from '../data/studentsCatalog';
+import { STUDENTS_CATALOG, QURAN_PARTS_ORDER, normalizeArabic, isStudentMatch } from '../data/studentsCatalog';
 import { uploadToCloudinary } from '../services/cloudinary';
 import StudentEditModal from './StudentEditModal';
 import StudentBadgeModal from './StudentBadgeModal';
@@ -53,13 +54,14 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // ---------------------------------------------------
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncProgress, setSyncProgress] = useState({ processed: 0, total: 143, percentage: 0 });
+  const [isWiping, setIsWiping] = useState(false);
+  const [syncProgress, setSyncProgress] = useState({ processed: 0, total: STUDENTS_CATALOG.length, percentage: 0 });
   const [syncResult, setSyncResult] = useState(null);
 
   // ---------------------------------------------------
   // 🏆 حالة حفل التكريم والمسرح (Ceremony Hub State)
   // ---------------------------------------------------
-  const [ceremonyTierFilter, setCeremonyTierFilter] = useState('ALL');
+  const [ceremonyPartFilter, setCeremonyPartFilter] = useState('ALL');
   const [ceremonySearch, setCeremonySearch] = useState('');
   const [stagePrompterStudent, setStagePrompterStudent] = useState(null);
   const [stagePrompterIndex, setStagePrompterIndex] = useState(0);
@@ -150,7 +152,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   }, []);
 
   // ---------------------------------------------------
-  // ⚡ دالة تنفيذ المزامنة للطلاب الـ 143 في Firebase
+  // ⚡ دالة تنفيذ المزامنة للطلاب في Firebase
   // ---------------------------------------------------
   const handleExecuteSyncStudents = async () => {
     setIsSyncing(true);
@@ -177,6 +179,39 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     }
   };
 
+  // 🗑️⚡ دالة مسح السجلات القديمة وإعادة الضبط الشامل لقاعدة البيانات
+  const handleExecuteWipeAndResetStudents = async () => {
+    const isConfirmed = window.confirm(
+      '⚠️ هل أنت متأكد من رغبتك في مسح كافة السجلات السابقة في Firebase وإعادة الضبط الشامل من قاعدة البيانات المعتمدة؟\n\nسيتم مسح أي سجلات قديمة أو مكررة وتعيين الـ 146 طالباً معتمداً بشكل نظيف مع روابط الـ QR.'
+    );
+    if (!isConfirmed) return;
+
+    setIsSyncing(true);
+    setIsWiping(true);
+    setSyncResult(null);
+    setSyncProgress({ processed: 0, total: STUDENTS_CATALOG.length, percentage: 0 });
+
+    try {
+      const res = await resetAndWipeStudentsFirestore(STUDENTS_CATALOG, (processed, total) => {
+        setSyncProgress({
+          processed,
+          total,
+          percentage: Math.round((processed / total) * 100)
+        });
+      });
+
+      setSyncResult({ success: true, count: res.count });
+      showToast?.(`تم مسح السجلات السابقة وتعيين ${res.count} طالباً معتمداً بنجاح! ⚡🎉`, 'success');
+    } catch (err) {
+      console.error('Reset and wipe error:', err);
+      setSyncResult({ success: false, error: err.message });
+      showToast?.('حدث خطأ أثناء إعادة ضبط ومزامنة الطلاب', 'error');
+    } finally {
+      setIsSyncing(false);
+      setIsWiping(false);
+    }
+  };
+
   // ---------------------------------------------------
   // ⚡ دالة استيراد ومزامنة الشيوخ في Firebase
   // ---------------------------------------------------
@@ -194,11 +229,22 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     }
   };
 
+  // دالة مساعدة لتحديد ترتيب الجزء القرآني
+  const getPartOrderRank = (partName = '') => {
+    if (!partName) return 999;
+    const norm = normalizeArabic(partName);
+    const idx = QURAN_PARTS_ORDER.findIndex(p => {
+      const pNorm = normalizeArabic(p);
+      return pNorm === norm || norm.includes(pNorm) || pNorm.includes(norm);
+    });
+    return idx !== -1 ? idx : 999;
+  };
+
   // ---------------------------------------------------
-  // 🌟 دمج وإعداد قائمة الطلاب المكرمين الشاملة (143 طالب)
+  // 🌟 دمج وإعداد قائمة الطلاب المكرمين الشاملة مرتبة بالأجزاء والدرجات
   // ---------------------------------------------------
   const masterStudentsList = useMemo(() => {
-    return STUDENTS_CATALOG.map((catStudent) => {
+    const list = STUDENTS_CATALOG.map((catStudent) => {
       const matchedRecord = records.find((r) => isStudentMatch(r, catStudent));
 
       return {
@@ -208,7 +254,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         studentCode: matchedRecord?.studentCode || catStudent.code || `#${String(catStudent.idx).padStart(3, '0')}`,
         studentName: matchedRecord?.studentName || catStudent.name,
         partName: matchedRecord?.partName || catStudent.part,
-        examScore: matchedRecord?.examScore ?? catStudent.score,
+        examScore: Number(matchedRecord?.examScore ?? catStudent.score) || 0,
         awardTier: matchedRecord?.awardTier || catStudent.tier,
         gift: matchedRecord?.gift || catStudent.gift,
         totalParts: catStudent.totalParts || 1,
@@ -232,6 +278,16 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         isSummerStudent: true
       };
     });
+
+    // ترتيب بحسب رتبة الجزء ثم تنازلياً بالدرجة داخل كل جزء
+    list.sort((a, b) => {
+      const rankA = getPartOrderRank(a.partName);
+      const rankB = getPartOrderRank(b.partName);
+      if (rankA !== rankB) return rankA - rankB;
+      return (b.examScore || 0) - (a.examScore || 0);
+    });
+
+    return list;
   }, [records]);
 
   // Combined records for Students Tab
@@ -244,48 +300,43 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       ...r,
       studentCode: r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#${String(masterStudentsList.length + extraIdx + 1).padStart(3, '0')}`),
       awardTier: r.awardTier || '✨ فئة متميزة',
-      gift: r.gift || 'مكافأة وهدية التكريم',
-      partName: r.partName || 'القرآن الكريم'
+      gift: r.gift || 'شهادة تقدير وتكريم الكُتّاب',
+      partName: r.partName || 'القرآن الكريم',
+      examScore: Number(r.examScore) || 0
     }));
 
-    return [...masterStudentsList, ...standaloneRecords];
+    const combined = [...masterStudentsList, ...standaloneRecords];
+    combined.sort((a, b) => {
+      const rankA = getPartOrderRank(a.partName);
+      const rankB = getPartOrderRank(b.partName);
+      if (rankA !== rankB) return rankA - rankB;
+      return (b.examScore || 0) - (a.examScore || 0);
+    });
+
+    return combined;
   }, [masterStudentsList, records]);
 
-  // الأجزاء المتاحة للفلترة
+  // الأجزاء المتاحة للفلترة مرتبة رسمياً
   const availableParts = useMemo(() => {
-    const partsSet = new Set();
-    allDisplayStudents.forEach(s => {
-      if (s.partName) partsSet.add(s.partName);
-    });
-    return Array.from(partsSet);
-  }, [allDisplayStudents]);
+    return QURAN_PARTS_ORDER;
+  }, []);
 
   // ---------------------------------------------------
   // 🏆 تصفية وترتيب طلاب حفل التكريم والمسرح (Ceremony Hub Roster)
   // ---------------------------------------------------
   const ceremonyStudents = useMemo(() => {
-    const getTierWeight = (tierStr = '') => {
-      if (tierStr.includes('الأولى') || tierStr.includes('تاج الوقار')) return 1;
-      if (tierStr.includes('الثانية') || tierStr.includes('الأوائل')) return 2;
-      if (tierStr.includes('الثالثة') || tierStr.includes('المتميزون') || tierStr.includes('التفوق')) return 3;
-      if (tierStr.includes('الرابعة') || tierStr.includes('الإجادة')) return 4;
-      return 5;
-    };
-
     let list = [...masterStudentsList];
 
-    if (ceremonyTierFilter !== 'ALL') {
+    // فلترة بحسب الجزء القرآني المختار
+    if (ceremonyPartFilter !== 'ALL') {
+      const normFilter = normalizeArabic(ceremonyPartFilter);
       list = list.filter((s) => {
-        const tier = s.awardTier || '';
-        if (ceremonyTierFilter === 'TIER-1') return tier.includes('الأولى') || tier.includes('تاج الوقار');
-        if (ceremonyTierFilter === 'TIER-2') return tier.includes('الثانية') || tier.includes('الأوائل');
-        if (ceremonyTierFilter === 'TIER-3') return tier.includes('الثالثة') || tier.includes('التفوق');
-        if (ceremonyTierFilter === 'TIER-4') return tier.includes('الرابعة') || tier.includes('الإجادة');
-        if (ceremonyTierFilter === 'TIER-5') return tier.includes('الخامسة') || tier.includes('التشجيع');
-        return true;
+        const normPart = normalizeArabic(s.partName || '');
+        return normPart === normFilter || normPart.includes(normFilter) || normFilter.includes(normPart);
       });
     }
 
+    // فلترة البحث
     if (ceremonySearch.trim()) {
       const q = normalizeArabic(ceremonySearch);
       list = list.filter((s) => 
@@ -297,26 +348,22 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       );
     }
 
+    // الترتيب: حسب رتبة الجزء ثم بالدرجة تنازلياً داخل كل جزء
     list.sort((a, b) => {
-      const weightA = getTierWeight(a.awardTier);
-      const weightB = getTierWeight(b.awardTier);
-      if (weightA !== weightB) return weightA - weightB;
-
-      if ((b.totalParts || 0) !== (a.totalParts || 0)) {
-        return (b.totalParts || 0) - (a.totalParts || 0);
-      }
-
+      const rankA = getPartOrderRank(a.partName);
+      const rankB = getPartOrderRank(b.partName);
+      if (rankA !== rankB) return rankA - rankB;
       return (b.examScore || 0) - (a.examScore || 0);
     });
 
     return list;
-  }, [masterStudentsList, ceremonyTierFilter, ceremonySearch]);
+  }, [masterStudentsList, ceremonyPartFilter, ceremonySearch]);
 
   // ---------------------------------------------------
   // 📊 تصفية الطلاب للسجل العام والدورة الصيفية
   // ---------------------------------------------------
   const filteredStudents = useMemo(() => {
-    return allDisplayStudents.filter((student) => {
+    const filtered = allDisplayStudents.filter((student) => {
       const q = normalizeArabic(studentSearch);
       const matchSearch =
         !studentSearch ||
@@ -332,10 +379,20 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
       const matchPart =
         studentFilterPart === 'ALL' ||
-        (student.partName && student.partName.includes(studentFilterPart));
+        (student.partName && normalizeArabic(student.partName).includes(normalizeArabic(studentFilterPart)));
 
       return matchSearch && matchScope && matchPart;
     });
+
+    // ترتيب بحسب الجزء والدرجة تنازلياً
+    filtered.sort((a, b) => {
+      const rankA = getPartOrderRank(a.partName);
+      const rankB = getPartOrderRank(b.partName);
+      if (rankA !== rankB) return rankA - rankB;
+      return (b.examScore || 0) - (a.examScore || 0);
+    });
+
+    return filtered;
   }, [allDisplayStudents, studentSearch, studentScope, studentFilterPart]);
 
   // ---------------------------------------------------
@@ -419,17 +476,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // ---------------------------------------------------
   const stats = useMemo(() => {
     const totalHonored = masterStudentsList.length;
-    const tier1Count = masterStudentsList.filter(s => (s.awardTier || '').includes('الأولى') || (s.awardTier || '').includes('تاج الوقار')).length;
-    const tier2Count = masterStudentsList.filter(s => (s.awardTier || '').includes('الثانية') || (s.awardTier || '').includes('الأوائل')).length;
-    const tier3Count = masterStudentsList.filter(s => (s.awardTier || '').includes('الثالثة') || (s.awardTier || '').includes('التفوق')).length;
-    const totalAwardsBudgetEgp = (tier1Count * 2500) + (tier2Count * 1200) + (tier3Count * 600) + (50 * 180) + (67 * 90);
+    const topScorersCount = masterStudentsList.filter(s => (s.examScore || 0) >= 90).length;
+    const totalPartsCount = QURAN_PARTS_ORDER.length;
 
     return {
       totalHonored,
-      tier1Count,
-      tier2Count,
-      tier3Count,
-      totalAwardsBudgetEgp,
+      topScorersCount,
+      totalPartsCount,
       totalSheikhs: sheikhs.length,
       totalFamilies: familiesData.length
     };
@@ -440,17 +493,16 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // ---------------------------------------------------
   const exportCeremonyToCSV = () => {
     let csvContent = '\uFEFF';
-    csvContent += 'الترتيب,كود الطالب,اسم الطالب المكرم,فئة التكريم,مستوى الحفظ,درجة الاختبار,المكافأة والجائزة المادية,الشيخ المشرف,اسم ولي الأمر,هاتف ولي الأمر\n';
+    csvContent += 'الترتيب,كود الطالب,اسم الطالب المكرم,مستوى الحفظ القرآني,درجة الاختبار,التكريم وشهادة التقدير,الشيخ المشرف,اسم ولي الأمر,هاتف ولي الأمر\n';
 
     ceremonyStudents.forEach((s, idx) => {
       const row = [
         idx + 1,
         `"${s.studentCode || ''}"`,
         `"${s.studentName || ''}"`,
-        `"${s.awardTier || ''}"`,
         `"${s.partName || ''}"`,
         `"${s.examScore || ''}%"`,
-        `"${s.gift || ''}"`,
+        `"${s.gift || s.awardTier || ''}"`,
         `"${s.sheikhName || ''}"`,
         `"${s.parentName || ''}"`,
         `"${s.fatherPhone || ''}"`
@@ -462,11 +514,11 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `كشف_حفل_تكريم_الطلاب_143_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `كشف_حفل_تكريم_الطلاب_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast?.('تم تصدير كشف حفل التكريم والجوائز بنجاح 📊🎉', 'success');
+    showToast?.('تم تصدير كشف حفل التكريم بنجاح 📊🎉', 'success');
   };
 
   const exportStudentsToExcel = () => {
@@ -700,7 +752,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
               منظومة كُتّاب <span className="text-[#fbbf24]">| قاعدة البيانات وحفل التكريم</span>
             </h1>
             <p className="text-xs text-emerald-200/80 font-medium max-w-xl">
-              إدارة بروتوكول التكريم المباشر، ترتيب صعود الطلاب الـ 143 على المسرح، ومزامنة البيانات في Firebase.
+              إدارة بروتوكول التكريم المباشر، ترتيب صعود الطلاب على المسرح حسب الأجزاء والدرجات، ومزامنة البيانات في Firebase.
             </p>
           </div>
 
@@ -709,10 +761,10 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             <button
               onClick={() => setSyncModalOpen(true)}
               className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-lg active:scale-95 border border-amber-300/40"
-              title="مزامنة وتعيين كافة الطلاب الـ 143 في Firebase"
+              title="مزامنة وإدارة قاعدة بيانات الطلاب في Firebase"
             >
               <Database className="w-4 h-4" />
-              <span>⚡ مزامنة الـ 143 طالب في Firebase</span>
+              <span>⚡ إدارة ومزامنة الطلاب ({masterStudentsList.length} طالب)</span>
             </button>
 
             <button
@@ -807,31 +859,31 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             </div>
 
             <div className="bg-[#062b24]/90 border border-emerald-700/40 rounded-2xl p-5 text-center shadow-xl">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto mb-2">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-300">{stats.tier1Count} طلاب</div>
-              <div className="text-xs font-bold text-slate-300 mt-1">👑 الفئة الأولى (تاج الوقار 2500 ج)</div>
-            </div>
-
-            <div className="bg-[#062b24]/90 border border-emerald-700/40 rounded-2xl p-5 text-center shadow-xl">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto mb-2">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-emerald-300">{stats.tier2Count} طلاب</div>
-              <div className="text-xs font-bold text-slate-300 mt-1">🌟 الفئة الثانية (الأوائل المطلقون 100%)</div>
+              <div className="text-2xl sm:text-3xl font-black text-emerald-300">{stats.topScorersCount} طلاب</div>
+              <div className="text-xs font-bold text-slate-300 mt-1">🌟 الطلاب المتفوقون (≥90%)</div>
+            </div>
+
+            <div className="bg-[#062b24]/90 border border-emerald-700/40 rounded-2xl p-5 text-center shadow-xl">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto mb-2">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-amber-300">{stats.totalPartsCount} مستويات</div>
+              <div className="text-xs font-bold text-slate-300 mt-1">📖 مستويات الحفظ والأجزاء</div>
             </div>
 
             <div className="bg-[#062b24]/90 border border-emerald-700/40 rounded-2xl p-5 text-center shadow-xl">
               <div className="w-10 h-10 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 mx-auto mb-2">
-                <Gift className="w-5 h-5" />
+                <Users className="w-5 h-5" />
               </div>
-              <div className="text-xl sm:text-2xl font-black text-teal-300">{stats.totalAwardsBudgetEgp.toLocaleString()} ج.م</div>
-              <div className="text-xs font-bold text-slate-300 mt-1">إجمالي ميزانية الجوائز المالية</div>
+              <div className="text-2xl sm:text-3xl font-black text-teal-300">{stats.totalSheikhs} محفظاً</div>
+              <div className="text-xs font-bold text-slate-300 mt-1">👳‍♂️ المشرفون والمعلمون المعتمدون</div>
             </div>
           </div>
 
-          {/* Ceremony Controls: Search, Tier Filter & Action Buttons */}
+          {/* Ceremony Controls: Search, Parts Filter & Action Buttons */}
           <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 sm:p-5 rounded-3xl shadow-xl space-y-4">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               
@@ -862,95 +914,65 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   className="px-4 py-2.5 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-black flex items-center gap-2 cursor-pointer transition-all shadow"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
-                  <span>تصدير كشف الجوائز (Excel)</span>
+                  <span>تصدير كشف التكريم (Excel)</span>
                 </button>
               </div>
             </div>
 
-            {/* Tier Filter Pills */}
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-emerald-800/40">
-              <span className="text-xs font-bold text-slate-300 ml-1 flex items-center gap-1">
+            {/* Quran Parts Filter Pills */}
+            <div className="space-y-2 pt-2 border-t border-emerald-800/40">
+              <div className="flex items-center gap-1.5 text-xs font-black text-[#fbbf24]">
                 <Filter className="w-3.5 h-3.5 text-amber-400" />
-                تصفية حسب الفئة:
-              </span>
+                <span>تصنيف وترتيب حسب الأجزاء القرآنية:</span>
+                <span className="text-[11px] text-slate-400 font-normal">(الترتيب داخل كل جزء تنازلياً بحسب الدرجة)</span>
+              </div>
 
-              <button
-                onClick={() => setCeremonyTierFilter('ALL')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  ceremonyTierFilter === 'ALL'
-                    ? 'bg-amber-400 text-slate-950 shadow'
-                    : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
-                }`}
-              >
-                الكل ({masterStudentsList.length})
-              </button>
+              <div className="flex flex-wrap items-center gap-2 max-h-36 overflow-y-auto p-1">
+                <button
+                  onClick={() => setCeremonyPartFilter('ALL')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    ceremonyPartFilter === 'ALL'
+                      ? 'bg-amber-400 text-slate-950 shadow-md scale-105'
+                      : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
+                  }`}
+                >
+                  جميع الأجزاء ({masterStudentsList.length})
+                </button>
 
-              <button
-                onClick={() => setCeremonyTierFilter('TIER-1')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  ceremonyTierFilter === 'TIER-1'
-                    ? 'bg-amber-500 text-slate-950 shadow'
-                    : 'bg-slate-900/80 text-amber-300 hover:text-white border border-amber-500/30'
-                }`}
-              >
-                👑 الأولى - تاج الوقار (8)
-              </button>
+                {QURAN_PARTS_ORDER.map((part) => {
+                  const normP = normalizeArabic(part);
+                  const count = masterStudentsList.filter(s => {
+                    const normPart = normalizeArabic(s.partName || '');
+                    return normPart === normP || normPart.includes(normP) || normP.includes(normPart);
+                  }).length;
 
-              <button
-                onClick={() => setCeremonyTierFilter('TIER-2')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  ceremonyTierFilter === 'TIER-2'
-                    ? 'bg-emerald-400 text-slate-950 shadow'
-                    : 'bg-slate-900/80 text-emerald-300 hover:text-white border border-emerald-500/30'
-                }`}
-              >
-                🌟 الثانية - الأوائل 100% (5)
-              </button>
-
-              <button
-                onClick={() => setCeremonyTierFilter('TIER-3')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  ceremonyTierFilter === 'TIER-3'
-                    ? 'bg-teal-400 text-slate-950 shadow'
-                    : 'bg-slate-900/80 text-teal-300 hover:text-white border border-teal-500/30'
-                }`}
-              >
-                ✨ الثالثة - المتميزون (13)
-              </button>
-
-              <button
-                onClick={() => setCeremonyTierFilter('TIER-4')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  ceremonyTierFilter === 'TIER-4'
-                    ? 'bg-cyan-400 text-slate-950 shadow'
-                    : 'bg-slate-900/80 text-cyan-300 hover:text-white border border-cyan-500/30'
-                }`}
-              >
-                📜 الرابعة - الإجادة (50)
-              </button>
-
-              <button
-                onClick={() => setCeremonyTierFilter('TIER-5')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                  ceremonyTierFilter === 'TIER-5'
-                    ? 'bg-slate-300 text-slate-950 shadow'
-                    : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-700/40'
-                }`}
-              >
-                🎁 الخامسة - التشجيع (67)
-              </button>
+                  return (
+                    <button
+                      key={part}
+                      onClick={() => setCeremonyPartFilter(part)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                        ceremonyPartFilter === part
+                          ? 'bg-emerald-400 text-slate-950 shadow-md scale-105'
+                          : 'bg-slate-900/80 text-emerald-300 hover:text-white border border-emerald-500/30'
+                      }`}
+                    >
+                      {part} ({count})
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           {/* Stage Ascension Roster Table */}
           <div className="bg-[#062b24]/90 border border-emerald-700/40 rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-emerald-800/40 pb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-emerald-800/40 pb-4 gap-2">
               <div className="flex items-center gap-2.5 font-black text-[#fbbf24] text-base">
                 <Award className="w-5 h-5" />
-                <span>كشف ترتيب صعود المسرح المعتمد ({ceremonyStudents.length} طالب معروض)</span>
+                <span>كشف صعود المسرح المعتمد ({ceremonyStudents.length} طالب معروض)</span>
               </div>
               <span className="text-xs font-bold text-emerald-300 bg-emerald-950 px-3.5 py-1 rounded-full border border-emerald-700/40">
-                مرتب حسب فئات التكريم وحفظ القرآن ⭐
+                مرتب بحسب الأجزاء والدرجات تنازلياً ⭐
               </span>
             </div>
 
@@ -961,9 +983,9 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                     <th className="p-3 text-center rounded-r-xl w-16">الدور #</th>
                     <th className="p-3 text-center w-20">كود الطالب</th>
                     <th className="p-3">اسم الطالب المُكَرَّم</th>
-                    <th className="p-3">فئة الجائزة والتكريم</th>
-                    <th className="p-3">مستوى الحفظ والدرجة</th>
-                    <th className="p-3">المكافأة والجائزة المادية</th>
+                    <th className="p-3">مستوى الحفظ (الجزء)</th>
+                    <th className="p-3 text-center w-28">درجة الاختبار</th>
+                    <th className="p-3">التكريم وشهادة التقدير</th>
                     <th className="p-3 text-center rounded-l-xl w-36">إجراءات المسرح</th>
                   </tr>
                 </thead>
@@ -988,26 +1010,29 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
                       <td className="p-3">
                         <div className="font-bold text-white text-sm">{student.studentName}</div>
-                        <span className="text-[10px] text-slate-400">{student.sheikhName}</span>
+                        <span className="text-[10px] text-slate-400">{student.sheikhName || 'شيوخ الكُتّاب'}</span>
                       </td>
 
                       <td className="p-3">
-                        <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold text-[11px] inline-block">
-                          {student.awardTier}
+                        <span className="px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-[11px] inline-block">
+                          {student.partName || 'القرآن الكريم'}
                         </span>
                       </td>
 
-                      <td className="p-3">
-                        <div className="font-bold text-emerald-300">{student.partName}</div>
-                        {student.examScore && (
-                          <span className="text-[10px] text-amber-400 font-mono font-bold">الدرجة: {student.examScore}%</span>
+                      <td className="p-3 text-center">
+                        {student.examScore ? (
+                          <span className="px-2.5 py-1 rounded-xl bg-slate-950 border border-amber-500/40 text-amber-400 font-mono font-black text-xs inline-block">
+                            {student.examScore}%
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-xs">—</span>
                         )}
                       </td>
 
                       <td className="p-3">
                         <div className="text-amber-200 text-[11px] font-bold flex items-center gap-1">
-                          <Gift className="w-3.5 h-3.5 text-[#fbbf24] shrink-0" />
-                          <span>{student.gift}</span>
+                          <Award className="w-3.5 h-3.5 text-[#fbbf24] shrink-0" />
+                          <span>{student.gift || student.awardTier || 'شهادة تقدير وتكريم'}</span>
                         </div>
                       </td>
 
@@ -1423,7 +1448,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             <div className="flex items-center justify-between border-b border-emerald-800/40 pb-3">
               <div className="flex items-center gap-2 text-[#fbbf24] font-black text-base">
                 <Database className="w-5 h-5" />
-                <span>محرك المزامنة التلقائي مع Firebase</span>
+                <span>محرك إدارة ومزامنة قاعدة البيانات مع Firebase</span>
               </div>
               <button
                 type="button"
@@ -1438,23 +1463,33 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
             <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
               <p>
-                سيقوم هذا المحرك بتعيين وحفظ كافة بيانات الطلاب الـ <strong>143 طالباً</strong> المسجلين في قاعدة بيانات <strong className="text-[#fbbf24]">kuttab_master_database.xlsx</strong> مباشرة في قاعدة بيانات Firebase Firestore مع فئات التكريم والجوائز ورموز الـ QR.
+                يتيح لك هذا المحرك مزامنة أو إعادة ضبط قاعدة بيانات الطلاب المعتمدة (<strong>{STUDENTS_CATALOG.length} طالباً</strong>) مباشرة مع Firebase Firestore مع الأجزاء والدرجات وأكواد الـ QR.
               </p>
 
               <div className="p-3.5 bg-emerald-950/60 rounded-2xl border border-emerald-700/40 text-emerald-300 text-xs space-y-1">
                 <p className="font-bold flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-[#fbbf24]" />
-                  <span>دمج آمن ومحمي (Safe Upsert & Merge):</span>
+                  <span>1. المزامنة والدمج الآمن (Safe Update & Merge):</span>
                 </p>
                 <p className="text-[11px] text-slate-300">
-                  لن يتم حذف أي بيانات أو أرقام هواتف أو صور أدخلها أولياء الأمور مسبقاً، وسيتم دمج البيانات بدقة.
+                  يقوم بتحديث بيانات الطلاب مع الاحتفاظ بأي بيانات إضافية (أرقام الهواتف أو صور الطلاب) المسجلة مسبقاً.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-rose-950/40 rounded-2xl border border-rose-700/40 text-rose-300 text-xs space-y-1">
+                <p className="font-bold flex items-center gap-1.5">
+                  <Trash2 className="w-4 h-4 text-rose-400" />
+                  <span>2. مسح السجلات وإعادة الضبط الشامل (Full Reset & Fresh Sync):</span>
+                </p>
+                <p className="text-[11px] text-slate-300">
+                  يمسح أي بيانات قديمة أو مكررة في فايربيز ويقوم بإعادة إيداع قائمة الـ {STUDENTS_CATALOG.length} طالباً المعتمدين من البداية.
                 </p>
               </div>
 
               {isSyncing && (
                 <div className="space-y-2 pt-2">
                   <div className="flex justify-between text-xs font-bold text-amber-300">
-                    <span>جاري المزامنة مع Firebase Firestore...</span>
+                    <span>{isWiping ? 'جاري مسح السجلات القديمة وإعادة البناء...' : 'جاري المزامنة مع Firebase Firestore...'}</span>
                     <span>{syncProgress.percentage}% ({syncProgress.processed} / {syncProgress.total})</span>
                   </div>
                   <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-amber-500/40">
@@ -1469,30 +1504,43 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
               {syncResult?.success && (
                 <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-xl font-bold flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>تمت مزامنة وحفظ {syncResult.count} طالباً بنجاح في Firebase! 🎉</span>
+                  <span>تم تعيين وحفظ {syncResult.count} طالباً بنجاح في Firebase! 🎉</span>
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-emerald-800/40">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 border-t border-emerald-800/40">
               <button
                 type="button"
-                onClick={() => setSyncModalOpen(false)}
+                onClick={handleExecuteWipeAndResetStudents}
                 disabled={isSyncing}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer transition-all"
+                className="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/40 font-bold rounded-xl cursor-pointer text-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                title="مسح كافة البيانات السابقة والبدء من جديد"
               >
-                إلغاء
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>مسح وإعادة ضبط شامل</span>
               </button>
 
-              <button
-                type="button"
-                onClick={handleExecuteSyncStudents}
-                disabled={isSyncing}
-                className="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg flex items-center gap-2 disabled:opacity-50 transition-all active:scale-95"
-              >
-                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span>{isSyncing ? 'جاري المزامنة...' : 'بدء المزامنة الآن ⚡'}</span>
-              </button>
+              <div className="flex items-center gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSyncModalOpen(false)}
+                  disabled={isSyncing}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer transition-all text-xs"
+                >
+                  إغلاق
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExecuteSyncStudents}
+                  disabled={isSyncing}
+                  className="px-5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 transition-all active:scale-95 text-xs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span>{isSyncing ? 'جاري التنفيذ...' : 'مزامنة وتحديث'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>,
@@ -1540,23 +1588,25 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 {stagePrompterStudent.studentName || stagePrompterStudent.name}
               </h2>
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black">
-                  {stagePrompterStudent.awardTier || stagePrompterStudent.tier}
-                </span>
                 <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
                   {stagePrompterStudent.partName || stagePrompterStudent.part}
                 </span>
+                {stagePrompterStudent.examScore && (
+                  <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-black">
+                    الدرجة: {stagePrompterStudent.examScore}%
+                  </span>
+                )}
               </div>
 
               <div className="p-4 bg-slate-950/90 rounded-2xl border border-emerald-700/40 text-right space-y-2">
                 <p className="text-xs sm:text-sm text-slate-100 leading-relaxed font-semibold">
-                  "بسم الله الرحمن الرحيم .. ويتفضل الآن لصعود منصة التكريم الطالب الحافظ / <strong className="text-[#fbbf24] text-sm sm:text-base">{stagePrompterStudent.studentName || stagePrompterStudent.name}</strong> .. الحاصل على <strong className="text-emerald-300">{stagePrompterStudent.awardTier || stagePrompterStudent.tier}</strong> بمستوى <strong className="text-white">{stagePrompterStudent.partName || stagePrompterStudent.part}</strong> .. تحت إشراف فضيلة الشيخ / <strong className="text-amber-300">{stagePrompterStudent.sheikhName || 'شيوخ الكُتّاب'}</strong>."
+                  "بسم الله الرحمن الرحيم .. ويتفضل الآن لصعود منصة التكريم الطالب الحافظ / <strong className="text-[#fbbf24] text-sm sm:text-base">{stagePrompterStudent.studentName || stagePrompterStudent.name}</strong> .. بمستوى <strong className="text-emerald-300">{stagePrompterStudent.partName || stagePrompterStudent.part}</strong> .. تحت إشراف فضيلة الشيخ / <strong className="text-amber-300">{stagePrompterStudent.sheikhName || 'شيوخ الكُتّاب'}</strong>."
                 </p>
               </div>
 
               <div className="p-4 bg-gradient-to-r from-amber-500/20 via-[#062b24] to-amber-500/20 rounded-2xl border border-[#fbbf24]/50 text-center space-y-1">
-                <div className="text-xs font-bold text-emerald-300">🎁 الجائزة المستحقة للتسليم على المسرح:</div>
-                <div className="text-sm sm:text-base font-black text-[#fbbf24]">{stagePrompterStudent.gift || 'مكافأة تكريم خاصة'}</div>
+                <div className="text-xs font-bold text-emerald-300">🎖️ شهادة التقدير والتكريم المعتمدة:</div>
+                <div className="text-sm sm:text-base font-black text-[#fbbf24]">{stagePrompterStudent.gift || stagePrompterStudent.awardTier || 'شهادة تقدير وتكريم الكُتّاب'}</div>
               </div>
             </div>
 

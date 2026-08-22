@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { updateStudentRecord, addStudentRecord } from '../firebase';
 import { uploadStudentPhoto } from '../services/cloudinary';
+import { QURAN_PARTS_ORDER } from '../data/studentsCatalog';
 
 // ─── Inline Field Hint Component ────────────────────────────
 function FieldHint({ show, type = 'error', message }) {
@@ -345,14 +346,16 @@ export default function StudentEditModal({ student, onClose, showToast }) {
           {/* Quranic Level & Score */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block font-bold text-emerald-300 mb-1">المستوى القرآني</label>
-              <input
-                type="text"
+              <label className="block font-bold text-emerald-300 mb-1">المستوى القرآني (الجزء)</label>
+              <select
                 value={formData.partName}
                 onChange={(e) => handleInputChange('partName', e.target.value)}
-                placeholder="مثال: القرآن كاملاً / جزء عم"
                 className={getInputClass('partName')}
-              />
+              >
+                {QURAN_PARTS_ORDER.map((part) => (
+                  <option key={part} value={part}>{part}</option>
+                ))}
+              </select>
             </div>
 
             <div>
