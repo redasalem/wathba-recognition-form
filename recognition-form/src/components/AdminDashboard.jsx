@@ -236,7 +236,11 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         // Base official catalog properties (Immutable baseline)
         ...cat,
         idx: cat.idx || index + 1,
+        studentId: cat.studentId || `STU-2026-${String(index + 1).padStart(3, '0')}`,
+        studentCode: cat.code || `#${String(cat.idx || index + 1).padStart(3, '0')}`,
+        code: cat.code || `#${String(cat.idx || index + 1).padStart(3, '0')}`,
         studentName: cat.name,
+        name: cat.name,
         partName: cat.part,
         part: cat.part,
         examScore: cat.score !== undefined ? Number(cat.score) : 0,
@@ -1705,6 +1709,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                         </td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => setBadgeModalStudent(r)}
+                              className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl transition-all cursor-pointer border border-amber-500/30 shadow-sm"
+                              title="معاينة كارت التكريم والـ QR Code والطباعة 👁️"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
                             <button
                               onClick={() => handleCopyStudentLink(r)}
                               className="p-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-xl transition-all cursor-pointer border border-amber-500/30"
