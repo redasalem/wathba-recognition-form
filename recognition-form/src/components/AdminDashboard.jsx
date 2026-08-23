@@ -1081,7 +1081,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 return (
                   <button
                     key={part}
-                    onClick={() => setPartFilter(part)}
+                    onClick={() => setPartFilter(partFilter === part ? 'ALL' : part)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
                       partFilter === part
                         ? 'bg-emerald-400 text-slate-950 shadow-md scale-105 font-black'
