@@ -114,34 +114,6 @@ export default function StagePrompterModal({
           </div>
         </div>
 
-        {/* Center: View Modes Toggles */}
-        <div className="hidden md:flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-emerald-800/60">
-          <button
-            onClick={() => setActiveMode('both')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeMode === 'both' ? 'bg-[#fbbf24] text-slate-950 shadow font-black' : 'text-slate-300 hover:text-white'
-            }`}
-          >
-            العرض والنداء معاً
-          </button>
-          <button
-            onClick={() => setActiveMode('certificate')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeMode === 'certificate' ? 'bg-emerald-500 text-slate-950 shadow font-black' : 'text-slate-300 hover:text-white'
-            }`}
-          >
-            شهادة المسرح الكبرى 🏆
-          </button>
-          <button
-            onClick={() => setActiveMode('speech')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeMode === 'speech' ? 'bg-emerald-500 text-slate-950 shadow font-black' : 'text-slate-300 hover:text-white'
-            }`}
-          >
-            نص الإلقاء الصوتي 🎙️
-          </button>
-        </div>
-
         {/* Right: Quick Action Controls */}
         <div className="flex items-center gap-2">
           <button
@@ -176,139 +148,103 @@ export default function StagePrompterModal({
       <div className="w-full max-w-5xl flex-1 flex flex-col items-center justify-center gap-4 my-auto print:max-w-none print:w-full print:m-0">
         
         {/* 🌟 LUXURY OFFICIAL STAGE CERTIFICATE CANVAS (دار تاج الوقار) */}
-        {(activeMode === 'both' || activeMode === 'certificate') && (
+        <div
+          id="stage-certificate-print"
+          className="relative w-full max-w-4xl aspect-[1.414/1] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_20px_70px_rgba(0,0,0,0.8)] border-2 sm:border-4 border-[#fbbf24]/70 bg-[#062b24] transition-all print:border-none print:shadow-none print:w-full print:aspect-auto"
+          style={{
+            backgroundImage: `url('/certificate-template.jpg')`,
+            backgroundSize: '100% 100%',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        >
+          {/* 1. STUDENT NAME OVERLAY (Perfect vertical & horizontal center inside the green ornate banner) */}
           <div
-            id="stage-certificate-print"
-            className="relative w-full max-w-4xl aspect-[1.414/1] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_20px_70px_rgba(0,0,0,0.8)] border-2 sm:border-4 border-[#fbbf24]/70 bg-[#062b24] transition-all print:border-none print:shadow-none print:w-full print:aspect-auto"
+            className="absolute text-center flex items-center justify-center px-4"
             style={{
-              backgroundImage: `url('/certificate-template.jpg')`,
-              backgroundSize: '100% 100%',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
+              top: '55.2%',
+              left: '26%',
+              width: '48%',
+              height: '7%',
+              transform: 'translateY(-50%)'
             }}
           >
-            {/* 1. STUDENT NAME OVERLAY (Perfect vertical & horizontal center inside the green ornate banner) */}
-            <div
-              className="absolute text-center flex items-center justify-center px-4"
+            <h1
+              className="font-black text-[#fef08a] tracking-wide truncate drop-shadow-[0_3px_6px_rgba(0,0,0,0.95)]"
               style={{
-                top: '55.2%',
-                left: '26%',
-                width: '48%',
-                height: '7%',
-                transform: 'translateY(-50%)'
+                fontSize: 'clamp(1.15rem, 2.6vw, 2.25rem)',
+                fontFamily: `'Amiri', 'Cairo', 'Traditional Arabic', serif`,
+                textShadow: '0 0 16px rgba(251, 191, 36, 0.75), 0 3px 8px rgba(0,0,0,0.95)'
               }}
             >
-              <h1
-                className="font-black text-[#fef08a] tracking-wide truncate drop-shadow-[0_3px_6px_rgba(0,0,0,0.95)]"
-                style={{
-                  fontSize: 'clamp(1.15rem, 2.6vw, 2.25rem)',
-                  fontFamily: `'Amiri', 'Cairo', 'Traditional Arabic', serif`,
-                  textShadow: '0 0 16px rgba(251, 191, 36, 0.75), 0 3px 8px rgba(0,0,0,0.95)'
-                }}
-              >
-                {studentName}
-              </h1>
-            </div>
-
-            {/* 2. QURANIC LEVEL OVERLAY (Inside the dark green oval frame on the left of "المستوى القرآني") */}
-            <div
-              className="absolute text-center flex flex-col items-center justify-center gap-0.5 px-1"
-              style={{
-                top: '76.4%',
-                left: '42.0%',
-                width: '10.5%',
-                height: '5.6%',
-                transform: 'translate(-50%, -50%)'
-              }}
-            >
-              <span
-                className="font-black text-[#fbbf24] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] truncate leading-tight"
-                style={{
-                  fontSize: 'clamp(0.65rem, 1.0vw, 0.90rem)',
-                  fontFamily: `'Amiri', 'Cairo', serif`,
-                  textShadow: '0 0 10px rgba(251, 191, 36, 0.6), 0 2px 5px rgba(0,0,0,0.9)'
-                }}
-              >
-                {partName}
-              </span>
-              {score > 0 && (
-                <span className="text-white font-mono font-black text-[0.65rem] sm:text-[0.75rem] leading-none drop-shadow">
-                  ({score}%)
-                </span>
-              )}
-            </div>
-
-            {/* 3. SUPERVISING SHEIKH (On the line to the left of "الشيخ المحفظ") */}
-            <div
-              className="absolute text-center flex items-center justify-center px-1"
-              style={{
-                bottom: '6.5%',
-                right: '21.0%',
-                width: '14.0%',
-                height: '4.0%'
-              }}
-            >
-              <p
-                className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-                style={{ fontSize: 'clamp(0.6rem, 0.9vw, 0.82rem)' }}
-              >
-                {sheikhName}
-              </p>
-            </div>
-
-
-            {/* 5. CEREMONY MANAGEMENT (On the line to the right of "مدير الكتاب") */}
-            <div
-              className="absolute text-center flex items-center justify-center px-1"
-              style={{
-                bottom: '6.5%',
-                left: '21.0%',
-                width: '14.0%',
-                height: '4.0%'
-              }}
-            >
-              <p
-                className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-                style={{ fontSize: 'clamp(0.6rem, 0.9vw, 0.82rem)' }}
-              >
-                إدارة دار تاج الوقار
-              </p>
-            </div>
+              {studentName}
+            </h1>
           </div>
-        )}
 
-        {/* 🎙️ SPOKEN STAGE ANNOUNCEMENT SCRIPT BOX */}
-        {(activeMode === 'both' || activeMode === 'speech') && (
-          <div className="w-full max-w-4xl bg-gradient-to-r from-[#041915] via-[#062b24] to-[#041915] border border-amber-500/40 rounded-2xl p-4 sm:p-5 shadow-2xl space-y-3 print:hidden">
-            <div className="flex items-center justify-between border-b border-emerald-800/40 pb-2">
-              <div className="flex items-center gap-2 text-xs font-black text-amber-300">
-                <Volume2 className="w-4 h-4 text-[#fbbf24]" />
-                <span>نص الإلقاء والتقديم المباشر على ميكروفون المسرح:</span>
-              </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-slate-900 text-[#fbbf24] text-[11px] font-mono font-bold border border-amber-500/30">
-                {studentCode}
+          {/* 2. QURANIC LEVEL OVERLAY (Inside the dark green oval frame on the left of "المستوى القرآني") */}
+          <div
+            className="absolute text-center flex flex-col items-center justify-center gap-0.5 px-1"
+            style={{
+              top: '76.4%',
+              left: '42.0%',
+              width: '10.5%',
+              height: '5.6%',
+              transform: 'translate(-50%, -50%)'
+            }}
+          >
+            <span
+              className="font-black text-[#fbbf24] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] truncate leading-tight"
+              style={{
+                fontSize: 'clamp(0.65rem, 1.0vw, 0.90rem)',
+                fontFamily: `'Amiri', 'Cairo', serif`,
+                textShadow: '0 0 10px rgba(251, 191, 36, 0.6), 0 2px 5px rgba(0,0,0,0.9)'
+              }}
+            >
+              {partName}
+            </span>
+            {score > 0 && (
+              <span className="text-white font-mono font-black text-[0.65rem] sm:text-[0.75rem] leading-none drop-shadow">
+                ({score}%)
               </span>
-            </div>
+            )}
+          </div>
 
-            <p className="text-sm sm:text-lg text-slate-100 font-semibold leading-relaxed text-right">
-              "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ .. يَتَفَضَّلُ الآنَ لِصُعُودِ مِنَصَّةِ التَّكْرِيمِ الطَّالِبُ الحَافِظُ / <strong className="text-[#fbbf24] text-base sm:text-xl font-black">{studentName}</strong> .. بِمُسْتَوَى <strong className="text-emerald-300 font-black">{partName}</strong> {score > 0 && <span>(بِدَرَجَةِ <strong className="text-amber-300 font-mono font-black">{score}%</strong>)</span>} .. تَحْتَ إِشْرَافِ فَضِيلَةِ الشَّيْخِ / <strong className="text-amber-300 font-black">{sheikhName}</strong>."
+          {/* 3. SUPERVISING SHEIKH (On the line to the left of "الشيخ المحفظ") */}
+          <div
+            className="absolute text-center flex items-center justify-center px-1"
+            style={{
+              bottom: '6.5%',
+              right: '21.0%',
+              width: '14.0%',
+              height: '4.0%'
+            }}
+          >
+            <p
+              className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
+              style={{ fontSize: 'clamp(0.6rem, 0.9vw, 0.82rem)' }}
+            >
+              {sheikhName}
             </p>
-
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-emerald-800/40 text-xs">
-              <div className="flex items-center gap-1.5 text-emerald-300 font-bold">
-                <Award className="w-4 h-4 text-[#fbbf24]" />
-                <span>التكريم والهدية:</span>
-                <span className="text-[#fbbf24] font-black">{gift}</span>
-              </div>
-
-              {student.fatherPhone && (
-                <div className="text-[11px] text-slate-400 font-mono">
-                  📱 هاتف ولي الأمر: {student.fatherPhone}
-                </div>
-              )}
-            </div>
           </div>
-        )}
+
+          {/* 5. CEREMONY MANAGEMENT (On the line to the right of "مدير الكتاب") */}
+          <div
+            className="absolute text-center flex items-center justify-center px-1"
+            style={{
+              bottom: '6.5%',
+              left: '21.0%',
+              width: '14.0%',
+              height: '4.0%'
+            }}
+          >
+            <p
+              className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
+              style={{ fontSize: 'clamp(0.6rem, 0.9vw, 0.82rem)' }}
+            >
+              إدارة دار تاج الوقار
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* ─── 3. BOTTOM NAVIGATION BAR ─── */}
