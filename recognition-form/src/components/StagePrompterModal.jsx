@@ -86,6 +86,7 @@ export default function StagePrompterModal({
   const studentCode = student.studentCode || (student.idx ? `#${String(student.idx).padStart(3, '0')}` : '#001');
   const studentName = student.studentName || student.name || 'طالب دار تاج الوقار';
   const partName = student.partName || student.part || 'القرآن كاملاً';
+  const score = student.examScore !== undefined && student.examScore !== '' ? Number(student.examScore) : (student.score !== undefined ? Number(student.score) : 0);
   const sheikhName = student.sheikhName && student.sheikhName !== 'شيوخ الكُتّاب' ? student.sheikhName : 'شيوخ الكُتّاب';
   const gift = student.gift || student.awardTier || 'شهادة تقدير وتكريم الكُتّاب';
 
