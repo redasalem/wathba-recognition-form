@@ -214,17 +214,17 @@ export default function StagePrompterModal({
             <div
               className="absolute text-center flex flex-col items-center justify-center gap-0.5 px-1"
               style={{
-                top: '74.2%',
-                left: '37.0%',
-                width: '13.5%',
-                height: '6.2%',
-                transform: 'translateY(-50%)'
+                top: '75.2%',
+                left: '42.0%',
+                width: '10.5%',
+                height: '5.6%',
+                transform: 'translate(-50%, -50%)'
               }}
             >
               <span
                 className="font-black text-[#fbbf24] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] truncate leading-tight"
                 style={{
-                  fontSize: 'clamp(0.65rem, 1.1vw, 0.95rem)',
+                  fontSize: 'clamp(0.65rem, 1.0vw, 0.90rem)',
                   fontFamily: `'Amiri', 'Cairo', serif`,
                   textShadow: '0 0 10px rgba(251, 191, 36, 0.6), 0 2px 5px rgba(0,0,0,0.9)'
                 }}
@@ -232,80 +232,80 @@ export default function StagePrompterModal({
                 {partName}
               </span>
               {score > 0 && (
-                <span className="text-white font-mono font-black text-[0.7rem] sm:text-[0.8rem] leading-none drop-shadow">
+                <span className="text-white font-mono font-black text-[0.65rem] sm:text-[0.75rem] leading-none drop-shadow">
                   ({score}%)
                 </span>
               )}
             </div>
 
-            {/* 3. SUPERVISING SHEIKH (Bottom Right under the line of "الشيخ المحفظ") */}
+            {/* 3. SUPERVISING SHEIKH (On the line to the left of "الشيخ المحفظ") */}
             <div
               className="absolute text-center flex items-center justify-center px-1"
               style={{
-                bottom: '5.2%',
-                right: '15%',
-                width: '23%',
-                height: '4.5%'
+                bottom: '6.2%',
+                right: '18.0%',
+                width: '17.0%',
+                height: '4.2%'
               }}
             >
               <p
                 className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-                style={{ fontSize: 'clamp(0.65rem, 0.95vw, 0.85rem)' }}
+                style={{ fontSize: 'clamp(0.6rem, 0.9vw, 0.82rem)' }}
               >
                 {sheikhName}
               </p>
             </div>
 
-            {/* 4. QR CODE (Bottom Center inside the white box) */}
+            {/* 4. QR CODE (Directly inside the white box) */}
             <div
               className="absolute flex items-center justify-center bg-white rounded-sm p-0.5 shadow-sm"
               style={{
-                bottom: '7.0%',
-                left: '51.3%',
-                width: '6.8%',
-                height: '10.2%'
+                bottom: '5.8%',
+                left: '49.4%',
+                width: '4.8%',
+                height: '8.6%'
               }}
             >
               <QRCodeSVG
                 value={studentQrUrl}
-                size={85}
+                size={75}
                 level="M"
                 includeMargin={false}
                 className="w-full h-full object-contain"
               />
             </div>
 
-            {/* Student Code Badge (On the space next to "كود الطالب") */}
+            {/* Student Code Badge (On the space next to "كود الطالب:") */}
             <div
-              className="absolute text-center flex items-center justify-center px-1"
+              className="absolute text-center flex items-center justify-center px-0.5"
               style={{
-                bottom: '10.8%',
+                bottom: '8.8%',
                 left: '46.0%',
-                width: '5.0%',
-                height: '3.8%'
+                width: '3.8%',
+                height: '3.0%'
               }}
             >
               <span
-                className="font-mono font-black text-[#fbbf24] drop-shadow"
-                style={{ fontSize: 'clamp(0.7rem, 1.1vw, 0.95rem)' }}
+                className="font-mono font-black text-[#fbbf24] drop-shadow leading-none"
+                style={{ fontSize: 'clamp(0.65rem, 0.95vw, 0.85rem)' }}
               >
                 {studentCode}
               </span>
             </div>
 
-            {/* 5. CEREMONY MANAGEMENT (Bottom Left under the line of "مدير الكتاب") */}
+            {/* 5. CEREMONY MANAGEMENT (On the line to the right of "مدير الكتاب") */}
             <div
               className="absolute text-center flex items-center justify-center px-1"
               style={{
-                bottom: '5.2%',
-                left: '15%',
-                width: '23%',
-                height: '4.5%'
+                bottom: '6.2%',
+                left: '18.0%',
+                width: '17.0%',
+                height: '4.2%'
               }}
             >
               <p
                 className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-                style={{ fontSize: 'clamp(0.65rem, 0.95vw, 0.85rem)' }}
+                style={{ fontSize: 'clamp(0.6rem, 0.9vw, 0.82rem)' }}
               >
                 إدارة دار تاج الوقار
               </p>
