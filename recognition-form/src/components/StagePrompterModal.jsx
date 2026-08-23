@@ -256,42 +256,6 @@ export default function StagePrompterModal({
               </p>
             </div>
 
-            {/* 4. QR CODE (Directly inside the white box) */}
-            <div
-              className="absolute flex items-center justify-center p-0.5"
-              style={{
-                bottom: '4.2%',
-                left: '48.0%',
-                width: '4.4%',
-                height: '7.8%'
-              }}
-            >
-              <QRCodeSVG
-                value={studentQrUrl}
-                size={70}
-                level="M"
-                includeMargin={false}
-                className="w-full h-full object-contain"
-              />
-            </div>
-
-            {/* Student Code Badge (On the line immediately after "كود الطالب:") */}
-            <div
-              className="absolute text-center flex items-center justify-center px-0.5"
-              style={{
-                bottom: '6.8%',
-                left: '45.2%',
-                width: '2.8%',
-                height: '2.8%'
-              }}
-            >
-              <span
-                className="font-mono font-black text-[#fbbf24] drop-shadow leading-none"
-                style={{ fontSize: 'clamp(0.65rem, 0.9vw, 0.82rem)' }}
-              >
-                {studentCode}
-              </span>
-            </div>
 
             {/* 5. CEREMONY MANAGEMENT (On the line to the right of "مدير الكتاب") */}
             <div
