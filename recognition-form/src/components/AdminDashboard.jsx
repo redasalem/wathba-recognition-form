@@ -236,8 +236,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         // Base official catalog properties (Immutable baseline)
         ...cat,
         idx: cat.idx || index + 1,
-        studentId: cat.studentId || `STU-2026-${String(index + 1).padStart(3, '0')}`,
-        studentName: (matchedRecord && (!STUDENTS_CATALOG.some(s => s.studentId !== cat.studentId && normalizeArabic(s.name) === normalizeArabic(matchedRecord.studentName || ''))) && matchedRecord.studentName?.trim()) || cat.name,
+        studentName: cat.name,
         partName: cat.part,
         part: cat.part,
         examScore: cat.score !== undefined ? Number(cat.score) : 0,

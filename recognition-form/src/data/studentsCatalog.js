@@ -323,17 +323,19 @@ export function findStudentInCatalog(identifier) {
     if (match) return match;
   }
 
-  // 5. مطابقة ذكية بالكلمات للألقاب والأسماء (مع اشتراط تطابق الاسم الأول دائماً)
+  // 5. مطابقة ذكية بالأسماء: تشترط تطابق الاسم الأول واسم الأب (الكلمة الثانية) لمنع التداخل بين الإخوة وأبناء العمومة
   const qWords = normalizedQuery.split(' ').filter(Boolean);
   if (qWords.length >= 2) {
     match = STUDENTS_CATALOG.find(s => {
       const sWords = normalizeArabic(s.name).split(' ').filter(Boolean);
       if (sWords.length < 2) return false;
       const firstMatch = sWords[0] === qWords[0];
-      if (!firstMatch) return false;
+      const fatherMatch = sWords[1] === qWords[1];
+      if (!firstMatch || !fatherMatch) return false;
+      
       const lastMatch = sWords[sWords.length - 1] === qWords[qWords.length - 1];
       const matchedWordsCount = sWords.filter(w => qWords.includes(w)).length;
-      return lastMatch || matchedWordsCount >= 2;
+      return lastMatch || matchedWordsCount >= Math.min(sWords.length, qWords.length);
     });
     if (match) return match;
   }
@@ -341,7 +343,7 @@ export function findStudentInCatalog(identifier) {
   return null;
 }
 
-// دالة فحص مطابقة سجل طالب مع طالب في الكتالوج (Strict & Robust Matching)
+// دالة فحص مطابقة سجل طالب مع طالب في الكتالوج (Strict & Exact Matching)
 export function isStudentMatch(rec, catStudent) {
   if (!rec || !catStudent) return false;
 
@@ -379,15 +381,15 @@ export function isStudentMatch(rec, catStudent) {
     }
   }
 
-  // 4. مطابقة ذكية مشددة بالأسماء المركبة (مطابقة الاسم الأول واسم العائلة ونسبة تشابه عالية)
+  // 4. مطابقة مشددة بالأسماء: تشترط تطابق الاسم الأول واسم الأب (الكلمة الثانية)
   const rWords = recName.split(' ').filter(Boolean);
   const cWords = catName.split(' ').filter(Boolean);
-  if (rWords.length >= 3 && cWords.length >= 3) {
+  if (rWords.length >= 2 && cWords.length >= 2) {
     const firstMatch = rWords[0] === cWords[0];
-    const lastMatch = rWords[rWords.length - 1] === cWords[cWords.length - 1];
-    if (firstMatch && lastMatch) {
+    const fatherMatch = rWords[1] === cWords[1];
+    if (firstMatch && fatherMatch) {
       const commonWords = cWords.filter(w => rWords.includes(w)).length;
-      if (commonWords >= Math.min(rWords.length, cWords.length) - 1) {
+      if (commonWords >= Math.min(rWords.length, cWords.length)) {
         return true;
       }
     }
