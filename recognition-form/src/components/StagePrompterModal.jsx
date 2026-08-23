@@ -187,11 +187,11 @@ export default function StagePrompterModal({
               backgroundRepeat: 'no-repeat'
             }}
           >
-            {/* 1. STUDENT NAME OVERLAY (Perfectly centered inside the upper green ornamental banner) */}
+            {/* 1. STUDENT NAME OVERLAY (Perfect vertical & horizontal center inside the green ornate banner) */}
             <div
               className="absolute text-center flex items-center justify-center px-4"
               style={{
-                top: '57.0%',
+                top: '55.2%',
                 left: '26%',
                 width: '48%',
                 height: '7%',
@@ -210,47 +210,47 @@ export default function StagePrompterModal({
               </h1>
             </div>
 
-            {/* 2. QURANIC LEVEL OVERLAY (Perfectly inside the dark green oval on the scroll ribbon) */}
+            {/* 2. QURANIC LEVEL OVERLAY (Inside the dark green oval frame on the left of "المستوى القرآني") */}
             <div
-              className="absolute text-center flex items-center justify-center gap-1.5 px-2"
+              className="absolute text-center flex flex-col items-center justify-center gap-0.5 px-1"
               style={{
-                top: '73.2%',
-                left: '36.0%',
-                width: '26%',
-                height: '5.5%',
+                top: '74.2%',
+                left: '37.0%',
+                width: '13.5%',
+                height: '6.2%',
                 transform: 'translateY(-50%)'
               }}
             >
               <span
-                className="font-black text-[#fbbf24] drop-shadow-[0_2px_5px_rgba(0,0,0,0.95)] truncate"
+                className="font-black text-[#fbbf24] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] truncate leading-tight"
                 style={{
-                  fontSize: 'clamp(0.75rem, 1.35vw, 1.2rem)',
+                  fontSize: 'clamp(0.65rem, 1.1vw, 0.95rem)',
                   fontFamily: `'Amiri', 'Cairo', serif`,
                   textShadow: '0 0 10px rgba(251, 191, 36, 0.6), 0 2px 5px rgba(0,0,0,0.9)'
                 }}
               >
                 {partName}
-                {score > 0 && (
-                  <span className="text-white font-mono font-black mr-1.5 text-[0.85em]">
-                    ({score}%)
-                  </span>
-                )}
               </span>
+              {score > 0 && (
+                <span className="text-white font-mono font-black text-[0.7rem] sm:text-[0.8rem] leading-none drop-shadow">
+                  ({score}%)
+                </span>
+              )}
             </div>
 
             {/* 3. SUPERVISING SHEIKH (Bottom Right under the line of "الشيخ المحفظ") */}
             <div
               className="absolute text-center flex items-center justify-center px-1"
               style={{
-                bottom: '7.8%',
-                right: '18%',
-                width: '18%',
+                bottom: '5.2%',
+                right: '15%',
+                width: '23%',
                 height: '4.5%'
               }}
             >
               <p
                 className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-                style={{ fontSize: 'clamp(0.65rem, 1.0vw, 0.88rem)' }}
+                style={{ fontSize: 'clamp(0.65rem, 0.95vw, 0.85rem)' }}
               >
                 {sheikhName}
               </p>
@@ -260,10 +260,10 @@ export default function StagePrompterModal({
             <div
               className="absolute flex items-center justify-center bg-white rounded-sm p-0.5 shadow-sm"
               style={{
-                bottom: '6.8%',
-                left: '44.5%',
-                width: '8.2%',
-                height: '11.5%'
+                bottom: '7.0%',
+                left: '51.3%',
+                width: '6.8%',
+                height: '10.2%'
               }}
             >
               <QRCodeSVG
@@ -275,19 +275,19 @@ export default function StagePrompterModal({
               />
             </div>
 
-            {/* Student Code Badge (On the line next to "كود الطالب") */}
+            {/* Student Code Badge (On the space next to "كود الطالب") */}
             <div
               className="absolute text-center flex items-center justify-center px-1"
               style={{
-                bottom: '10.2%',
-                right: '56.5%',
-                width: '8%',
+                bottom: '10.8%',
+                left: '46.0%',
+                width: '5.0%',
                 height: '3.8%'
               }}
             >
               <span
                 className="font-mono font-black text-[#fbbf24] drop-shadow"
-                style={{ fontSize: 'clamp(0.75rem, 1.2vw, 1.05rem)' }}
+                style={{ fontSize: 'clamp(0.7rem, 1.1vw, 0.95rem)' }}
               >
                 {studentCode}
               </span>
@@ -297,15 +297,15 @@ export default function StagePrompterModal({
             <div
               className="absolute text-center flex items-center justify-center px-1"
               style={{
-                bottom: '7.8%',
-                left: '18%',
-                width: '18%',
+                bottom: '5.2%',
+                left: '15%',
+                width: '23%',
                 height: '4.5%'
               }}
             >
               <p
                 className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-                style={{ fontSize: 'clamp(0.65rem, 1.0vw, 0.88rem)' }}
+                style={{ fontSize: 'clamp(0.65rem, 0.95vw, 0.85rem)' }}
               >
                 إدارة دار تاج الوقار
               </p>
