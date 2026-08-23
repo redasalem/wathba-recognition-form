@@ -187,125 +187,125 @@ export default function StagePrompterModal({
               backgroundRepeat: 'no-repeat'
             }}
           >
-            {/* 1. STUDENT NAME OVERLAY (Directly inside the upper ornamental green banner) */}
+            {/* 1. STUDENT NAME OVERLAY (Perfectly centered inside the upper green ornamental banner) */}
             <div
               className="absolute text-center flex items-center justify-center px-4"
               style={{
-                top: '53.5%',
-                left: '20%',
-                width: '60%',
-                height: '7.5%',
+                top: '57.0%',
+                left: '26%',
+                width: '48%',
+                height: '7%',
                 transform: 'translateY(-50%)'
               }}
             >
               <h1
                 className="font-black text-[#fef08a] tracking-wide truncate drop-shadow-[0_3px_6px_rgba(0,0,0,0.95)]"
                 style={{
-                  fontSize: 'clamp(1.1rem, 2.7vw, 2.3rem)',
+                  fontSize: 'clamp(1.15rem, 2.6vw, 2.25rem)',
                   fontFamily: `'Amiri', 'Cairo', 'Traditional Arabic', serif`,
-                  textShadow: '0 0 15px rgba(251, 191, 36, 0.7), 0 3px 8px rgba(0,0,0,0.95)'
+                  textShadow: '0 0 16px rgba(251, 191, 36, 0.75), 0 3px 8px rgba(0,0,0,0.95)'
                 }}
               >
                 {studentName}
               </h1>
             </div>
 
-            {/* 2. QURANIC LEVEL OVERLAY (Directly inside the middle scroll ribbon) */}
+            {/* 2. QURANIC LEVEL OVERLAY (Perfectly inside the dark green oval on the scroll ribbon) */}
             <div
-              className="absolute text-center flex items-center justify-center gap-2 px-2"
+              className="absolute text-center flex items-center justify-center gap-1.5 px-2"
               style={{
-                top: '67.5%',
-                left: '26%',
-                width: '48%',
-                height: '6.5%',
+                top: '73.2%',
+                left: '36.0%',
+                width: '26%',
+                height: '5.5%',
                 transform: 'translateY(-50%)'
               }}
             >
               <span
                 className="font-black text-[#fbbf24] drop-shadow-[0_2px_5px_rgba(0,0,0,0.95)] truncate"
                 style={{
-                  fontSize: 'clamp(0.85rem, 1.8vw, 1.45rem)',
+                  fontSize: 'clamp(0.75rem, 1.35vw, 1.2rem)',
                   fontFamily: `'Amiri', 'Cairo', serif`,
-                  textShadow: '0 0 10px rgba(251, 191, 36, 0.5), 0 2px 5px rgba(0,0,0,0.9)'
+                  textShadow: '0 0 10px rgba(251, 191, 36, 0.6), 0 2px 5px rgba(0,0,0,0.9)'
                 }}
               >
                 {partName}
                 {score > 0 && (
-                  <span className="text-white font-mono font-black mr-2 bg-slate-950/60 px-2 py-0.5 rounded-lg border border-[#fbbf24]/40">
+                  <span className="text-white font-mono font-black mr-1.5 text-[0.85em]">
                     ({score}%)
                   </span>
                 )}
               </span>
             </div>
 
-            {/* 3. SUPERVISING SHEIKH (Bottom Right under "الشيخ المحفظ") */}
+            {/* 3. SUPERVISING SHEIKH (Bottom Right under the line of "الشيخ المحفظ") */}
             <div
-              className="absolute text-center flex items-center justify-center px-2"
+              className="absolute text-center flex items-center justify-center px-1"
               style={{
-                bottom: '2%',
-                right: '8%',
-                width: '23%',
-                height: '5%'
+                bottom: '7.8%',
+                right: '18%',
+                width: '18%',
+                height: '4.5%'
               }}
             >
               <p
                 className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-                style={{ fontSize: 'clamp(0.65rem, 1.1vw, 0.95rem)' }}
+                style={{ fontSize: 'clamp(0.65rem, 1.0vw, 0.88rem)' }}
               >
                 {sheikhName}
               </p>
             </div>
 
-            {/* 4. QR CODE & STUDENT CODE (Bottom Center inside the white box) */}
+            {/* 4. QR CODE (Bottom Center inside the white box) */}
             <div
-              className="absolute flex items-center justify-center bg-white rounded p-0.5 shadow-md"
+              className="absolute flex items-center justify-center bg-white rounded-sm p-0.5 shadow-sm"
               style={{
-                bottom: '1.8%',
-                left: '46.2%',
-                width: '7.6%',
-                height: '11%'
+                bottom: '6.8%',
+                left: '44.5%',
+                width: '8.2%',
+                height: '11.5%'
               }}
             >
               <QRCodeSVG
                 value={studentQrUrl}
-                size={80}
+                size={85}
                 level="M"
                 includeMargin={false}
                 className="w-full h-full object-contain"
               />
             </div>
 
-            {/* Student Code Badge (Placed cleanly next to QR) */}
+            {/* Student Code Badge (On the line next to "كود الطالب") */}
             <div
               className="absolute text-center flex items-center justify-center px-1"
               style={{
-                bottom: '4.5%',
-                right: '54.5%',
-                width: '14%',
-                height: '5%'
+                bottom: '10.2%',
+                right: '56.5%',
+                width: '8%',
+                height: '3.8%'
               }}
             >
               <span
-                className="font-mono font-black text-[#fbbf24] bg-slate-950/80 px-2 py-0.5 rounded-md border border-[#fbbf24]/50 drop-shadow"
-                style={{ fontSize: 'clamp(0.7rem, 1.1vw, 0.95rem)' }}
+                className="font-mono font-black text-[#fbbf24] drop-shadow"
+                style={{ fontSize: 'clamp(0.75rem, 1.2vw, 1.05rem)' }}
               >
-                كود: {studentCode}
+                {studentCode}
               </span>
             </div>
 
-            {/* 5. CEREMONY MANAGEMENT (Bottom Left under "مدير الكتاب") */}
+            {/* 5. CEREMONY MANAGEMENT (Bottom Left under the line of "مدير الكتاب") */}
             <div
-              className="absolute text-center flex items-center justify-center px-2"
+              className="absolute text-center flex items-center justify-center px-1"
               style={{
-                bottom: '2%',
-                left: '8%',
-                width: '23%',
-                height: '5%'
+                bottom: '7.8%',
+                left: '18%',
+                width: '18%',
+                height: '4.5%'
               }}
             >
               <p
                 className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-                style={{ fontSize: 'clamp(0.65rem, 1.1vw, 0.95rem)' }}
+                style={{ fontSize: 'clamp(0.65rem, 1.0vw, 0.88rem)' }}
               >
                 إدارة دار تاج الوقار
               </p>
