@@ -158,7 +158,7 @@ export default function StagePrompterModal({
             backgroundRepeat: 'no-repeat'
           }}
         >
-          {/* 1. STUDENT NAME OVERLAY (Perfect vertical & horizontal center inside the green ornate banner) */}
+          {/* 1. STUDENT NAME OVERLAY (Perfect vertical & horizontal center inside the green ornate banner - refined font size) */}
           <div
             className="absolute text-center flex items-center justify-center px-4"
             style={{
@@ -172,18 +172,18 @@ export default function StagePrompterModal({
             <h1
               className="font-black text-[#fef08a] tracking-wide truncate drop-shadow-[0_3px_6px_rgba(0,0,0,0.95)]"
               style={{
-                fontSize: 'clamp(1.15rem, 2.6vw, 2.25rem)',
+                fontSize: 'clamp(1.0rem, 2.1vw, 1.85rem)',
                 fontFamily: `'Amiri', 'Cairo', 'Traditional Arabic', serif`,
-                textShadow: '0 0 16px rgba(251, 191, 36, 0.75), 0 3px 8px rgba(0,0,0,0.95)'
+                textShadow: '0 0 14px rgba(251, 191, 36, 0.7), 0 3px 8px rgba(0,0,0,0.95)'
               }}
             >
               {studentName}
             </h1>
           </div>
 
-          {/* 2. QURANIC LEVEL OVERLAY (Inside the dark green oval frame on the left of "المستوى القرآني") */}
+          {/* 2. QURANIC LEVEL OVERLAY (Inside the dark green oval frame without percentage) */}
           <div
-            className="absolute text-center flex flex-col items-center justify-center gap-0.5 px-1"
+            className="absolute text-center flex items-center justify-center px-1"
             style={{
               top: '76.4%',
               left: '42.0%',
@@ -193,20 +193,15 @@ export default function StagePrompterModal({
             }}
           >
             <span
-              className="font-black text-[#fbbf24] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] truncate leading-tight"
+              className="font-black text-[#fbbf24] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] truncate"
               style={{
-                fontSize: 'clamp(0.65rem, 1.0vw, 0.90rem)',
+                fontSize: 'clamp(0.7rem, 1.15vw, 1.05rem)',
                 fontFamily: `'Amiri', 'Cairo', serif`,
                 textShadow: '0 0 10px rgba(251, 191, 36, 0.6), 0 2px 5px rgba(0,0,0,0.9)'
               }}
             >
               {partName}
             </span>
-            {score > 0 && (
-              <span className="text-white font-mono font-black text-[0.65rem] sm:text-[0.75rem] leading-none drop-shadow">
-                ({score}%)
-              </span>
-            )}
           </div>
 
           {/* 3. SUPERVISING SHEIKH (On the line to the left of "الشيخ المحفظ") */}
@@ -226,6 +221,17 @@ export default function StagePrompterModal({
               {sheikhName}
             </p>
           </div>
+
+          {/* 4. MASK/COVER BOTTOM CENTER (Cleanly hide the white box & printed code text) */}
+          <div
+            className="absolute bg-[#062c24] rounded-md"
+            style={{
+              bottom: '3.5%',
+              left: '39.2%',
+              width: '15.5%',
+              height: '10.5%'
+            }}
+          />
 
           {/* 5. CEREMONY MANAGEMENT (On the line to the right of "مدير الكتاب") */}
           <div
