@@ -341,44 +341,45 @@ export function findStudentInCatalog(identifier) {
   return null;
 }
 
-// دالة فحص مطابقة سجل طالب مع طالب في الكتالوج (Strict Matching)
+// دالة فحص مطابقة سجل طالب مع طالب في الكتالوج (Strict & Robust Matching)
 export function isStudentMatch(rec, catStudent) {
   if (!rec || !catStudent) return false;
 
-  // 1. مطابقة بمعرف الطالب المعتمد STU-2026-XXX
-  if (rec.studentId && catStudent.studentId) {
-    if (String(rec.studentId).trim().toUpperCase() === String(catStudent.studentId).trim().toUpperCase()) {
-      return true;
-    }
-  }
-  if (rec.id && catStudent.studentId) {
-    if (String(rec.id).trim().toUpperCase() === String(catStudent.studentId).trim().toUpperCase()) {
-      return true;
-    }
+  const recStudentId = String(rec.studentId || rec.id || '').trim().toUpperCase();
+  const catStudentId = String(catStudent.studentId || '').trim().toUpperCase();
+
+  // 1. مطابقة قطعية بمعرف الطالب المعتمد STU-2026-XXX
+  if (recStudentId && catStudentId && recStudentId === catStudentId) {
+    return true;
   }
 
-  // 2. مطابقة بالكود التكريمي (#001)
-  if (rec.studentCode && catStudent.code) {
-    const cleanRec = String(rec.studentCode).replace(/^#/, '').trim();
-    const cleanCat = String(catStudent.code).replace(/^#/, '').trim();
-    const numRec = parseInt(cleanRec, 10);
-    const numCat = parseInt(cleanCat, 10);
-    if (cleanRec && cleanCat) {
-      if (cleanRec === cleanCat) return true;
-      if (!isNaN(numRec) && !isNaN(numCat) && numRec === numCat && /^\d+$/.test(cleanRec) && /^\d+$/.test(cleanCat)) {
+  const recName = normalizeArabic(rec.studentName || rec.name || '');
+  const catName = normalizeArabic(catStudent.name || '');
+
+  // 2. مطابقة بالاسم الموحد التام
+  if (recName && catName && recName === catName) {
+    return true;
+  }
+
+  // 3. مطابقة بالكود التكريمي المعتمد (#001) مع التحقق من عدم التعارض الجسيم بالاسم
+  const cleanRec = String(rec.studentCode || '').replace(/^#/, '').trim();
+  const cleanCat = String(catStudent.code || '').replace(/^#/, '').trim();
+  const numRec = parseInt(cleanRec, 10);
+  const numCat = parseInt(cleanCat, 10);
+
+  if (cleanRec && cleanCat) {
+    const isCodeMatch = cleanRec === cleanCat || (!isNaN(numRec) && !isNaN(numCat) && numRec === numCat && /^\d+$/.test(cleanRec) && /^\d+$/.test(cleanCat));
+    if (isCodeMatch) {
+      // إذا كان الكود متطابقاً، نتحقق أن الاسم في السجل لا يخص طالباً آخر في الكتالوج
+      if (!recName) return true;
+      const otherCatMatch = STUDENTS_CATALOG.find(s => s.studentId !== catStudent.studentId && normalizeArabic(s.name) === recName);
+      if (!otherCatMatch) {
         return true;
       }
     }
   }
 
-  // 3. مطابقة بالاسم الموحد التام
-  const recName = normalizeArabic(rec.studentName || rec.name || '');
-  const catName = normalizeArabic(catStudent.name || '');
-  if (recName && catName && recName === catName) {
-    return true;
-  }
-
-  // 4. مطابقة ذكية مشددة: يجب تطابق الاسم الأول واسم العائلة
+  // 4. مطابقة ذكية مشددة بالأسماء المركبة (مطابقة الاسم الأول واسم العائلة ونسبة تشابه عالية)
   const rWords = recName.split(' ').filter(Boolean);
   const cWords = catName.split(' ').filter(Boolean);
   if (rWords.length >= 3 && cWords.length >= 3) {

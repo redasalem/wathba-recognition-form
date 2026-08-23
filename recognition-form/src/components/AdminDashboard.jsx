@@ -68,6 +68,7 @@ import {
 import { uploadToCloudinary } from '../services/cloudinary';
 import StudentEditModal from './StudentEditModal';
 import StudentBadgeModal from './StudentBadgeModal';
+import StagePrompterModal from './StagePrompterModal';
 
 // ─── Helper: Check if student has entered ALL required registration inputs ───
 export const isStudentFullyRegistered = (student) => {
@@ -236,8 +237,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         ...cat,
         idx: cat.idx || index + 1,
         studentId: cat.studentId || `STU-2026-${String(index + 1).padStart(3, '0')}`,
-        studentCode: cat.code || `#${String(cat.idx || index + 1).padStart(3, '0')}`,
-        studentName: (matchedRecord?.studentName && matchedRecord.studentName.trim()) || cat.name,
+        studentName: (matchedRecord && (!STUDENTS_CATALOG.some(s => s.studentId !== cat.studentId && normalizeArabic(s.name) === normalizeArabic(matchedRecord.studentName || ''))) && matchedRecord.studentName?.trim()) || cat.name,
         partName: cat.part,
         part: cat.part,
         examScore: cat.score !== undefined ? Number(cat.score) : 0,
@@ -372,10 +372,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     switch (sortBy) {
       case 'STAGE_ORDER':
         sorted.sort((a, b) => {
-          const rankA = getPartOrderRank(a.partName);
-          const rankB = getPartOrderRank(b.partName);
+          const rankA = getPartOrderRank(a.partName || a.part);
+          const rankB = getPartOrderRank(b.partName || b.part);
           if (rankA !== rankB) return rankA - rankB;
-          return (b.examScore || 0) - (a.examScore || 0);
+          const scoreA = Number(a.examScore ?? a.score ?? 0);
+          const scoreB = Number(b.examScore ?? b.score ?? 0);
+          if (scoreB !== scoreA) return scoreB - scoreA;
+          return (a.idx || 0) - (b.idx || 0);
         });
         break;
       case 'SCORE_DESC':
@@ -2103,103 +2106,19 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* 🎤 MODAL 2: STAGE LIVE PROMPTER MODAL */}
+      {/* 🎤 MODAL 2: LUXURY STAGE LIVE PROMPTER & PRESENTATION MODAL */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      {stagePrompterStudent && createPortal(
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setStagePrompterStudent(null);
-            }
-          }}
-          className="fixed inset-0 z-[99999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative bg-gradient-to-b from-[#062b24] via-[#041915] to-[#02100d] rounded-3xl border-2 border-[#fbbf24]/50 max-w-2xl w-full p-5 sm:p-6 text-slate-100 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto animate-scaleIn my-auto"
-          >
-            <div className="flex items-center justify-between border-b border-[#fbbf24]/30 pb-3">
-              <div className="flex items-center gap-2 text-[#fbbf24] font-black">
-                <Sparkles className="w-5 h-5" />
-                <span className="text-sm sm:text-base">منصة التكريم | النداء المباشر على المسرح 🎙️</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-slate-900 border border-[#fbbf24]/40 text-[#fbbf24] text-xs font-mono font-black">
-                  #{stagePrompterIndex + 1} من {ceremonyStudents.length}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setStagePrompterStudent(null)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="text-center space-y-4 py-2">
-              <div className="inline-block px-4 py-1 rounded-full bg-[#fbbf24]/20 border border-[#fbbf24]/50 text-[#fbbf24] font-mono font-black text-sm">
-                كود التكريم: {stagePrompterStudent.studentCode}
-              </div>
-              <h2 className="text-2xl sm:text-4xl font-black text-white drop-shadow tracking-wide">
-                {stagePrompterStudent.studentName || stagePrompterStudent.name}
-              </h2>
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
-                  📖 {stagePrompterStudent.partName || stagePrompterStudent.part}
-                </span>
-                {stagePrompterStudent.examScore !== undefined && (
-                  <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-black">
-                    الدرجة: {stagePrompterStudent.examScore}%
-                  </span>
-                )}
-              </div>
-
-              <div className="p-4 bg-slate-950/90 rounded-2xl border border-emerald-700/40 text-right space-y-2">
-                <p className="text-xs sm:text-sm text-slate-100 leading-relaxed font-semibold">
-                  "بسم الله الرحمن الرحيم .. ويتفضل الآن لصعود منصة التكريم الطالب الحافظ / <strong className="text-[#fbbf24] text-sm sm:text-base">{stagePrompterStudent.studentName || stagePrompterStudent.name}</strong> .. بمستوى <strong className="text-emerald-300">{stagePrompterStudent.partName || stagePrompterStudent.part}</strong> .. تحت إشراف فضيلة الشيخ / <strong className="text-amber-300">{stagePrompterStudent.sheikhName || 'شيوخ الكُتّاب'}</strong>."
-                </p>
-              </div>
-
-              <div className="p-4 bg-gradient-to-r from-amber-500/20 via-[#062b24] to-amber-500/20 rounded-2xl border border-[#fbbf24]/50 text-center space-y-1">
-                <div className="text-xs font-bold text-emerald-300">🎖️ شهادة التقدير والتكريم المعتمدة:</div>
-                <div className="text-sm sm:text-base font-black text-[#fbbf24]">{stagePrompterStudent.gift || stagePrompterStudent.awardTier || 'شهادة تقدير وتكريم الكُتّاب'}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-emerald-800/40">
-              <button
-                type="button"
-                onClick={handlePrevStageStudent}
-                disabled={stagePrompterIndex === 0}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all"
-              >
-                <ChevronRight className="w-4 h-4" />
-                <span>الطالب السابق</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setBadgeModalStudent(stagePrompterStudent)}
-                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all shadow"
-              >
-                <Eye className="w-4 h-4 text-amber-300" />
-                <span>معاينة كارت التكريم</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleNextStageStudent}
-                disabled={stagePrompterIndex >= ceremonyStudents.length - 1}
-                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-30 text-slate-950 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all shadow"
-              >
-                <span>الطالب التالي</span>
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
+      {stagePrompterStudent && (
+        <StagePrompterModal
+          student={stagePrompterStudent}
+          currentIndex={stagePrompterIndex}
+          totalStudents={ceremonyStudents.length}
+          onNext={handleNextStageStudent}
+          onPrev={handlePrevStageStudent}
+          onClose={() => setStagePrompterStudent(null)}
+          onOpenBadge={(st) => setBadgeModalStudent(st)}
+          categoryName={partFilter === 'ALL' ? 'كشف صعود المسرح (جميع الأجزاء)' : `كشف صعود المسرح (${partFilter})`}
+        />
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
