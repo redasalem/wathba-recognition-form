@@ -308,11 +308,48 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     return [...masterStudentsList, ...standaloneRecords];
   }, [masterStudentsList, records]);
 
+  // Active Base List for Filter Stats
+  const activeTabBaseList = useMemo(() => {
+    if (activeTab === 'registered') return allDisplayStudents.filter(s => s.completed === true);
+    if (activeTab === 'unregistered') return allDisplayStudents.filter(s => s.completed !== true);
+    return masterStudentsList;
+  }, [activeTab, allDisplayStudents, masterStudentsList]);
+
+  // Live Counts for Score Dropdown
+  const scoreFilterCounts = useMemo(() => {
+    let top90 = 0, exc80 = 0, good70 = 0, below70 = 0;
+    activeTabBaseList.forEach(s => {
+      const sc = Number(s.examScore ?? s.score ?? 0);
+      if (sc >= 90) top90++;
+      else if (sc >= 80) exc80++;
+      else if (sc >= 70) good70++;
+      else below70++;
+    });
+    return { top90, exc80, good70, below70 };
+  }, [activeTabBaseList]);
+
+  // Live Counts for Study Stage Dropdown
+  const stageFilterCounts = useMemo(() => {
+    let nursery = 0, primary = 0, prep = 0, sec = 0, uni = 0, pending = 0;
+    activeTabBaseList.forEach(s => {
+      const st = normalizeArabic(s.studyStage || '');
+      if (!st) pending++;
+      else if (st.includes('حضان') || st.includes('اطفال')) nursery++;
+      else if (st.includes('ابتدائ')) primary++;
+      else if (st.includes('اعداد')) prep++;
+      else if (st.includes('ثانو')) sec++;
+      else if (st.includes('جامع') || st.includes('عالي')) uni++;
+      else pending++;
+    });
+    return { nursery, primary, prep, sec, uni, pending };
+  }, [activeTabBaseList]);
+
   // Unique Supervising Sheikhs for Dropdown Filter
   const uniqueSupervisingSheikhs = useMemo(() => {
     const namesSet = new Set();
+    namesSet.add('شيوخ الكُتّاب');
     allDisplayStudents.forEach(s => {
-      if (s.sheikhName && s.sheikhName.trim() && s.sheikhName !== 'شيوخ الكُتّاب') {
+      if (s.sheikhName && s.sheikhName.trim()) {
         namesSet.add(s.sheikhName.trim());
       }
     });
@@ -335,13 +372,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       }
 
       // 2. Quran Part Filter
-      if (partFilter !== 'ALL' && !matchesQuranPartCanonical(student.partName, partFilter)) {
+      if (partFilter !== 'ALL' && !matchesQuranPartCanonical(student.partName || student.part, partFilter)) {
         return false;
       }
 
       // 3. Exam Score Range Filter
       if (scoreFilter !== 'ALL') {
-        const score = Number(student.examScore) || 0;
+        const score = Number(student.examScore ?? student.score ?? 0);
         if (scoreFilter === 'TOP_90' && score < 90) return false;
         if (scoreFilter === 'EXCELLENT_80' && (score < 80 || score >= 90)) return false;
         if (scoreFilter === 'GOOD_70' && (score < 70 || score >= 80)) return false;
@@ -350,7 +387,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
       // 4. Supervising Sheikh Filter
       if (sheikhFilter !== 'ALL') {
-        const sSheikh = normalizeArabic(student.sheikhName || '');
+        const sSheikh = normalizeArabic(student.sheikhName || 'شيوخ الكتاب');
         const targetSheikh = normalizeArabic(sheikhFilter);
         if (!sSheikh.includes(targetSheikh) && !targetSheikh.includes(sSheikh)) {
           return false;
@@ -360,9 +397,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       // 5. Study Stage Filter
       if (stageFilter !== 'ALL') {
         const sStage = normalizeArabic(student.studyStage || '');
-        const targetStage = normalizeArabic(stageFilter);
-        if (!sStage.includes(targetStage)) {
-          return false;
+        if (stageFilter === 'PENDING') {
+          if (sStage && sStage.trim()) return false;
+        } else {
+          const targetStage = normalizeArabic(stageFilter);
+          if (!sStage.includes(targetStage)) {
+            return false;
+          }
         }
       }
 
@@ -1112,13 +1153,13 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 <select
                   value={scoreFilter}
                   onChange={(e) => setScoreFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-emerald-700/60 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] cursor-pointer"
+                  className="w-full px-3 py-2 bg-slate-950 border border-emerald-700/60 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] cursor-pointer font-medium"
                 >
-                  <option value="ALL">جميع الدرجات والفئات</option>
-                  <option value="TOP_90">🌟 أوائل وامتياز (≥ 90%)</option>
-                  <option value="EXCELLENT_80">✨ فئة التفوق (80% - 89.9%)</option>
-                  <option value="GOOD_70">📜 فئة الإجادة (70% - 79.9%)</option>
-                  <option value="ENCOURAGE_BELOW_70">🎁 فئة المواظبة والتشجيع (&lt; 70%)</option>
+                  <option value="ALL">جميع الدرجات والفئات ({activeTabBaseList.length})</option>
+                  <option value="TOP_90">🌟 أوائل وامتياز (≥ 90%) ({scoreFilterCounts.top90} طالب)</option>
+                  <option value="EXCELLENT_80">✨ فئة التفوق (80% - 89.9%) ({scoreFilterCounts.exc80} طالب)</option>
+                  <option value="GOOD_70">📜 فئة الإجادة (70% - 79.9%) ({scoreFilterCounts.good70} طالب)</option>
+                  <option value="ENCOURAGE_BELOW_70">🎁 فئة المواظبة والتشجيع (&lt; 70%) ({scoreFilterCounts.below70} طالب)</option>
                 </select>
               </div>
 
@@ -1131,11 +1172,15 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 <select
                   value={sheikhFilter}
                   onChange={(e) => setSheikhFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-emerald-700/60 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] cursor-pointer"
+                  className="w-full px-3 py-2 bg-slate-950 border border-emerald-700/60 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] cursor-pointer font-medium"
                 >
-                  <option value="ALL">جميع المشايخ والكوادر</option>
+                  <option value="ALL">جميع المشايخ والكوادر ({activeTabBaseList.length})</option>
                   {uniqueSupervisingSheikhs.map((name) => {
-                    const count = allDisplayStudents.filter(s => normalizeArabic(s.sheikhName || '').includes(normalizeArabic(name))).length;
+                    const count = activeTabBaseList.filter(s => {
+                      const sSh = normalizeArabic(s.sheikhName || 'شيوخ الكتاب');
+                      const target = normalizeArabic(name);
+                      return sSh.includes(target) || target.includes(sSh);
+                    }).length;
                     return (
                       <option key={name} value={name}>
                         {name} ({count} طالب)
@@ -1154,14 +1199,15 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 <select
                   value={stageFilter}
                   onChange={(e) => setStageFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-emerald-700/60 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] cursor-pointer"
+                  className="w-full px-3 py-2 bg-slate-950 border border-emerald-700/60 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] cursor-pointer font-medium"
                 >
-                  <option value="ALL">جميع المراحل الدراسية</option>
-                  <option value="حضانة">حضانة ورياض أطفال</option>
-                  <option value="ابتدائي">المرحلة الابتدائية</option>
-                  <option value="إعدادي">المرحلة الإعدادية</option>
-                  <option value="ثانوي">المرحلة الثانوية</option>
-                  <option value="جامعي">المرحلة الجامعية</option>
+                  <option value="ALL">جميع المراحل الدراسية ({activeTabBaseList.length})</option>
+                  <option value="حضانة">حضانة ورياض أطفال ({stageFilterCounts.nursery} طالب)</option>
+                  <option value="ابتدائي">المرحلة الابتدائية ({stageFilterCounts.primary} طالب)</option>
+                  <option value="إعدادي">المرحلة الإعدادية ({stageFilterCounts.prep} طالب)</option>
+                  <option value="ثانوي">المرحلة الثانوية ({stageFilterCounts.sec} طالب)</option>
+                  <option value="جامعي">المرحلة الجامعية ({stageFilterCounts.uni} طالب)</option>
+                  <option value="PENDING">⏳ لم تسجل المرحلة بعد ({stageFilterCounts.pending} طالب)</option>
                 </select>
               </div>
 
