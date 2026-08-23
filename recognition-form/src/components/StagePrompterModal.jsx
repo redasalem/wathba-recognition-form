@@ -258,12 +258,12 @@ export default function StagePrompterModal({
 
             {/* 4. QR CODE (Directly inside the white box) */}
             <div
-              className="absolute flex items-center justify-center bg-white rounded-sm p-0.5 shadow-sm"
+              className="absolute flex items-center justify-center p-0.5"
               style={{
-                bottom: '4.8%',
-                left: '50.3%',
-                width: '3.8%',
-                height: '7.2%'
+                bottom: '4.2%',
+                left: '48.0%',
+                width: '4.4%',
+                height: '7.8%'
               }}
             >
               <QRCodeSVG
@@ -275,19 +275,19 @@ export default function StagePrompterModal({
               />
             </div>
 
-            {/* Student Code Badge (On the space next to "كود الطالب:") */}
+            {/* Student Code Badge (On the line immediately after "كود الطالب:") */}
             <div
               className="absolute text-center flex items-center justify-center px-0.5"
               style={{
-                bottom: '8.8%',
-                left: '45.8%',
-                width: '4.0%',
-                height: '3.0%'
+                bottom: '6.8%',
+                left: '45.2%',
+                width: '2.8%',
+                height: '2.8%'
               }}
             >
               <span
                 className="font-mono font-black text-[#fbbf24] drop-shadow leading-none"
-                style={{ fontSize: 'clamp(0.65rem, 0.95vw, 0.85rem)' }}
+                style={{ fontSize: 'clamp(0.65rem, 0.9vw, 0.82rem)' }}
               >
                 {studentCode}
               </span>
