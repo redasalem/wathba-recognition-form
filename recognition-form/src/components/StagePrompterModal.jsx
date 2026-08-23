@@ -172,7 +172,7 @@ export default function StagePrompterModal({
             <h1
               className="font-black text-[#fef08a] tracking-wide truncate drop-shadow-[0_3px_6px_rgba(0,0,0,0.95)]"
               style={{
-                fontSize: 'clamp(1.0rem, 2.1vw, 1.85rem)',
+                fontSize: 'clamp(0.95rem, 1.9vw, 1.7rem)',
                 fontFamily: `'Amiri', 'Cairo', 'Traditional Arabic', serif`,
                 textShadow: '0 0 14px rgba(251, 191, 36, 0.7), 0 3px 8px rgba(0,0,0,0.95)'
               }}
@@ -181,21 +181,21 @@ export default function StagePrompterModal({
             </h1>
           </div>
 
-          {/* 2. QURANIC LEVEL OVERLAY (Inside the dark green oval frame without percentage) */}
+          {/* 2. QURANIC LEVEL OVERLAY (Inside the dark green oval frame - full text without truncation) */}
           <div
             className="absolute text-center flex items-center justify-center px-1"
             style={{
               top: '76.4%',
               left: '42.0%',
-              width: '10.5%',
+              width: '20.0%',
               height: '5.6%',
               transform: 'translate(-50%, -50%)'
             }}
           >
             <span
-              className="font-black text-[#fbbf24] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] truncate"
+              className="font-black text-[#fbbf24] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] whitespace-nowrap"
               style={{
-                fontSize: 'clamp(0.7rem, 1.15vw, 1.05rem)',
+                fontSize: 'clamp(0.7rem, 1.1vw, 1.0rem)',
                 fontFamily: `'Amiri', 'Cairo', serif`,
                 textShadow: '0 0 10px rgba(251, 191, 36, 0.6), 0 2px 5px rgba(0,0,0,0.9)'
               }}
@@ -222,18 +222,7 @@ export default function StagePrompterModal({
             </p>
           </div>
 
-          {/* 4. MASK/COVER BOTTOM CENTER (Cleanly hide the white box & printed code text) */}
-          <div
-            className="absolute bg-[#062c24] rounded-md"
-            style={{
-              bottom: '3.5%',
-              left: '39.2%',
-              width: '15.5%',
-              height: '10.5%'
-            }}
-          />
-
-          {/* 5. CEREMONY MANAGEMENT (On the line to the right of "مدير الكتاب") */}
+          {/* 4. CEREMONY MANAGEMENT (On the line to the right of "مدير الكتاب") */}
           <div
             className="absolute text-center flex items-center justify-center px-1"
             style={{
