@@ -86,8 +86,7 @@ export default function StagePrompterModal({
   const studentCode = student.studentCode || (student.idx ? `#${String(student.idx).padStart(3, '0')}` : '#001');
   const studentName = student.studentName || student.name || 'طالب دار تاج الوقار';
   const partName = student.partName || student.part || 'القرآن كاملاً';
-  const score = student.examScore !== undefined && student.examScore !== '' ? Number(student.examScore) : (student.score !== undefined ? Number(student.score) : 0);
-  const sheikhName = student.sheikhName && student.sheikhName !== 'شيوخ الكُتّاب' ? student.sheikhName : 'شيوخ كُتّاب دار تاج الوقار';
+  const sheikhName = student.sheikhName && student.sheikhName !== 'شيوخ الكُتّاب' ? student.sheikhName : 'شيوخ الكُتّاب';
   const gift = student.gift || student.awardTier || 'شهادة تقدير وتكريم الكُتّاب';
 
   return createPortal(
@@ -214,7 +213,7 @@ export default function StagePrompterModal({
             <div
               className="absolute text-center flex flex-col items-center justify-center gap-0.5 px-1"
               style={{
-                top: '75.2%',
+                top: '76.4%',
                 left: '42.0%',
                 width: '10.5%',
                 height: '5.6%',
@@ -242,10 +241,10 @@ export default function StagePrompterModal({
             <div
               className="absolute text-center flex items-center justify-center px-1"
               style={{
-                bottom: '6.2%',
-                right: '18.0%',
-                width: '17.0%',
-                height: '4.2%'
+                bottom: '6.5%',
+                right: '21.0%',
+                width: '14.0%',
+                height: '4.0%'
               }}
             >
               <p
@@ -260,15 +259,15 @@ export default function StagePrompterModal({
             <div
               className="absolute flex items-center justify-center bg-white rounded-sm p-0.5 shadow-sm"
               style={{
-                bottom: '5.8%',
-                left: '49.4%',
-                width: '4.8%',
-                height: '8.6%'
+                bottom: '4.8%',
+                left: '50.3%',
+                width: '3.8%',
+                height: '7.2%'
               }}
             >
               <QRCodeSVG
                 value={studentQrUrl}
-                size={75}
+                size={70}
                 level="M"
                 includeMargin={false}
                 className="w-full h-full object-contain"
@@ -280,8 +279,8 @@ export default function StagePrompterModal({
               className="absolute text-center flex items-center justify-center px-0.5"
               style={{
                 bottom: '8.8%',
-                left: '46.0%',
-                width: '3.8%',
+                left: '45.8%',
+                width: '4.0%',
                 height: '3.0%'
               }}
             >
@@ -297,10 +296,10 @@ export default function StagePrompterModal({
             <div
               className="absolute text-center flex items-center justify-center px-1"
               style={{
-                bottom: '6.2%',
-                left: '18.0%',
-                width: '17.0%',
-                height: '4.2%'
+                bottom: '6.5%',
+                left: '21.0%',
+                width: '14.0%',
+                height: '4.0%'
               }}
             >
               <p
