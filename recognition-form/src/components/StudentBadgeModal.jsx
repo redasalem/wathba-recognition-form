@@ -42,7 +42,7 @@ export default function StudentBadgeModal({ student, onClose }) {
   }, []);
 
   const handleShareWhatsApp = () => {
-    const text = `🎉 كارت وتصريح تكريم الطالب في كُتّاب: ${student.studentName || student.name}\nكود التكريم: ${student.studentCode || ''}\nفئة التكريم: ${student.awardTier || student.tier || ''}\nمستوى الحفظ: ${student.partName || student.part || 'القرآن الكريم'}\nالدرجة: ${student.examScore || student.score || ''}%\nالجائزة: ${student.gift || ''}\n\nرابط الكارت والـ QR:\n${studentQrUrl}`;
+    const text = `🎉 كارت وتصريح تكريم الطالب في كُتّاب: ${student.studentName || student.name}\nكود التكريم: ${student.studentCode || ''}\nفئة التكريم: ${student.awardTier || student.tier || ''}\nمستوى الحفظ: ${student.partName || student.part || 'القرآن الكريم'}\nالجائزة: ${student.gift || ''}\n\nرابط الكارت والـ QR:\n${studentQrUrl}`;
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -180,11 +180,6 @@ export default function StudentBadgeModal({ student, onClose }) {
               <span className="px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
                 {student.partName || student.part || 'القرآن الكريم'}
               </span>
-              {(student.examScore || student.score) && (
-                <span className="px-2.5 py-1 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-400 font-mono font-black text-xs">
-                  الدرجة: {student.examScore || student.score}%
-                </span>
-              )}
             </div>
 
             {/* Recognition Gift & Certificate Description */}

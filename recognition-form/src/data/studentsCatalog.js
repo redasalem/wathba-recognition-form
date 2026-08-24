@@ -50,14 +50,14 @@ export const STUDENTS_CATALOG = [
   { idx: 34, code: "#123", studentId: "STU-2026-031", name: "آدم تامر الغول", part: "جزء الأنبياء", score: 60.0, tier: "🎁 فئة التشجيع والمواظبة", gift: "شهادة تقدير ومصحف شريف", totalParts: 17 },
 
   // 7. جزء الفرقان (5 طلاب)
-  { idx: 35, code: "#009", studentId: "STU-2026-032", name: "ريماس رضا شلبي", part: "جزء الفرقان", score: 100.0, tier: "🌟 فئة الأوائل 100%", gift: "شهادة تقدير وميدالية ذهبية", totalParts: 18 },
+  { idx: 35, code: "#009", studentId: "STU-2026-032", name: "ريماس رضا شلبي", part: "جزء الفرقان", score: 100.0, tier: "🌟 فئة الأوائل والامتياز", gift: "شهادة تقدير وميدالية ذهبية", totalParts: 18 },
   { idx: 36, code: "#029", studentId: "STU-2026-033", name: "وفاء هاني راجح", part: "جزء الفرقان", score: 88.0, tier: "📜 فئة الإجادة", gift: "شهادة تقدير وتكريم الكُتّاب", totalParts: 18 },
   { idx: 37, code: "#060", studentId: "STU-2026-034", name: "حذيفة حسن الديهى", part: "جزء الفرقان", score: 80.0, tier: "📜 فئة الإجادة", gift: "شهادة تقدير وتكريم الكُتّاب", totalParts: 18 },
   { idx: 38, code: "#072", studentId: "STU-2026-035", name: "يوسف بصيلة", part: "جزء الفرقان", score: 76.0, tier: "📜 فئة الإجادة", gift: "شهادة تقدير وتكريم الكُتّاب", totalParts: 18 },
   { idx: 39, code: "#124", studentId: "STU-2026-036", name: "مصطفى جنيدي", part: "جزء الفرقان", score: 60.0, tier: "🎁 فئة التشجيع والمواظبة", gift: "شهادة تقدير ومصحف شريف", totalParts: 18 },
 
   // 8. جزء العنكبوت (9 طلاب)
-  { idx: 40, code: "#010", studentId: "STU-2026-037", name: "حسناء حسن الديهى", part: "جزء العنكبوت", score: 100.0, tier: "🌟 فئة الأوائل 100%", gift: "شهادة تقدير وميدالية ذهبية", totalParts: 20 },
+  { idx: 40, code: "#010", studentId: "STU-2026-037", name: "حسناء حسن الديهى", part: "جزء العنكبوت", score: 100.0, tier: "🌟 فئة الأوائل والامتياز", gift: "شهادة تقدير وميدالية ذهبية", totalParts: 20 },
   { idx: 41, code: "#020", studentId: "STU-2026-038", name: "هنا مبروك السمدوني", part: "جزء العنكبوت", score: 92.0, tier: "✨ فئة التفوق", gift: "شهادة تقدير وميدالية تكريم", totalParts: 20 },
   { idx: 42, code: "#030", studentId: "STU-2026-039", name: "حسن عرفه الديهى", part: "جزء العنكبوت", score: 88.0, tier: "📜 فئة الإجادة", gift: "شهادة تقدير وتكريم الكُتّاب", totalParts: 20 },
   { idx: 43, code: "#073", studentId: "STU-2026-040", name: "فيفي عشره", part: "جزء العنكبوت", score: 76.0, tier: "📜 فئة الإجادة", gift: "شهادة تقدير وتكريم الكُتّاب", totalParts: 20 },
@@ -68,7 +68,7 @@ export const STUDENTS_CATALOG = [
   { idx: 48, code: "#138", studentId: "STU-2026-045", name: "مريم تليمه", part: "جزء العنكبوت", score: 40.0, tier: "🎁 فئة التشجيع والمواظبة", gift: "شهادة تقدير ومصحف شريف", totalParts: 20 },
 
   // 9. جزء يس (10 طلاب)
-  { idx: 49, code: "#011", studentId: "STU-2026-046", name: "محمد السعيد شخيخة", part: "جزء يس", score: 100.0, tier: "🌟 فئة الأوائل 100%", gift: "شهادة تقدير وميدالية ذهبية", totalParts: 22 },
+  { idx: 49, code: "#011", studentId: "STU-2026-046", name: "محمد السعيد شخيخة", part: "جزء يس", score: 100.0, tier: "🌟 فئة الأوائل والامتياز", gift: "شهادة تقدير وميدالية ذهبية", totalParts: 22 },
   { idx: 50, code: "#015", studentId: "STU-2026-047", name: "محمود إبراهيم الديهي", part: "جزء يس", score: 96.0, tier: "✨ فئة التفوق", gift: "شهادة تقدير وميدالية تكريم", totalParts: 22 },
   { idx: 51, code: "#031", studentId: "STU-2026-048", name: "أحمد عبد الشهيد عكاز", part: "جزء يس", score: 88.0, tier: "📜 فئة الإجادة", gift: "شهادة تقدير وتكريم الكُتّاب", totalParts: 22 },
   { idx: 52, code: "#037", studentId: "STU-2026-049", name: "ريتاج مصطفي الهنداوي", part: "جزء يس", score: 84.0, tier: "📜 فئة الإجادة", gift: "شهادة تقدير وتكريم الكُتّاب", totalParts: 22 },
@@ -163,8 +163,8 @@ export const STUDENTS_CATALOG = [
   { idx: 131, code: "#127", studentId: "STU-2026-128", name: "ياسمين فتحي سالم", part: "جزء تبارك", score: 60.0, tier: "🎁 فئة التشجيع والمواظبة", gift: "شهادة تقدير ومصحف شريف", totalParts: 29 },
 
   // 15. جزء عم وقصار السور (15 طالباً)
-  { idx: 132, code: "#013", studentId: "STU-2026-129", name: "آدم حسن الفقى", part: "جزء عم وقصار السور", score: 100.0, tier: "🌟 فئة الأوائل 100%", gift: "شهادة تقدير وميدالية ذهبية", totalParts: 30 },
-  { idx: 133, code: "#012", studentId: "STU-2026-130", name: "عمر رضا شرف الدين", part: "جزء عم وقصار السور", score: 100.0, tier: "🌟 فئة الأوائل 100%", gift: "شهادة تقدير وميدالية ذهبية", totalParts: 30 },
+  { idx: 132, code: "#013", studentId: "STU-2026-129", name: "آدم حسن الفقى", part: "جزء عم وقصار السور", score: 100.0, tier: "🌟 فئة الأوائل والامتياز", gift: "شهادة تقدير وميدالية ذهبية", totalParts: 30 },
+  { idx: 133, code: "#012", studentId: "STU-2026-130", name: "عمر رضا شرف الدين", part: "جزء عم وقصار السور", score: 100.0, tier: "🌟 فئة الأوائل والامتياز", gift: "شهادة تقدير وميدالية ذهبية", totalParts: 30 },
   { idx: 134, code: "#050", studentId: "STU-2026-131", name: "حمدى السيد أيوب", part: "جزء عم وقصار السور", score: 84.0, tier: "📜 فئة الإجادة", gift: "شهادة تقدير وتكريم الكُتّاب", totalParts: 30 },
   { idx: 135, code: "#049", studentId: "STU-2026-132", name: "رهف محمد نصر الدين", part: "جزء عم وقصار السور", score: 84.0, tier: "📜 فئة الإجادة", gift: "شهادة تقدير وتكريم الكُتّاب", totalParts: 30 },
   { idx: 136, code: "#048", studentId: "STU-2026-133", name: "يسر مصطفى كامل", part: "جزء عم وقصار السور", score: 84.0, tier: "📜 فئة الإجادة", gift: "شهادة تقدير وتكريم الكُتّاب", totalParts: 30 },

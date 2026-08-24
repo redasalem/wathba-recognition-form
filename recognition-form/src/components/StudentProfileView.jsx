@@ -142,12 +142,6 @@ export default function StudentProfileView({ student, onEdit, onGoHome, isAdminL
                       {student.awardTier}
                     </span>
                   )}
-
-                  {student.examScore !== undefined && student.examScore !== '' && (
-                    <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
-                      🏆 الدرجة: {student.examScore}%
-                    </span>
-                  )}
                 </div>
 
                 {student.studentId && (

@@ -369,12 +369,12 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
 
             <div>
-              <label className="block font-bold text-amber-300 mb-1">درجة الاختبار %</label>
+              <label className="block font-bold text-amber-300 mb-1">درجة الاختبار</label>
               <input
                 type="number"
                 value={formData.examScore}
                 onChange={(e) => handleInputChange('examScore', e.target.value)}
-                placeholder="الدرجة من 100"
+                placeholder="درجة التقييم"
                 className={getInputClass('examScore')}
               />
             </div>

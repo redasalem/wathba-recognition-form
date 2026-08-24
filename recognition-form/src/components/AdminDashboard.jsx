@@ -609,7 +609,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         `"${s.studentId || ''}"`,
         `"${s.studentName || ''}"`,
         `"${s.partName || ''}"`,
-        `"${s.examScore !== undefined ? s.examScore + '%' : ''}"`,
+        `"${s.examScore !== undefined && s.examScore !== '' ? s.examScore : ''}"`,
         `"${s.awardTier || ''}"`,
         `"${s.gift || ''}"`,
         `"${s.sheikhName || ''}"`,
@@ -962,7 +962,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-3xl shadow-lg relative overflow-hidden">
           <span className="text-[11px] font-bold text-slate-400 block">إجمالي الطلاب المكرمين بالدورة</span>
           <div className="text-2xl font-black text-white mt-1">{stats.totalHonored} <span className="text-xs font-normal text-emerald-400">طالب</span></div>
-          <div className="text-[10px] text-amber-300 mt-1 font-semibold">100% معتمدون بحفل التكريم</div>
+          <div className="text-[10px] text-amber-300 mt-1 font-semibold">معتمدون بالكامل بحفل التكريم</div>
         </div>
 
         <div className="bg-[#062b24]/90 border border-emerald-500/50 p-4 rounded-3xl shadow-lg relative overflow-hidden">
@@ -980,7 +980,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         </div>
 
         <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-3xl shadow-lg relative overflow-hidden">
-          <span className="text-[11px] font-bold text-slate-400 block">🌟 الطلاب المتفوقون (≥90%)</span>
+          <span className="text-[11px] font-bold text-slate-400 block">🌟 الطلاب المتفوقون</span>
           <div className="text-2xl font-black text-amber-300 mt-1">{stats.topScorersCount} <span className="text-xs font-normal text-emerald-400">طلاب</span></div>
           <div className="text-[10px] text-emerald-300 mt-1 font-semibold">درجات الامتياز والتفوق</div>
         </div>
@@ -1147,10 +1147,10 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   className="w-full px-3 py-2 bg-slate-950 border border-emerald-700/60 rounded-xl text-white focus:outline-none focus:border-[#fbbf24] cursor-pointer font-medium"
                 >
                   <option value="ALL">جميع الدرجات والفئات ({activeTabBaseList.length})</option>
-                  <option value="TOP_90">🌟 أوائل وامتياز (≥ 90%) ({scoreFilterCounts.top90} طالب)</option>
-                  <option value="EXCELLENT_80">✨ فئة التفوق (80% - 89.9%) ({scoreFilterCounts.exc80} طالب)</option>
-                  <option value="GOOD_70">📜 فئة الإجادة (70% - 79.9%) ({scoreFilterCounts.good70} طالب)</option>
-                  <option value="ENCOURAGE_BELOW_70">🎁 فئة المواظبة والتشجيع (&lt; 70%) ({scoreFilterCounts.below70} طالب)</option>
+                  <option value="TOP_90">🌟 فئة الأوائل والامتياز ({scoreFilterCounts.top90} طالب)</option>
+                  <option value="EXCELLENT_80">✨ فئة التفوق ({scoreFilterCounts.exc80} طالب)</option>
+                  <option value="GOOD_70">📜 فئة الإجادة ({scoreFilterCounts.good70} طالب)</option>
+                  <option value="ENCOURAGE_BELOW_70">🎁 فئة المواظبة والتشجيع ({scoreFilterCounts.below70} طالب)</option>
                 </select>
               </div>
 
@@ -1246,7 +1246,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
                 {scoreFilter !== 'ALL' && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-950 border border-purple-500/40 text-purple-300 text-[11px] font-bold">
-                    <span>الدرجة: {scoreFilter === 'TOP_90' ? '≥ 90%' : (scoreFilter === 'EXCELLENT_80' ? '80-89%' : (scoreFilter === 'GOOD_70' ? '70-79%' : '< 70%'))}</span>
+                    <span>التقييم: {scoreFilter === 'TOP_90' ? 'أوائل وامتياز' : (scoreFilter === 'EXCELLENT_80' ? 'فئة التفوق' : (scoreFilter === 'GOOD_70' ? 'فئة الإجادة' : 'فئة المواظبة والتشجيع'))}</span>
                     <button onClick={() => setScoreFilter('ALL')} className="hover:text-white cursor-pointer"><X className="w-3 h-3" /></button>
                   </span>
                 )}
@@ -1367,7 +1367,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                         <td className="p-3 text-center">
                           {student.examScore !== undefined && student.examScore !== '' ? (
                             <span className="px-2.5 py-1 rounded-xl bg-slate-950 border border-amber-500/40 text-amber-400 font-mono font-black text-xs inline-block">
-                              {student.examScore}%
+                              {student.examScore}
                             </span>
                           ) : (
                             <span className="text-slate-500 text-xs">—</span>
@@ -1445,7 +1445,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
                     <div className="flex items-center justify-between border-t border-emerald-800/40 pt-2 text-xs">
                       <div className="text-amber-300 font-mono font-black">
-                        الدرجة: {student.examScore}%
+                        الدرجة: {student.examScore}
                       </div>
                       <div className="text-[11px] text-slate-300 truncate max-w-[140px]">
                         {student.gift || student.awardTier}
@@ -1555,7 +1555,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                           </span>
                           {r.examScore !== undefined && r.examScore !== '' && (
                             <span className="text-amber-400 font-mono font-bold mr-2 text-[10px]">
-                              ({r.examScore}%)
+                              ({r.examScore})
                             </span>
                           )}
                         </td>
@@ -1628,7 +1628,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
                     <div className="border-t border-emerald-800/40 pt-2 text-xs space-y-1 text-slate-300">
                       <div>الهاتف: <span className="font-mono text-emerald-400 font-bold">{r.fatherPhone || '—'}</span></div>
-                      <div>الدرجة: <span className="font-mono text-amber-300 font-bold">{r.examScore}%</span></div>
+                      <div>الدرجة: <span className="font-mono text-amber-300 font-bold">{r.examScore}</span></div>
                     </div>
 
                     <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-emerald-800/40">
@@ -1731,7 +1731,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                           </span>
                           {r.examScore !== undefined && r.examScore !== '' && (
                             <span className="text-amber-400 font-mono font-bold mr-2 text-[10px]">
-                              ({r.examScore}%)
+                              ({r.examScore})
                             </span>
                           )}
                         </td>
