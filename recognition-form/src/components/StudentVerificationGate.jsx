@@ -111,10 +111,6 @@ export default function StudentVerificationGate({
     onStudentVerified(student, forceEdit);
   };
 
-  const handleQuickChipClick = (sampleText) => {
-    setQuery(sampleText);
-  };
-
   return (
     <div className="w-full max-w-2xl mx-auto my-4 sm:my-8 animate-fade-in text-slate-100 px-3 sm:px-4">
       <div className="rounded-3xl border border-[#fbbf24]/40 bg-[#062b24]/90 backdrop-blur-xl shadow-2xl p-5 sm:p-8 space-y-6 relative overflow-hidden">
@@ -150,7 +146,7 @@ export default function StudentVerificationGate({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="اكتب اسم الطالب (مثال: تسنيم أحمد) أو الكود (مثال: #001)..."
+              placeholder="اكتب اسم الطالب أو كود الطالب المطبوع على كارت الدعوة..."
               className="w-full px-4 py-4 pl-12 pr-12 rounded-2xl text-sm sm:text-base bg-slate-900/95 border-2 border-emerald-700/70 text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24] transition-all shadow-inner"
               autoFocus
             />
@@ -163,7 +159,7 @@ export default function StudentVerificationGate({
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800/80 hover:bg-slate-700 transition-colors"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800/80 hover:bg-slate-700 transition-colors cursor-pointer"
                 title="مسح البحث"
               >
                 <X className="w-4 h-4" />
@@ -171,41 +167,13 @@ export default function StudentVerificationGate({
             )}
           </div>
 
-          {/* Quick Helper Chips */}
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 px-1 font-medium">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span>💡 اقتراحات سريعة:</span>
-              <button
-                type="button"
-                onClick={() => handleQuickChipClick('#001')}
-                className="px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 transition-colors cursor-pointer text-[11px] font-mono"
-              >
-                #001
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickChipClick('تسنيم')}
-                className="px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 transition-colors cursor-pointer text-[11px]"
-              >
-                تسنيم
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickChipClick('عكاز')}
-                className="px-2 py-0.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 hover:bg-blue-500/25 transition-colors cursor-pointer text-[11px]"
-              >
-                عكاز
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickChipClick('جزء الكهف')}
-                className="px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 transition-colors cursor-pointer text-[11px]"
-              >
-                جزء الكهف
-              </button>
-            </div>
-            <span className="text-emerald-400 font-bold text-[11px] hidden sm:inline">
-              ✓ 146 طالباً معتمداً
+          {/* Search Helper Info Bar */}
+          <div className="flex items-center justify-between text-xs text-slate-400 px-1 font-medium">
+            <span className="text-[11px] text-slate-400">
+              💡 اكتب الاسم ثلاثياً أو الكود المعتمد للبحث المباشر
+            </span>
+            <span className="text-emerald-400 font-bold text-[11px]">
+              ✓ كشوفات الطلاب معتمدة ومؤمنة
             </span>
           </div>
         </div>
@@ -329,7 +297,7 @@ export default function StudentVerificationGate({
 
             <div className="pt-2 border-t border-rose-500/20 text-[11px] text-slate-300 space-y-1">
               <p>🔒 <strong>قواعد التسجيل:</strong> الاستمارة مخصصة حصرياً للطلاب المقيدين في قاعدة بيانات الحفل الرسمية ولا يمكن التسجيل دون اعتماد مسبق.</p>
-              <p>💡 <strong>نصيحة:</strong> يرجى التأكد من كتابة الاسم بدون أخطاء إملائية، أو كتابة كود الطالب المكتوب على كارت الدعوة (مثال: <span className="text-amber-300 font-mono">#001</span>).</p>
+              <p>💡 <strong>نصيحة:</strong> يرجى التأكد من كتابة الاسم بدون أخطاء إملائية، أو كتابة كود الطالب المطبوع على كارت الدعوة بدقة.</p>
             </div>
           </div>
         )}
