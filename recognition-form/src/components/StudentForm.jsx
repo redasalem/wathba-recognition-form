@@ -110,14 +110,74 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
     setTouched(prev => ({ ...prev, [id]: true }));
   };
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPhotoFile(file);
+  // ─── Photo compression utility ─────────────────────────────
+  const compressImage = (file, maxWidth = 800, quality = 0.7) => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = (event) => setPhotoPreview(event.target.result);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
       reader.readAsDataURL(file);
+    });
+  };
+
+  const MAX_PHOTO_SIZE_MB = 5;
+  const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!ALLOWED_PHOTO_TYPES.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp|heic|heif)$/i)) {
+      showToast?.('⚠️ يرجى اختيار صورة بصيغة JPG أو PNG أو WebP فقط', 'error');
+      return;
     }
+
+    // Validate file size (before compression)
+    if (file.size > MAX_PHOTO_SIZE_MB * 1024 * 1024) {
+      showToast?.(`⚠️ حجم الصورة كبير جداً (${(file.size / 1024 / 1024).toFixed(1)}MB). الحد الأقصى ${MAX_PHOTO_SIZE_MB}MB`, 'error');
+      return;
+    }
+
+    // Compress the image to reduce size
+    const compressedFile = await compressImage(file, 800, 0.75);
+    setPhotoFile(compressedFile);
+
+    const reader = new FileReader();
+    reader.onload = (event) => setPhotoPreview(event.target.result);
+    reader.readAsDataURL(compressedFile);
   };
 
   // ─── Real-time Arabic Validation ───────────────────────────
@@ -197,6 +257,7 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
   // ─── Submit Handler ───────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return; // Prevent double-click submissions
     setErrorMessage('');
 
     // Mark all required fields as touched
@@ -323,7 +384,7 @@ export default function StudentForm({ initialStudentData, isEditMode = false, on
               className="absolute top-4 right-4 flex items-center gap-1.5 text-xs text-slate-300 hover:text-[#fbbf24] transition-colors cursor-pointer bg-slate-900/60 px-3 py-1.5 rounded-xl border border-emerald-700/40"
             >
               <ArrowRight className="w-3.5 h-3.5" />
-              <span>إلغاء والعودة للبروفايل</span>
+              <span>{isEditMode ? 'إلغاء والعودة للبروفايل' : 'العودة لبوابة البحث'}</span>
             </button>
           )}
 

@@ -176,6 +176,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     setTouched({
       studentName: true,

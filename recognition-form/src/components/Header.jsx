@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, ShieldCheck, Home, Menu, X, LogIn, Sparkles } from 'lucide-react';
+import { BookOpen, ShieldCheck, Home, Menu, X, LogIn, Sparkles, Award } from 'lucide-react';
 
 export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpenLoginModal }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -48,6 +48,18 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
             <Home className="w-4 h-4" />
             الرئيسية والتعريف
           </button>
+
+          <button
+            onClick={() => handleNav('student-gate')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeView === 'student-gate' || activeView === 'form' || activeView === 'student-profile' || activeView === 'success'
+                ? 'bg-[#fbbf24] text-slate-950 shadow-md font-black'
+                : 'text-slate-200 hover:text-white hover:bg-emerald-800/30'
+            }`}
+          >
+            <Award className="w-4 h-4" />
+            استمارة الطلاب المُكَرَّمين
+          </button>
         </nav>
 
         {/* RIGHT ACTION: UNIFIED LOGIN BUTTON */}
@@ -92,6 +104,18 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
           >
             <Home className="w-4 h-4" />
             الرئيسية والتعريف
+          </button>
+
+          <button
+            onClick={() => handleNav('student-gate')}
+            className={`w-full p-3 rounded-xl text-right text-xs font-bold flex items-center gap-3 ${
+              activeView === 'student-gate' || activeView === 'form' || activeView === 'student-profile' || activeView === 'success'
+                ? 'bg-[#fbbf24] text-slate-950 font-black'
+                : 'text-slate-200'
+            }`}
+          >
+            <Award className="w-4 h-4" />
+            استمارة الطلاب المُكَرَّمين
           </button>
 
           <div className="pt-2 border-t border-emerald-900/60">

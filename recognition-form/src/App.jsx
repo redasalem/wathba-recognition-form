@@ -15,6 +15,7 @@ export default function App() {
   // Views: 'landing' | 'form' | 'student-profile' | 'sheikh-form' | 'success' | 'admin'
   const [activeView, setActiveView] = useState('landing');
   const [records, setRecords] = useState([]);
+  const [isRecordsLoaded, setIsRecordsLoaded] = useState(false);
   const [submittedData, setSubmittedData] = useState(null);
   
   // Student Profile & Form Integration State
@@ -79,10 +80,10 @@ export default function App() {
     const path = window.location.pathname.toLowerCase();
     const { idParam, nameParam, codeParam, modeParam } = extractUrlParams();
 
-    // 1. Sheikh Form Route → Requires admin login, redirect to admin
+    // 1. Sheikh Form Route → Requires admin login to access
     if (hash.includes('sheikh-form') || path.includes('sheikh-form')) {
-      if (isAdminLoggedIn) {
-        setActiveView('admin');
+      if (adminLoggedIn) {
+        setActiveView('sheikh-form');
       } else {
         setActiveView('admin');
       }
@@ -109,7 +110,7 @@ export default function App() {
         return;
       }
 
-      // Find student in catalog
+      // Find student in catalog (always available - static data)
       const catalogMatch = findStudentInCatalog(idParam || codeParam || nameParam);
 
       // Search Firestore records
@@ -170,7 +171,7 @@ export default function App() {
     if (!hash || hash === '#' || hash === '#/' || hash === '#landing') {
       setActiveView('landing');
     }
-  }, [extractUrlParams]);
+  }, [extractUrlParams, isAdminLoggedIn]);
 
   // URL Hash Listener
   useEffect(() => {
@@ -185,9 +186,11 @@ export default function App() {
     const unsubscribe = subscribeStudents(
       (data) => {
         setRecords(data);
+        if (!isRecordsLoaded) setIsRecordsLoaded(true);
       },
       (err) => {
         console.error('Firebase error:', err);
+        setIsRecordsLoaded(true);
         showToast('حدث خطأ في الاتصال بقاعدة البيانات', 'error');
       }
     );
@@ -212,17 +215,18 @@ export default function App() {
     }
   };
 
-  const handleStudentVerified = (verifiedStudent) => {
+  const handleStudentVerified = (verifiedStudent, forceEdit = false) => {
     setSelectedStudent(verifiedStudent);
     const isCompleted = isStudentFullyRegistered(verifiedStudent);
-    if (isCompleted) {
+    if (isCompleted && !forceEdit) {
       setActiveView('student-profile');
       window.location.hash = `/student?id=${verifiedStudent.studentId}`;
     } else {
       setInitialStudentData(verifiedStudent);
-      setIsEditMode(false);
+      setIsEditMode(isCompleted || forceEdit);
       setActiveView('form');
-      window.location.hash = `/student/form?id=${verifiedStudent.studentId}&name=${encodeURIComponent(verifiedStudent.studentName)}`;
+      const editParam = (isCompleted || forceEdit) ? '&mode=edit' : '';
+      window.location.hash = `/student/form?id=${verifiedStudent.studentId}&name=${encodeURIComponent(verifiedStudent.studentName || verifiedStudent.name || '')}${editParam}`;
     }
   };
 

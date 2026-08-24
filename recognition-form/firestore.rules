@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── مساعدة: دوال التحقق من صحة البيانات (Validation Helpers) ───
+    function isValidStudent(data) {
+      return data.studentName is string &&
+             data.studentName.size() >= 2 &&
+             data.studentName.size() <= 100 &&
+             (!('fatherPhone' in data) || data.fatherPhone is string) &&
+             (!('examScore' in data) || data.examScore is number);
+    }
+
+    function isValidSheikh(data) {
+      return data.name is string &&
+             data.name.size() >= 2 &&
+             data.name.size() <= 100;
+    }
+
+    // ─── 1. مجموعة الطلاب (Students Collection) ───
+    match /students/{studentId} {
+      // السماح بالقراءة لجميع المستخدمين لعرض بطاقات التكريم والاستمارات
+      allow read: if true;
+
+      // السماح بإنشاء وتحديث السجلات بشرط صحة البيانات
+      allow create, update: if isValidStudent(request.resource.data);
+
+      // تقييد الحذف
+      allow delete: if request.auth != null;
+    }
+
+    // ─── 2. مجموعة المشايخ (Sheikhs Collection) ───
+    match /sheikhs/{sheikhId} {
+      allow read: if true;
+      allow create, update: if isValidSheikh(request.resource.data);
+      allow delete: if request.auth != null;
+    }
+
+    // ─── 3. حظر أي مسارات أو مجموعات أخرى غير مصرح بها ───
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

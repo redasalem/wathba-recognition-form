@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Search,
   Award,
@@ -6,166 +6,355 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  User,
+  BookOpen,
+  Clock,
+  Edit3,
+  QrCode,
+  X,
+  ChevronLeft
 } from 'lucide-react';
-import { findStudentInCatalog, normalizeArabic } from '../data/studentsCatalog';
+import {
+  STUDENTS_CATALOG,
+  normalizeArabic,
+  matchesStudentSearch,
+  isStudentMatch
+} from '../data/studentsCatalog';
+import { isStudentFullyRegistered } from './AdminDashboard';
 
-export default function StudentVerificationGate({ records = [], onStudentVerified, onGoHome, showToast }) {
+export default function StudentVerificationGate({
+  records = [],
+  onStudentVerified,
+  onGoHome,
+  showToast
+}) {
   const [query, setQuery] = useState('');
-  const [hasSearched, setHasSearched] = useState(false);
-  const [foundStudent, setFoundStudent] = useState(null);
-  const [searchError, setSearchError] = useState('');
 
-  const handleSearch = (e) => {
-    e?.preventDefault();
-    const cleanQuery = query.trim();
-    setSearchError('');
-    setHasSearched(true);
+  // 1. Merge catalog students (146 students) with active Firestore records
+  const allVerifiedStudents = useMemo(() => {
+    const map = new Map();
 
-    if (!cleanQuery) {
-      setSearchError('يرجى كتابة كود الطالب أو اسمه للتحقق.');
-      setFoundStudent(null);
-      return;
-    }
-
-    // 1. Check in 143 Catalog
-    const catalogMatch = findStudentInCatalog(cleanQuery);
-
-    // 2. Check in Firestore records
-    const existingDoc = records.find(rec => {
-      if (catalogMatch && (rec.studentId === catalogMatch.studentId || rec.id === catalogMatch.studentId)) return true;
-      if (rec.studentCode && rec.studentCode.replace('#', '') === cleanQuery.replace('#', '')) return true;
-      if (normalizeArabic(rec.studentName || '').includes(normalizeArabic(cleanQuery))) return true;
-      return false;
+    // Add all students from official 2026 catalog
+    STUDENTS_CATALOG.forEach(cat => {
+      map.set(cat.studentId || cat.code, {
+        ...cat,
+        studentId: cat.studentId,
+        studentCode: cat.code,
+        studentName: cat.name,
+        partName: cat.part,
+        awardTier: cat.tier,
+        examScore: cat.score,
+        gift: cat.gift,
+        totalParts: cat.totalParts || 1,
+        smartUrl: cat.smart_url,
+        qrCodeUrl: cat.qr_code_url
+      });
     });
 
-    if (catalogMatch || existingDoc) {
-      const merged = {
-        ...(catalogMatch || {}),
-        ...(existingDoc || {}),
-        studentId: catalogMatch ? catalogMatch.studentId : (existingDoc.studentId || existingDoc.id),
-        studentCode: catalogMatch ? catalogMatch.code : (existingDoc.studentCode || ''),
-        studentName: catalogMatch ? catalogMatch.name : (existingDoc.studentName || cleanQuery),
-        partName: catalogMatch ? catalogMatch.part : (existingDoc.partName || 'القرآن الكريم'),
-        awardTier: catalogMatch ? catalogMatch.tier : (existingDoc.awardTier || '✨ فئة متميزة'),
-        examScore: catalogMatch ? catalogMatch.score : (existingDoc.examScore || ''),
-        gift: catalogMatch ? catalogMatch.gift : (existingDoc.gift || 'شهادة تقدير وتكريم الكُتّاب'),
-        totalParts: catalogMatch ? catalogMatch.totalParts : (existingDoc.totalParts || 1)
-      };
-      setFoundStudent(merged);
-      setSearchError('');
-    } else {
-      setFoundStudent(null);
-      setSearchError('عذراً، لم يتم العثور على هذا الاسم أو الكود ضمن قائمة الطلاب المعتمدين لتكريم الدورة الصيفية 2026. يرجى التأكد من الكود المكتوب على كارت الدعوة.');
-    }
+    // Merge in real-time Firestore database records
+    records.forEach(rec => {
+      let matchedKey = null;
+
+      if (rec.studentId && map.has(rec.studentId)) {
+        matchedKey = rec.studentId;
+      } else {
+        for (const [k, v] of map.entries()) {
+          if (isStudentMatch(rec, v)) {
+            matchedKey = k;
+            break;
+          }
+        }
+      }
+
+      if (matchedKey) {
+        const existing = map.get(matchedKey);
+        map.set(matchedKey, {
+          ...existing,
+          ...rec,
+          studentId: existing.studentId || rec.studentId || rec.id,
+          studentCode: existing.studentCode || rec.studentCode || existing.code,
+          studentName: rec.studentName || existing.studentName || existing.name,
+          partName: rec.partName || existing.partName || existing.part,
+          awardTier: rec.awardTier || existing.awardTier || existing.tier,
+          examScore: rec.examScore !== undefined ? rec.examScore : existing.examScore,
+          gift: rec.gift || existing.gift,
+          totalParts: rec.totalParts || existing.totalParts || 1
+        });
+      } else if (rec.studentName || rec.name) {
+        const docId = rec.id || rec.studentId || `DOC-${Math.random().toString(36).substr(2, 9)}`;
+        map.set(docId, {
+          ...rec,
+          studentId: rec.studentId || rec.id || docId,
+          studentCode: rec.studentCode || '',
+          studentName: rec.studentName || rec.name,
+          partName: rec.partName || rec.part || 'القرآن الكريم',
+          awardTier: rec.awardTier || rec.tier || '✨ فئة متميزة',
+          examScore: rec.examScore !== undefined ? rec.examScore : '',
+          gift: rec.gift || 'شهادة تقدير وتكريم الكُتّاب',
+          totalParts: rec.totalParts || 1
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [records]);
+
+  // 2. Filter students in real time as the user types
+  const filteredStudents = useMemo(() => {
+    const cleanQuery = query.trim();
+    if (!cleanQuery) return [];
+    return allVerifiedStudents.filter(stu => matchesStudentSearch(stu, cleanQuery));
+  }, [allVerifiedStudents, query]);
+
+  const handleSelectStudent = (student, forceEdit = false) => {
+    onStudentVerified(student, forceEdit);
+  };
+
+  const handleQuickChipClick = (sampleText) => {
+    setQuery(sampleText);
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto my-6 sm:my-10 animate-fade-in text-slate-100 px-4">
-      <div className="rounded-3xl border border-[#fbbf24]/40 bg-[#062b24]/90 backdrop-blur-xl shadow-2xl p-6 sm:p-8 space-y-6 relative overflow-hidden">
+    <div className="w-full max-w-2xl mx-auto my-4 sm:my-8 animate-fade-in text-slate-100 px-3 sm:px-4">
+      <div className="rounded-3xl border border-[#fbbf24]/40 bg-[#062b24]/90 backdrop-blur-xl shadow-2xl p-5 sm:p-8 space-y-6 relative overflow-hidden">
         
-        {/* Glow Effects */}
-        <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#fbbf24]/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        {/* Decorative Glows */}
+        <div className="absolute -top-16 -right-16 w-56 h-56 bg-[#fbbf24]/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         {/* Top Header */}
         <div className="text-center space-y-3">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-amber-500/20 border border-[#fbbf24]/40 flex items-center justify-center text-[#fbbf24] shadow-lg shadow-amber-900/30">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-amber-500/20 border-2 border-[#fbbf24]/50 flex items-center justify-center text-[#fbbf24] shadow-xl shadow-amber-900/30">
             <ShieldCheck className="w-8 h-8" />
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fbbf24]/15 border border-[#fbbf24]/30 text-[#fbbf24] text-[11px] font-black">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#fbbf24]/15 border border-[#fbbf24]/30 text-[#fbbf24] text-xs font-black">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>بوابة التحقق من الطلاب المُكَرَّمين 2026</span>
+            <span>بوابة التحقق والبحث عن الطلاب المُكَرَّمين 2026</span>
           </div>
 
           <h2 className="text-xl sm:text-2xl font-black text-white leading-snug">
-            التحقق واعتماد بيانات الطالب المُكَرَّم
+            ابحث عن اسمك واستكمل بيانات التكريم 🏆
           </h2>
 
-          <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
-            الاستمارة مخصصة حصرياً لأبنائنا الطلاب المعتمدين في حفل تكريم الدورة الصيفية. يرجى كتابة كود الطالب أو اسمه للتحقق.
+          <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
+            الاستمارة مخصصة حصرياً لأبنائنا الطلاب المعتمدين في حفل تكريم الدورة الصيفية 2026. اكتب اسمك أو كودك للانتقال فوراً لاستكمال بياناتك.
           </p>
         </div>
 
         {/* Search Input Box */}
-        <form onSubmit={handleSearch} className="space-y-3">
+        <div className="space-y-3">
           <div className="relative">
             <input
               type="text"
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                if (hasSearched) setHasSearched(false);
-              }}
-              placeholder="اكتب كود الطالب (مثال: #001) أو اسم الطالب..."
-              className="w-full px-4 py-3.5 pl-12 rounded-2xl text-sm bg-slate-900/90 border border-emerald-700/60 text-white placeholder-slate-500 focus:outline-none focus:border-[#fbbf24] transition-all shadow-inner"
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="اكتب اسم الطالب (مثال: تسنيم أحمد) أو الكود (مثال: #001)..."
+              className="w-full px-4 py-4 pl-12 pr-12 rounded-2xl text-sm sm:text-base bg-slate-900/95 border-2 border-emerald-700/70 text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24] transition-all shadow-inner"
               autoFocus
             />
-            <button
-              type="submit"
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 p-2 bg-[#fbbf24] hover:bg-amber-400 text-slate-950 rounded-xl transition-all cursor-pointer shadow flex items-center justify-center"
-              title="بحث وتحقق"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          </div>
 
-          <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 font-medium">
-            <span>💡 مثال للبحث: <strong className="text-amber-300">#001</strong> أو <strong className="text-amber-300">تسنيم أحمد</strong></span>
-            <span className="text-emerald-400">قاعدة البيانات المعتمدة</span>
-          </div>
-        </form>
-
-        {/* Result 1: Student Verified Successfully */}
-        {foundStudent && (
-          <div className="p-5 rounded-2xl bg-[#041915] border-2 border-[#fbbf24] space-y-4 animate-scaleIn shadow-2xl">
-            <div className="flex items-center gap-3 border-b border-emerald-800/40 pb-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">تم التحقق بنجاح من السجل الرسمي ✓</span>
-                <h3 className="text-lg font-black text-white">{foundStudent.studentName}</h3>
-              </div>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+              <Search className="w-5 h-5" />
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-emerald-800/30">
-                <span className="text-[10px] text-slate-400 block">كود التكريم:</span>
-                <span className="font-mono font-black text-[#fbbf24] text-sm">{foundStudent.studentCode || '#001'}</span>
-              </div>
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800/80 hover:bg-slate-700 transition-colors"
+                title="مسح البحث"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-emerald-800/30">
-                <span className="text-[10px] text-slate-400 block">المستوى القرآني:</span>
-                <span className="font-bold text-emerald-300">{foundStudent.partName || 'القرآن الكريم'}</span>
-              </div>
+          {/* Quick Helper Chips */}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 px-1 font-medium">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span>💡 اقتراحات سريعة:</span>
+              <button
+                type="button"
+                onClick={() => handleQuickChipClick('#001')}
+                className="px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 transition-colors cursor-pointer text-[11px] font-mono"
+              >
+                #001
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickChipClick('تسنيم')}
+                className="px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 transition-colors cursor-pointer text-[11px]"
+              >
+                تسنيم
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickChipClick('عكاز')}
+                className="px-2 py-0.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 hover:bg-blue-500/25 transition-colors cursor-pointer text-[11px]"
+              >
+                عكاز
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickChipClick('جزء الكهف')}
+                className="px-2 py-0.5 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 transition-colors cursor-pointer text-[11px]"
+              >
+                جزء الكهف
+              </button>
+            </div>
+            <span className="text-emerald-400 font-bold text-[11px] hidden sm:inline">
+              ✓ 146 طالباً معتمداً
+            </span>
+          </div>
+        </div>
+
+        {/* ─── CASE 1: SEARCH HAS MATCHES (SHOW RESULT CARDS) ─── */}
+        {query.trim().length > 0 && filteredStudents.length > 0 && (
+          <div className="space-y-3 animate-fade-in">
+            <div className="flex items-center justify-between text-xs font-black text-[#fbbf24] px-1 border-b border-emerald-800/40 pb-2">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                نتائج البحث المعتمدة ({filteredStudents.length} طالب):
+              </span>
+              <span className="text-[11px] text-slate-400 font-normal">
+                اضغط على اسمك للمتابعة
+              </span>
             </div>
 
-            <button
-              onClick={() => onStudentVerified(foundStudent)}
-              className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm rounded-xl shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Award className="w-4 h-4" />
-              <span>متابعة واستكمال بيانات الطالب المُكَرَّم 🌟</span>
-            </button>
+            <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+              {filteredStudents.map((stu) => {
+                const isCompleted = isStudentFullyRegistered(stu);
+
+                return (
+                  <div
+                    key={stu.studentId || stu.studentCode || stu.name}
+                    className="p-4 rounded-2xl bg-[#041915]/95 border-2 border-emerald-700/50 hover:border-[#fbbf24] transition-all duration-200 space-y-3 group shadow-lg"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-base font-black text-white group-hover:text-[#fbbf24] transition-colors">
+                            {stu.studentName || stu.name}
+                          </h3>
+                          {stu.studentCode && (
+                            <span className="px-2 py-0.5 rounded-lg bg-amber-500/20 text-[#fbbf24] font-mono text-xs font-black border border-[#fbbf24]/40">
+                              {stu.studentCode}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs text-slate-300 flex-wrap">
+                          <span className="text-emerald-300 font-bold flex items-center gap-1">
+                            <BookOpen className="w-3.5 h-3.5" />
+                            {stu.partName || stu.part || 'القرآن الكريم'}
+                          </span>
+                          {stu.awardTier && (
+                            <span className="text-amber-200/90 text-[11px]">
+                              • {stu.awardTier}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Status Tag */}
+                      <div>
+                        {isCompleted ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold">
+                            <CheckCircle2 className="w-3 h-3" />
+                            بيانات مكتملة
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-[#fbbf24] text-[11px] font-bold">
+                            <Clock className="w-3 h-3" />
+                            جاهز للاستكمال
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="pt-2 border-t border-emerald-900/50 flex flex-wrap items-center gap-2">
+                      {isCompleted ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectStudent(stu, false)}
+                            className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
+                          >
+                            <Award className="w-3.5 h-3.5" />
+                            <span>عرض كارت وبروفايل التكريم 🏆</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectStudent(stu, true)}
+                            className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 border border-emerald-700/50 text-slate-200 hover:text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-[#fbbf24]" />
+                            <span>تعديل البيانات</span>
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleSelectStudent(stu, false)}
+                          className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <Award className="w-4 h-4" />
+                          <span>متابعة واستكمال بيانات الطالب المُكَرَّم 🌟</span>
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
-        {/* Result 2: Error / Not Found */}
-        {searchError && (
-          <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs font-bold space-y-2 animate-fade-in">
-            <div className="flex items-start gap-2.5">
-              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-              <p className="leading-relaxed">{searchError}</p>
+        {/* ─── CASE 2: SEARCH HAS NO MATCHES (ERROR BANNER) ─── */}
+        {query.trim().length > 0 && filteredStudents.length === 0 && (
+          <div className="p-5 rounded-2xl bg-rose-500/15 border-2 border-rose-500/40 text-rose-200 text-xs font-bold space-y-3 animate-fade-in">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-rose-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <h4 className="text-sm font-black text-white">لم يتم العثور على أي طالب بهذا الاسم أو الكود!</h4>
+                <p className="leading-relaxed text-slate-200">
+                  عذراً، لم نتمكن من مطابقة "<span className="text-[#fbbf24] font-black">{query}</span>" ضمن كشوفات الطلاب المعتمدين لتكريم الدورة الصيفية 2026.
+                </p>
+              </div>
             </div>
-            <p className="text-[11px] text-slate-300 pt-1 border-t border-rose-500/20">
-              📌 تنبيه: إذا كنت قد استلمت كارت الدعوة الرسمي المطبوع، يمكنك مسح كود الـ QR المطبوع على الكارت مباشرة بكاميرا هاتفك للوصول السريع.
-            </p>
+
+            <div className="pt-2 border-t border-rose-500/20 text-[11px] text-slate-300 space-y-1">
+              <p>🔒 <strong>قواعد التسجيل:</strong> الاستمارة مخصصة حصرياً للطلاب المقيدين في قاعدة بيانات الحفل الرسمية ولا يمكن التسجيل دون اعتماد مسبق.</p>
+              <p>💡 <strong>نصيحة:</strong> يرجى التأكد من كتابة الاسم بدون أخطاء إملائية، أو كتابة كود الطالب المكتوب على كارت الدعوة (مثال: <span className="text-amber-300 font-mono">#001</span>).</p>
+            </div>
           </div>
         )}
 
-        {/* Bottom Actions */}
+        {/* ─── CASE 3: INITIAL IDLE STATE (GUIDE BANNER) ─── */}
+        {query.trim().length === 0 && (
+          <div className="p-5 rounded-2xl bg-[#041915]/80 border border-emerald-800/40 space-y-3 text-xs text-slate-300">
+            <h4 className="text-sm font-black text-[#fbbf24] flex items-center gap-2">
+              <QrCode className="w-4 h-4" />
+              <span>طرق الوصول السريع للاستمارة:</span>
+            </h4>
+            <ul className="space-y-2 text-slate-300">
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 font-bold mt-0.5">1.</span>
+                <span><strong>كارت الـ QR المطبوع:</strong> إذا كنت قد استلمت كارت الدعوة المطبوع، يمكنك مسح كود الـ QR بكاميرا هاتفك مباشرة لفتح استمارتك تلقائياً.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 font-bold mt-0.5">2.</span>
+                <span><strong>البحث الفوري بالاسم أو الكود:</strong> اكتب اسم ابنك/ابنتك في صندوق البحث أعلاه للتحقق وتعبئة البيانات المطلوبة.</span>
+              </li>
+            </ul>
+          </div>
+        )}
+
+        {/* Bottom Navigation Actions */}
         <div className="pt-3 border-t border-emerald-800/40 flex items-center justify-between text-xs">
           <button
             type="button"
@@ -176,7 +365,7 @@ export default function StudentVerificationGate({ records = [], onStudentVerifie
             <span>العودة للرئيسية</span>
           </button>
 
-          <span className="text-[#fbbf24] font-bold">
+          <span className="text-[#fbbf24] font-bold text-[11px] sm:text-xs">
             كُتّاب 2026 | حفل التكريم والختام 🏆
           </span>
         </div>

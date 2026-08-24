@@ -8,6 +8,8 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
 
   // 🔑 Close on Escape key and lock body scroll
   useEffect(() => {
@@ -25,19 +27,28 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
     };
   }, [onClose]);
 
-  const targetPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'kuttab2026@@';
-  const validPasswords = [targetPassword, 'kuttab', 'kuttab2026', 'kuttab2026@@'];
+  const MAX_LOGIN_ATTEMPTS = 5;
+  const LOCKOUT_DURATION_MS = 60000; // 1 minute
 
   const handleAdminSubmit = (e) => {
     e.preventDefault();
     setError('');
+
+    if (isLocked) {
+      setError('⛔ تم تجميد تسجيل الدخول مؤقتاً بسبب كثرة المحاولات الخاطئة. يرجى الانتظار دقيقة ثم المحاولة مرة أخرى.');
+      return;
+    }
 
     if (!password.trim()) {
       setError('⚠️ يرجى إدخال كلمة المرور');
       return;
     }
 
-    if (validPasswords.includes(password.trim())) {
+    // Use only environment variable password - no hardcoded fallbacks
+    const targetPassword = import.meta.env.VITE_ADMIN_PASSWORD || '';
+
+    if (targetPassword && password.trim() === targetPassword) {
+      setLoginAttempts(0);
       if (rememberMe) {
         localStorage.setItem('kuttab_admin_session', 'true');
         localStorage.setItem('kuttab_admin_auth', 'true');
@@ -49,7 +60,20 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
       setPassword('');
       onClose();
     } else {
-      setError('كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.');
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
+
+      if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+        setIsLocked(true);
+        setError(`⛔ تم تجميد تسجيل الدخول لمدة دقيقة بسبب ${MAX_LOGIN_ATTEMPTS} محاولات خاطئة متتالية.`);
+        setTimeout(() => {
+          setIsLocked(false);
+          setLoginAttempts(0);
+          setError('');
+        }, LOCKOUT_DURATION_MS);
+      } else {
+        setError(`كلمة المرور غير صحيحة. المحاولة ${newAttempts} من ${MAX_LOGIN_ATTEMPTS}.`);
+      }
     }
   };
 

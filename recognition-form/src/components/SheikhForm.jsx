@@ -25,24 +25,34 @@ export default function SheikhForm({ onSuccess, showToast }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedSheikh, setSubmittedSheikh] = useState(null);
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [isAuthorized, setIsAuthorized] = useState(() => {
     return localStorage.getItem('kuttab_sheikh_session') === 'true' || localStorage.getItem('kuttab_admin_session') === 'true';
   });
   const [passcode, setPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
+  const [verifyAttempts, setVerifyAttempts] = useState(0);
 
-  const targetSheikhPasscode = import.meta.env.VITE_SHEIKH_PASSCODE || 'sheikh2026';
+  const targetSheikhPasscode = import.meta.env.VITE_SHEIKH_PASSCODE || '';
 
   const handleVerifySheikhPasscode = (e) => {
     e.preventDefault();
     setPasscodeError('');
     const clean = passcode.trim();
-    if (clean === targetSheikhPasscode || clean === 'kuttab2026' || clean === 'sheikh2026') {
+
+    if (!clean) {
+      setPasscodeError('⚠️ يرجى إدخال رمز اعتماد المشايخ');
+      return;
+    }
+
+    if (targetSheikhPasscode && clean === targetSheikhPasscode) {
       setIsAuthorized(true);
       localStorage.setItem('kuttab_sheikh_session', 'true');
       showToast?.('تم التحقق من هوية فضيلة الشيخ بنجاح 👳‍♂️✨', 'success');
     } else {
-      setPasscodeError('رمز المرور غير صحيح. يرجى إدخال رمز اعتماد المحفظين الصحيح.');
+      const nextAttempts = verifyAttempts + 1;
+      setVerifyAttempts(nextAttempts);
+      setPasscodeError(`رمز المرور غير صحيح. يرجى مراجعة إدارة الكُتّاب (محاولة ${nextAttempts}).`);
     }
   };
 
@@ -93,6 +103,7 @@ export default function SheikhForm({ onSuccess, showToast }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setTouched({ sheikhName: true, phone: true });
 
     if (!validateForm()) {
