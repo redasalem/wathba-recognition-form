@@ -202,7 +202,7 @@ export const QURAN_PARTS_ORDER = [
 // دالة لتوليد رابط ذكي ورمز QR لكل طالب
 const defaultCatalogBaseUrl = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://wathba-kuttab.vercel.app';
 STUDENTS_CATALOG.forEach(s => {
-  s.smart_url = `${defaultCatalogBaseUrl}/#/student/form?name=${encodeURIComponent(s.name)}&id=${s.studentId}`;
+  s.smart_url = `${defaultCatalogBaseUrl}/#/student/form?name=${encodeURIComponent(s.name)}`;
   s.qr_code_url = s.smart_url;
   s.qr_img_url = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(s.smart_url)}&color=041915&bgcolor=ffffff`;
 });
@@ -220,7 +220,8 @@ export function normalizeArabic(text) {
     .replace(/ة/g, 'ه') // توحيد التاء المربوطة
     .replace(/ى/g, 'ي') // توحيد الياء
     .replace(/[\u200B-\u200D\uFEFF]/g, '') // حذف الحروف المخفية
-    .replace(/\s+/g, ' '); // توحيد المسافات
+    .replace(/\s+/g, ' ') // توحيد المسافات
+    .replace(/عبد\s+/g, 'عبد'); // توحيد الأسماء المركبة (عبد الرحمن -> عبدالرحمن)
 }
 
 // دالة الفحص والبحث الشامل للطلاب (اسم، كود، معرف، جزء، هاتف، شيخ، مدرسة)
@@ -282,20 +283,68 @@ export function matchesStudentSearch(student, searchStr) {
   return false;
 }
 
+// دالة البحث المخصص بالاسم في الكتالوج مع المعالجة الدقيقة للغة العربية
+export function findStudentByName(name) {
+  if (!name) return null;
+  const rawName = String(name).trim();
+  if (!rawName) return null;
+  const normalizedQuery = normalizeArabic(rawName);
+  if (!normalizedQuery) return null;
+
+  // 1. مطابقة تامة بالاسم الموحد
+  let match = STUDENTS_CATALOG.find(s => {
+    return normalizeArabic(s.name) === normalizedQuery;
+  });
+  if (match) return match;
+
+  // 2. مطابقة بالاسم المتضمن إذا كان كافياً (>= 3 أحرف)
+  if (normalizedQuery.length >= 3) {
+    match = STUDENTS_CATALOG.find(s => {
+      const sNorm = normalizeArabic(s.name);
+      return sNorm.includes(normalizedQuery) || normalizedQuery.includes(sNorm);
+    });
+    if (match) return match;
+  }
+
+  // 3. مطابقة ذكية بالكلمات المركبة (الاسم الأول واسم الأب أو تطابق أغلب الكلمات)
+  const qWords = normalizedQuery.split(' ').filter(Boolean);
+  if (qWords.length >= 2) {
+    match = STUDENTS_CATALOG.find(s => {
+      const sWords = normalizeArabic(s.name).split(' ').filter(Boolean);
+      if (sWords.length < 2) return false;
+      const firstMatch = sWords[0] === qWords[0];
+      const fatherMatch = sWords[1] === qWords[1];
+      if (!firstMatch || !fatherMatch) return false;
+
+      const lastMatch = sWords[sWords.length - 1] === qWords[qWords.length - 1];
+      const matchedWordsCount = sWords.filter(w => qWords.includes(w)).length;
+      return lastMatch || matchedWordsCount >= Math.min(sWords.length, qWords.length);
+    });
+    if (match) return match;
+  }
+
+  return null;
+}
+
 // دالة البحث الذكي عن الطالب في الكتالوج
 export function findStudentInCatalog(identifier) {
   if (!identifier) return null;
   const rawId = String(identifier).trim();
   if (!rawId) return null;
-  const normalizedQuery = normalizeArabic(rawId);
 
-  // 1. مطابقة بمعرف الطالب STU-2026-XXX
+  // 1. إذا كان يحتوي على أحرف عربية، ابحث بالاسم أولاً
+  if (/[\u0600-\u06FF]/.test(rawId)) {
+    const nameMatch = findStudentByName(rawId);
+    if (nameMatch) return nameMatch;
+  }
+
+  // 2. مطابقة بمعرف الطالب STU-2026-XXX
   let match = STUDENTS_CATALOG.find(s => 
     s.studentId && s.studentId.toUpperCase() === rawId.toUpperCase()
   );
   if (match) return match;
 
-  // 2. مطابقة بالكود التكريمي مثل #001 أو 001 أو 1 (فقط إذا كان رقماً)
+  // 3. مطابقة بالكود التكريمي مثل #001 أو 001 أو 1 (فقط إذا كان رقماً)
   const cleanCode = rawId.replace(/^#/, '').trim();
   const parsedCodeNum = parseInt(cleanCode, 10);
   if (!isNaN(parsedCodeNum) && parsedCodeNum > 0 && parsedCodeNum <= 200 && /^\d+$/.test(cleanCode)) {
@@ -307,40 +356,8 @@ export function findStudentInCatalog(identifier) {
     if (match) return match;
   }
 
-  // 3. مطابقة بالاسم العربي التام
-  match = STUDENTS_CATALOG.find(s => {
-    const sNorm = normalizeArabic(s.name);
-    return sNorm === normalizedQuery;
-  });
-  if (match) return match;
-
-  // 4. مطابقة الاسم المتضمن (إذا كان الاستعلام طويلاً بما يكفي >= 3 أحرف)
-  if (normalizedQuery.length >= 3) {
-    match = STUDENTS_CATALOG.find(s => {
-      const sNorm = normalizeArabic(s.name);
-      return sNorm.includes(normalizedQuery);
-    });
-    if (match) return match;
-  }
-
-  // 5. مطابقة ذكية بالأسماء: تشترط تطابق الاسم الأول واسم الأب (الكلمة الثانية) لمنع التداخل بين الإخوة وأبناء العمومة
-  const qWords = normalizedQuery.split(' ').filter(Boolean);
-  if (qWords.length >= 2) {
-    match = STUDENTS_CATALOG.find(s => {
-      const sWords = normalizeArabic(s.name).split(' ').filter(Boolean);
-      if (sWords.length < 2) return false;
-      const firstMatch = sWords[0] === qWords[0];
-      const fatherMatch = sWords[1] === qWords[1];
-      if (!firstMatch || !fatherMatch) return false;
-      
-      const lastMatch = sWords[sWords.length - 1] === qWords[qWords.length - 1];
-      const matchedWordsCount = sWords.filter(w => qWords.includes(w)).length;
-      return lastMatch || matchedWordsCount >= Math.min(sWords.length, qWords.length);
-    });
-    if (match) return match;
-  }
-
-  return null;
+  // 4. مطابقة بالاسم كخيار أخير لأي نص آخر
+  return findStudentByName(rawId);
 }
 
 // دالة فحص مطابقة سجل طالب مع طالب في الكتالوج (Strict & Exact Matching)

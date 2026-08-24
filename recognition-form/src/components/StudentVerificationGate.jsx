@@ -8,7 +8,7 @@ import {
   ArrowRight,
   ShieldCheck
 } from 'lucide-react';
-import { findStudentInCatalog, normalizeArabic } from '../data/studentsCatalog';
+import { findStudentInCatalog, findStudentByName, normalizeArabic, isStudentMatch } from '../data/studentsCatalog';
 
 export default function StudentVerificationGate({ records = [], onStudentVerified, onGoHome, showToast }) {
   const [query, setQuery] = useState('');
@@ -28,14 +28,16 @@ export default function StudentVerificationGate({ records = [], onStudentVerifie
       return;
     }
 
-    // 1. Check in 143 Catalog
-    const catalogMatch = findStudentInCatalog(cleanQuery);
+    // 1. Check in Catalog
+    const catalogMatch = findStudentByName(cleanQuery) || findStudentInCatalog(cleanQuery);
 
     // 2. Check in Firestore records
     const existingDoc = records.find(rec => {
-      if (catalogMatch && (rec.studentId === catalogMatch.studentId || rec.id === catalogMatch.studentId)) return true;
+      if (catalogMatch && isStudentMatch(rec, catalogMatch)) return true;
+      if (normalizeArabic(rec.studentName || rec.name || '') === normalizeArabic(cleanQuery)) return true;
+      if (normalizeArabic(rec.studentName || rec.name || '').includes(normalizeArabic(cleanQuery))) return true;
       if (rec.studentCode && rec.studentCode.replace('#', '') === cleanQuery.replace('#', '')) return true;
-      if (normalizeArabic(rec.studentName || '').includes(normalizeArabic(cleanQuery))) return true;
+      if (rec.studentId && rec.studentId.toUpperCase() === cleanQuery.toUpperCase()) return true;
       return false;
     });
 
@@ -56,7 +58,7 @@ export default function StudentVerificationGate({ records = [], onStudentVerifie
       setSearchError('');
     } else {
       setFoundStudent(null);
-      setSearchError('عذراً، لم يتم العثور على هذا الاسم أو الكود ضمن قائمة الطلاب المعتمدين لتكريم الدورة الصيفية 2026. يرجى التأكد من الكود المكتوب على كارت الدعوة.');
+      setSearchError('عذراً، بيانات الطالب غير موجودة. من فضلك الرجوع إلى إدارة الكُتّاب أو أرسل لنا رسالة على الرابط التالي للمساعدة في استكمال وتحديث البيانات:');
     }
   };
 
@@ -154,14 +156,22 @@ export default function StudentVerificationGate({ records = [], onStudentVerifie
 
         {/* Result 2: Error / Not Found */}
         {searchError && (
-          <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs font-bold space-y-2 animate-fade-in">
+          <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs font-bold space-y-3 animate-fade-in">
             <div className="flex items-start gap-2.5">
               <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
               <p className="leading-relaxed">{searchError}</p>
             </div>
-            <p className="text-[11px] text-slate-300 pt-1 border-t border-rose-500/20">
-              📌 تنبيه: إذا كنت قد استلمت كارت الدعوة الرسمي المطبوع، يمكنك مسح كود الـ QR المطبوع على الكارت مباشرة بكاميرا هاتفك للوصول السريع.
-            </p>
+            <div className="pt-2 border-t border-rose-500/20 flex flex-col sm:flex-row items-center justify-between gap-2">
+              <span className="text-[11px] text-slate-300">للمساعدة الفورية في تحديث بيانات الطالب:</span>
+              <a
+                href="https://www.facebook.com/profile.php?id=61593331866319"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow"
+              >
+                <span>مراسلة الدعم عبر فيسبوك 💬</span>
+              </a>
+            </div>
           </div>
         )}
 

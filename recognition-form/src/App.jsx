@@ -8,11 +8,12 @@ import SuccessView from './components/SuccessView';
 import AdminDashboard, { isStudentFullyRegistered } from './components/AdminDashboard';
 import LoginPortalModal from './components/LoginPortalModal';
 import StudentVerificationGate from './components/StudentVerificationGate';
+import StudentNotFoundView from './components/StudentNotFoundView';
 import { subscribeStudents } from './firebase';
-import { STUDENTS_CATALOG, findStudentInCatalog, normalizeArabic, isStudentMatch } from './data/studentsCatalog';
+import { STUDENTS_CATALOG, findStudentInCatalog, findStudentByName, normalizeArabic, isStudentMatch } from './data/studentsCatalog';
 
 export default function App() {
-  // Views: 'landing' | 'form' | 'student-profile' | 'sheikh-form' | 'success' | 'admin'
+  // Views: 'landing' | 'form' | 'student-profile' | 'sheikh-form' | 'success' | 'admin' | 'student-gate' | 'student-not-found'
   const [activeView, setActiveView] = useState('landing');
   const [records, setRecords] = useState([]);
   const [submittedData, setSubmittedData] = useState(null);
@@ -21,6 +22,7 @@ export default function App() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [initialStudentData, setInitialStudentData] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [notFoundQuery, setNotFoundQuery] = useState({ name: '', id: '', code: '' });
 
   // Auth & Login Portal Modal state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
@@ -46,46 +48,36 @@ export default function App() {
 
   // 🔍 Helper to parse URL params from window.location (search + hash)
   const extractUrlParams = useCallback(() => {
-    let idParam = '';
     let nameParam = '';
-    let codeParam = '';
     let modeParam = '';
 
     // 1. Parse standard window.location.search
     if (window.location.search) {
       const searchParams = new URLSearchParams(window.location.search);
-      idParam = searchParams.get('id') || '';
       nameParam = searchParams.get('name') || '';
-      codeParam = searchParams.get('code') || '';
       modeParam = searchParams.get('mode') || '';
     }
 
-    // 2. Parse query parameters inside window.location.hash (e.g. #/student/form?name=...&id=...)
+    // 2. Parse query parameters inside window.location.hash (e.g. #/student/form?name=...)
     if (window.location.hash.includes('?')) {
       const hashQuery = window.location.hash.split('?')[1];
       const hashParams = new URLSearchParams(hashQuery);
-      if (!idParam) idParam = hashParams.get('id') || '';
       if (!nameParam) nameParam = hashParams.get('name') || '';
-      if (!codeParam) codeParam = hashParams.get('code') || '';
       if (!modeParam) modeParam = hashParams.get('mode') || '';
     }
 
-    return { idParam, nameParam, codeParam, modeParam };
+    return { nameParam, modeParam };
   }, []);
 
   // 🔗 SMART URL ROUTING & STATE EVALUATOR
   const evaluateRoute = useCallback((currentRecords, adminLoggedIn) => {
     const hash = window.location.hash.toLowerCase();
     const path = window.location.pathname.toLowerCase();
-    const { idParam, nameParam, codeParam, modeParam } = extractUrlParams();
+    const { nameParam, modeParam } = extractUrlParams();
 
     // 1. Sheikh Form Route → Requires admin login, redirect to admin
     if (hash.includes('sheikh-form') || path.includes('sheikh-form')) {
-      if (isAdminLoggedIn) {
-        setActiveView('admin');
-      } else {
-        setActiveView('admin');
-      }
+      setActiveView('admin');
       return;
     }
 
@@ -101,29 +93,28 @@ export default function App() {
       return;
     }
 
-    // 4. Student Smart URL Route (QR Code Scanner or direct link)
-    if (idParam || nameParam || codeParam || hash.includes('student') || hash.includes('form')) {
-      // If no query parameter was passed at all (e.g. user clicked on #/student-form directly), redirect to verification gate!
-      if (!idParam && !nameParam && !codeParam) {
+    // 4. Student Smart URL Route (QR Code Scanner or direct link based strictly on name)
+    if (nameParam || hash.includes('student') || hash.includes('form')) {
+      // If no name parameter was passed (e.g. user clicked #/student/form directly), go to verification gate
+      if (!nameParam) {
         setActiveView('student-gate');
         return;
       }
 
-      // Find student in catalog
-      const catalogMatch = findStudentInCatalog(idParam || codeParam || nameParam);
+      // Find student in catalog strictly by Name
+      const catalogMatch = findStudentByName(nameParam) || findStudentInCatalog(nameParam);
 
-      // Search Firestore records
+      // Search Firestore records strictly by catalog identity or normalized name
       const existingDoc = currentRecords.find(rec => {
-        if (idParam && (rec.studentId === idParam || rec.id === idParam)) return true;
-        if (codeParam && rec.studentCode && rec.studentCode.replace('#', '') === codeParam.replace('#', '')) return true;
         if (catalogMatch && isStudentMatch(rec, catalogMatch)) return true;
-        if (nameParam && isStudentMatch(rec, { name: nameParam })) return true;
+        if (normalizeArabic(rec.studentName || rec.name || '') === normalizeArabic(nameParam)) return true;
         return false;
       });
 
       if (!catalogMatch && !existingDoc) {
-        // If parameters don't match any official student -> Gatekeeper
-        setActiveView('student-gate');
+        // If name doesn't match any official student -> Descriptive Fallback Screen
+        setNotFoundQuery({ name: nameParam, id: '', code: '' });
+        setActiveView('student-not-found');
         return;
       }
 
@@ -146,11 +137,11 @@ export default function App() {
         setIsEditMode(true);
         setActiveView('form');
       } else {
-        // Unregistered / Incomplete -> open prefilled form
+        // Unregistered / Incomplete -> open prefilled form with complete verified catalog details
         setInitialStudentData({
-          studentId: catalogMatch ? catalogMatch.studentId : (idParam || ''),
-          studentCode: catalogMatch ? catalogMatch.code : (codeParam || ''),
-          studentName: catalogMatch ? catalogMatch.name : (nameParam || ''),
+          studentId: catalogMatch ? catalogMatch.studentId : '',
+          studentCode: catalogMatch ? catalogMatch.code : '',
+          studentName: catalogMatch ? catalogMatch.name : nameParam,
           partName: catalogMatch ? catalogMatch.part : '',
           examScore: catalogMatch ? catalogMatch.score : '',
           awardTier: catalogMatch ? catalogMatch.tier : '',
@@ -203,10 +194,13 @@ export default function App() {
       window.location.hash = '/student-form';
     } else if (view === 'student-gate') {
       window.location.hash = '/student-gate';
+    } else if (view === 'student-not-found') {
+      window.location.hash = '/student-not-found';
     } else if (view === 'admin') {
       window.location.hash = '/admin';
-    } else if (view === 'student-profile' && selectedStudent?.studentId) {
-      window.location.hash = `/student?id=${selectedStudent.studentId}`;
+    } else if (view === 'student-profile' && selectedStudent) {
+      const sName = selectedStudent.studentName || selectedStudent.name || '';
+      window.location.hash = `/student?name=${encodeURIComponent(sName)}`;
     } else {
       window.location.hash = '';
     }
@@ -215,14 +209,15 @@ export default function App() {
   const handleStudentVerified = (verifiedStudent) => {
     setSelectedStudent(verifiedStudent);
     const isCompleted = isStudentFullyRegistered(verifiedStudent);
+    const sName = verifiedStudent.studentName || verifiedStudent.name || '';
     if (isCompleted) {
       setActiveView('student-profile');
-      window.location.hash = `/student?id=${verifiedStudent.studentId}`;
+      window.location.hash = `/student?name=${encodeURIComponent(sName)}`;
     } else {
       setInitialStudentData(verifiedStudent);
       setIsEditMode(false);
       setActiveView('form');
-      window.location.hash = `/student/form?id=${verifiedStudent.studentId}&name=${encodeURIComponent(verifiedStudent.studentName)}`;
+      window.location.hash = `/student/form?name=${encodeURIComponent(sName)}`;
     }
   };
 
@@ -296,6 +291,16 @@ export default function App() {
             onStudentVerified={handleStudentVerified}
             onGoHome={() => handleNavigate('landing')}
             showToast={showToast}
+          />
+        )}
+
+        {activeView === 'student-not-found' && (
+          <StudentNotFoundView
+            searchedName={notFoundQuery.name}
+            searchedId={notFoundQuery.id}
+            searchedCode={notFoundQuery.code}
+            onSearchAgain={() => handleNavigate('student-gate')}
+            onGoHome={() => handleNavigate('landing')}
           />
         )}
 
