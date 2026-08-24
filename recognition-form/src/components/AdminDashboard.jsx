@@ -1058,15 +1058,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 </button>
               </div>
 
-              {/* Print Button */}
-              <button
-                onClick={() => window.print()}
-                className="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer border border-emerald-700/50 transition-all"
-                title="طباعة الكشف المعروض حالياً"
-              >
-                <Printer className="w-3.5 h-3.5 text-[#fbbf24]" />
-                <span className="hidden sm:inline">طباعة</span>
-              </button>
 
               {/* Export CSV Button */}
               <button
