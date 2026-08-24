@@ -76,7 +76,11 @@ export default function StagePrompterModal({
 
   // 🖨️ Handle Print
   const handlePrint = () => {
+    document.body.classList.add('printing-stage-cert');
     window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing-stage-cert');
+    }, 1500);
   };
 
   if (!student) return null;
@@ -96,7 +100,7 @@ export default function StagePrompterModal({
       className="fixed inset-0 z-[99999] bg-[#020d0a]/95 backdrop-blur-md flex flex-col items-center justify-between p-2 sm:p-4 md:p-6 overflow-y-auto text-slate-100 select-none animate-fade-in print:bg-white print:p-0 print:static"
     >
       {/* ─── 1. TOP STAGE CONTROLS HEADER (Hidden in Print & Pure Stage Projector) ─── */}
-      <div className="w-full max-w-6xl flex items-center justify-between gap-3 bg-[#062b24]/90 border border-emerald-700/60 rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-xl mb-3 shrink-0 print:hidden">
+      <div className="w-full max-w-6xl 2xl:max-w-7xl flex items-center justify-between gap-3 bg-[#062b24]/90 border border-emerald-700/60 rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-xl mb-3 shrink-0 print:hidden">
         
         {/* Left: Ceremony Badge & Order Info */}
         <div className="flex items-center gap-3">
@@ -118,20 +122,20 @@ export default function StagePrompterModal({
         <div className="flex items-center gap-2">
           <button
             onClick={toggleFullscreen}
-            className="p-2 sm:px-3 sm:py-2 bg-slate-900 hover:bg-slate-800 border border-emerald-700/60 text-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            className="p-2 sm:px-3 sm:py-2 bg-slate-900 hover:bg-slate-800 border border-emerald-700/60 text-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow"
             title={isFullscreen ? 'الخروج من ملء الشاشة (F)' : 'شاشة كاملة للبروجكتور (F)'}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            <span className="hidden lg:inline">{isFullscreen ? 'تصغير' : 'ملء الشاشة'}</span>
+            <span className="hidden sm:inline">{isFullscreen ? 'تصغير الشاشة' : 'بروجكتور كامل (F)'}</span>
           </button>
 
           <button
             onClick={handlePrint}
             className="p-2 sm:px-3 sm:py-2 bg-emerald-800 hover:bg-emerald-700 border border-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow"
-            title="طباعة الشهادة"
+            title="طباعة الشهادة الرسمية"
           >
             <Printer className="w-4 h-4" />
-            <span className="hidden sm:inline">طباعة</span>
+            <span className="hidden sm:inline">طباعة الشهادة</span>
           </button>
 
           <button
@@ -145,12 +149,14 @@ export default function StagePrompterModal({
       </div>
 
       {/* ─── 2. MAIN PRESENTATION BODY ─── */}
-      <div className="w-full max-w-5xl flex-1 flex flex-col items-center justify-center gap-4 my-auto print:max-w-none print:w-full print:m-0">
+      <div className="w-full max-w-6xl 2xl:max-w-7xl flex-1 flex flex-col items-center justify-center gap-4 my-auto print:max-w-none print:w-full print:m-0">
         
         {/* 🌟 LUXURY OFFICIAL STAGE CERTIFICATE CANVAS (دار تاج الوقار) */}
         <div
           id="stage-certificate-print"
-          className="relative w-full max-w-4xl aspect-[1.414/1] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_20px_70px_rgba(0,0,0,0.8)] border-2 sm:border-4 border-[#fbbf24]/70 bg-[#062b24] transition-all print:border-none print:shadow-none print:w-full print:aspect-auto"
+          className={`relative w-full aspect-[1.414/1] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,0.9)] border-2 sm:border-4 border-[#fbbf24]/80 bg-[#062b24] transition-all print:border-none print:shadow-none print:w-full print:aspect-auto ${
+            isFullscreen ? 'max-w-[96vw] max-h-[92vh]' : 'max-w-5xl 2xl:max-w-6xl'
+          }`}
           style={{
             backgroundImage: `url('/certificate-template.jpg')`,
             backgroundSize: '100% 100%',
@@ -172,9 +178,9 @@ export default function StagePrompterModal({
             <h1
               className="font-black text-[#fef08a] tracking-wide truncate drop-shadow-[0_3px_6px_rgba(0,0,0,0.95)]"
               style={{
-                fontSize: 'clamp(0.95rem, 1.9vw, 1.7rem)',
+                fontSize: 'clamp(1.1rem, 2.3vw, 2.2rem)',
                 fontFamily: `'Amiri', 'Cairo', 'Traditional Arabic', serif`,
-                textShadow: '0 0 14px rgba(251, 191, 36, 0.7), 0 3px 8px rgba(0,0,0,0.95)'
+                textShadow: '0 0 16px rgba(251, 191, 36, 0.75), 0 3px 8px rgba(0,0,0,0.95)'
               }}
             >
               {studentName}
@@ -195,7 +201,7 @@ export default function StagePrompterModal({
             <span
               className="font-black text-[#fbbf24] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] whitespace-nowrap"
               style={{
-                fontSize: 'clamp(0.7rem, 1.1vw, 1.0rem)',
+                fontSize: 'clamp(0.8rem, 1.35vw, 1.25rem)',
                 fontFamily: `'Amiri', 'Cairo', serif`,
                 textShadow: '0 0 10px rgba(251, 191, 36, 0.6), 0 2px 5px rgba(0,0,0,0.9)'
               }}
@@ -216,7 +222,7 @@ export default function StagePrompterModal({
           >
             <p
               className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-              style={{ fontSize: 'clamp(0.6rem, 0.9vw, 0.82rem)' }}
+              style={{ fontSize: 'clamp(0.65rem, 1.05vw, 0.95rem)' }}
             >
               {sheikhName}
             </p>
@@ -234,7 +240,7 @@ export default function StagePrompterModal({
           >
             <p
               className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-              style={{ fontSize: 'clamp(0.6rem, 0.9vw, 0.82rem)' }}
+              style={{ fontSize: 'clamp(0.65rem, 1.05vw, 0.95rem)' }}
             >
               إدارة دار تاج الوقار
             </p>
@@ -243,7 +249,7 @@ export default function StagePrompterModal({
       </div>
 
       {/* ─── 3. BOTTOM NAVIGATION BAR ─── */}
-      <div className="w-full max-w-4xl flex items-center justify-between gap-3 bg-[#062b24]/90 border border-emerald-700/60 rounded-2xl p-3 shadow-2xl backdrop-blur-xl shrink-0 mt-3 print:hidden">
+      <div className="w-full max-w-6xl 2xl:max-w-7xl flex items-center justify-between gap-3 bg-[#062b24]/90 border border-emerald-700/60 rounded-2xl p-3 shadow-2xl backdrop-blur-xl shrink-0 mt-3 print:hidden">
         <button
           type="button"
           onClick={onPrev}
