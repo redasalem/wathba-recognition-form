@@ -209,42 +209,6 @@ export default function StagePrompterModal({
               {partName}
             </span>
           </div>
-
-          {/* 3. SUPERVISING SHEIKH (On the line to the left of "الشيخ المحفظ") */}
-          <div
-            className="absolute text-center flex items-center justify-center px-1"
-            style={{
-              bottom: '6.5%',
-              right: '21.0%',
-              width: '14.0%',
-              height: '4.0%'
-            }}
-          >
-            <p
-              className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-              style={{ fontSize: 'clamp(0.65rem, 1.05vw, 0.95rem)' }}
-            >
-              {sheikhName}
-            </p>
-          </div>
-
-          {/* 4. CEREMONY MANAGEMENT (On the line to the right of "مدير الكتاب") */}
-          <div
-            className="absolute text-center flex items-center justify-center px-1"
-            style={{
-              bottom: '6.5%',
-              left: '21.0%',
-              width: '14.0%',
-              height: '4.0%'
-            }}
-          >
-            <p
-              className="font-black text-[#fef08a] truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
-              style={{ fontSize: 'clamp(0.65rem, 1.05vw, 0.95rem)' }}
-            >
-              إدارة دار تاج الوقار
-            </p>
-          </div>
         </div>
       </div>
 
