@@ -58,7 +58,7 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
             }`}
           >
             <Award className="w-4 h-4" />
-            استمارة الطلاب المُكَرَّمين
+            بوابة الطلاب المُكَرَّمين
           </button>
         </nav>
 
@@ -115,7 +115,7 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
             }`}
           >
             <Award className="w-4 h-4" />
-            استمارة الطلاب المُكَرَّمين
+            بوابة الطلاب المُكَرَّمين
           </button>
 
           <div className="pt-2 border-t border-emerald-900/60">

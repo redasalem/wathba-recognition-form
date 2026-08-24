@@ -199,10 +199,10 @@ export const QURAN_PARTS_ORDER = [
   "جزء عم وقصار السور"
 ];
 
-// دالة لتوليد رابط ذكي ورمز QR لكل طالب
+// دالة لتوليد رابط ذكي ورمز QR لكل طالب يوجه لبوابة التحقق والبحث
 const defaultCatalogBaseUrl = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://wathba-kuttab.vercel.app';
 STUDENTS_CATALOG.forEach(s => {
-  s.smart_url = `${defaultCatalogBaseUrl}/#/student/form?name=${encodeURIComponent(s.name)}&id=${s.studentId}`;
+  s.smart_url = `${defaultCatalogBaseUrl}/#/student-gate?name=${encodeURIComponent(s.name)}&id=${s.studentId}`;
   s.qr_code_url = s.smart_url;
   s.qr_img_url = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(s.smart_url)}&color=041915&bgcolor=ffffff`;
 });

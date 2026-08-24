@@ -21,6 +21,7 @@ export default function App() {
   // Student Profile & Form Integration State
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [initialStudentData, setInitialStudentData] = useState(null);
+  const [initialSearchQuery, setInitialSearchQuery] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Auth & Login Portal Modal state
@@ -96,82 +97,54 @@ export default function App() {
       return;
     }
 
-    // 3. Student Verification Gate Route
-    if (hash.includes('student-gate') || path.includes('student-gate') || hash.includes('gate')) {
+    // 3. QR Code Scan / Student Verification Gate Route
+    // Any QR code scanned (or old printed card URLs with parameters) goes directly to the Student Verification Gate!
+    if (
+      hash.includes('student-gate') ||
+      path.includes('student-gate') ||
+      hash.includes('gate') ||
+      idParam ||
+      nameParam ||
+      codeParam ||
+      hash.includes('student') ||
+      hash.includes('form')
+    ) {
+      // If student parameters were provided in the URL (from printed QR card or shared link), pre-fill the search query!
+      if (nameParam || codeParam || idParam) {
+        setInitialSearchQuery(nameParam || codeParam || idParam);
+      }
+
+      // Check if this is a direct profile request with an exact ID and the user specifically requested #/student-profile
+      if (hash.includes('student-profile') && (idParam || codeParam || nameParam)) {
+        const catalogMatch = findStudentInCatalog(idParam || codeParam || nameParam);
+        const existingDoc = currentRecords.find(rec => {
+          if (idParam && (rec.studentId === idParam || rec.id === idParam)) return true;
+          if (codeParam && rec.studentCode && rec.studentCode.replace('#', '') === codeParam.replace('#', '')) return true;
+          if (catalogMatch && isStudentMatch(rec, catalogMatch)) return true;
+          if (nameParam && isStudentMatch(rec, { name: nameParam })) return true;
+          return false;
+        });
+
+        if (catalogMatch || existingDoc) {
+          setSelectedStudent({
+            ...(catalogMatch || {}),
+            ...(existingDoc || {})
+          });
+          setActiveView('student-profile');
+          return;
+        }
+      }
+
+      // Always route student QR scans and public form attempts to the secure verification gate
       setActiveView('student-gate');
       return;
     }
 
-    // 4. Student Smart URL Route (QR Code Scanner or direct link)
-    if (idParam || nameParam || codeParam || hash.includes('student') || hash.includes('form')) {
-      // If no query parameter was passed at all (e.g. user clicked on #/student-form directly), redirect to verification gate!
-      if (!idParam && !nameParam && !codeParam) {
-        setActiveView('student-gate');
-        return;
-      }
-
-      // Find student in catalog (always available - static data)
-      const catalogMatch = findStudentInCatalog(idParam || codeParam || nameParam);
-
-      // Search Firestore records
-      const existingDoc = currentRecords.find(rec => {
-        if (idParam && (rec.studentId === idParam || rec.id === idParam)) return true;
-        if (codeParam && rec.studentCode && rec.studentCode.replace('#', '') === codeParam.replace('#', '')) return true;
-        if (catalogMatch && isStudentMatch(rec, catalogMatch)) return true;
-        if (nameParam && isStudentMatch(rec, { name: nameParam })) return true;
-        return false;
-      });
-
-      if (!catalogMatch && !existingDoc) {
-        // If parameters don't match any official student -> Gatekeeper
-        setActiveView('student-gate');
-        return;
-      }
-
-      // Check if student record is already completed with all inputs
-      const isCompleted = isStudentFullyRegistered(existingDoc);
-
-      if (isCompleted && modeParam !== 'edit') {
-        // Show verified student profile card
-        setSelectedStudent({
-          ...(catalogMatch || {}),
-          ...existingDoc
-        });
-        setActiveView('student-profile');
-      } else if (existingDoc && modeParam === 'edit') {
-        // Form in edit mode
-        setInitialStudentData({
-          ...(catalogMatch || {}),
-          ...existingDoc
-        });
-        setIsEditMode(true);
-        setActiveView('form');
-      } else {
-        // Unregistered / Incomplete -> open prefilled form
-        setInitialStudentData({
-          studentId: catalogMatch ? catalogMatch.studentId : (idParam || ''),
-          studentCode: catalogMatch ? catalogMatch.code : (codeParam || ''),
-          studentName: catalogMatch ? catalogMatch.name : (nameParam || ''),
-          partName: catalogMatch ? catalogMatch.part : '',
-          examScore: catalogMatch ? catalogMatch.score : '',
-          awardTier: catalogMatch ? catalogMatch.tier : '',
-          gift: catalogMatch ? catalogMatch.gift : '',
-          totalParts: catalogMatch ? catalogMatch.totalParts : 1,
-          smartUrl: catalogMatch ? catalogMatch.smart_url : '',
-          qrCodeUrl: catalogMatch ? catalogMatch.qr_code_url : '',
-          ...(existingDoc || {})
-        });
-        setIsEditMode(false);
-        setActiveView('form');
-      }
-      return;
-    }
-
-    // 5. Default Landing View
+    // 4. Default Landing View
     if (!hash || hash === '#' || hash === '#/' || hash === '#landing') {
       setActiveView('landing');
     }
-  }, [extractUrlParams, isAdminLoggedIn]);
+  }, [extractUrlParams]);
 
   // URL Hash Listener
   useEffect(() => {
@@ -202,32 +175,21 @@ export default function App() {
     setActiveView(view);
     if (view === 'sheikh-form') {
       window.location.hash = '/sheikh-form';
-    } else if (view === 'form') {
-      window.location.hash = '/student-form';
     } else if (view === 'student-gate') {
       window.location.hash = '/student-gate';
     } else if (view === 'admin') {
       window.location.hash = '/admin';
     } else if (view === 'student-profile' && selectedStudent?.studentId) {
-      window.location.hash = `/student?id=${selectedStudent.studentId}`;
+      window.location.hash = `/student-profile?id=${selectedStudent.studentId}`;
     } else {
       window.location.hash = '';
     }
   };
 
-  const handleStudentVerified = (verifiedStudent, forceEdit = false) => {
+  const handleStudentVerified = (verifiedStudent) => {
     setSelectedStudent(verifiedStudent);
-    const isCompleted = isStudentFullyRegistered(verifiedStudent);
-    if (isCompleted && !forceEdit) {
-      setActiveView('student-profile');
-      window.location.hash = `/student?id=${verifiedStudent.studentId}`;
-    } else {
-      setInitialStudentData(verifiedStudent);
-      setIsEditMode(isCompleted || forceEdit);
-      setActiveView('form');
-      const editParam = (isCompleted || forceEdit) ? '&mode=edit' : '';
-      window.location.hash = `/student/form?id=${verifiedStudent.studentId}&name=${encodeURIComponent(verifiedStudent.studentName || verifiedStudent.name || '')}${editParam}`;
-    }
+    setActiveView('student-profile');
+    window.location.hash = `/student-profile?id=${verifiedStudent.studentId || ''}`;
   };
 
   const handleAdminLoginSuccess = () => {
@@ -257,9 +219,14 @@ export default function App() {
   };
 
   const handleEditStudentFromProfile = (student) => {
-    setInitialStudentData(student);
-    setIsEditMode(true);
-    setActiveView('form');
+    if (isAdminLoggedIn) {
+      setInitialStudentData(student);
+      setIsEditMode(true);
+      setActiveView('form');
+    } else {
+      setIsLoginModalOpen(true);
+      showToast('يرجى تسجيل الدخول كمسؤول لتعديل بيانات الطلاب', 'info');
+    }
   };
 
   return (
@@ -297,27 +264,42 @@ export default function App() {
         {activeView === 'student-gate' && (
           <StudentVerificationGate
             records={records}
+            initialQuery={initialSearchQuery}
             onStudentVerified={handleStudentVerified}
             onGoHome={() => handleNavigate('landing')}
+            isAdminLoggedIn={isAdminLoggedIn}
             showToast={showToast}
           />
         )}
 
         {activeView === 'form' && (
-          <StudentForm 
-            initialStudentData={initialStudentData}
-            isEditMode={isEditMode}
-            onCancel={selectedStudent ? () => setActiveView('student-profile') : () => handleNavigate('student-gate')}
-            onSuccess={handleStudentFormSuccess} 
-            showToast={showToast} 
-          />
+          isAdminLoggedIn ? (
+            <StudentForm 
+              initialStudentData={initialStudentData}
+              isEditMode={isEditMode}
+              onCancel={selectedStudent ? () => setActiveView('student-profile') : () => handleNavigate('admin')}
+              onSuccess={handleStudentFormSuccess} 
+              showToast={showToast} 
+            />
+          ) : (
+            <div className="text-center py-20 bg-[#062b24]/80 rounded-3xl border border-emerald-700/40 p-8 my-8 max-w-md mx-auto">
+              <p className="text-slate-300 text-xs mb-4">الاستمارة وتعديل بيانات الطلاب مخصصة للوحة الإدارة فقط</p>
+              <button
+                onClick={() => setIsLoginModalOpen(true)}
+                className="px-6 py-3 bg-[#fbbf24] text-slate-950 font-black rounded-xl text-xs cursor-pointer shadow-lg"
+              >
+                تسجيل الدخول كمسؤول 🔑
+              </button>
+            </div>
+          )
         )}
 
         {activeView === 'student-profile' && selectedStudent && (
           <StudentProfileView
             student={selectedStudent}
             onEdit={handleEditStudentFromProfile}
-            onGoHome={() => handleNavigate('landing')}
+            onGoHome={() => handleNavigate('student-gate')}
+            isAdminLoggedIn={isAdminLoggedIn}
             showToast={showToast}
           />
         )}

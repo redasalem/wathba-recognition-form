@@ -17,7 +17,7 @@ import {
   Heart
 } from 'lucide-react';
 
-export default function StudentProfileView({ student, onEdit, onGoHome, showToast }) {
+export default function StudentProfileView({ student, onEdit, onGoHome, isAdminLoggedIn = false, showToast }) {
   if (!student) return null;
 
   const handlePrint = () => {
@@ -26,7 +26,7 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
 
   // Smart URL for this student
   const studentSmartUrl = student.smartUrl || student.qrCodeUrl || (student.studentId 
-    ? `${window.location.origin}/#/student/form?name=${encodeURIComponent(student.studentName || '')}&id=${student.studentId}`
+    ? `${window.location.origin}/#/student-gate?name=${encodeURIComponent(student.studentName || '')}&id=${student.studentId}`
     : window.location.href);
 
   const handleShareWhatsApp = () => {
@@ -49,7 +49,7 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
             className="flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-[#fbbf24] transition-colors cursor-pointer"
           >
             <ArrowRight className="w-4 h-4" />
-            <span>العودة للرئيسية</span>
+            <span>العودة لبوابة البحث</span>
           </button>
 
           <div className="flex items-center gap-2">
@@ -67,13 +67,15 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
               <Printer className="w-3.5 h-3.5" />
               <span>طباعة</span>
             </button>
-            <button
-              onClick={() => onEdit(student)}
-              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-lg"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>تعديل البيانات</span>
-            </button>
+            {isAdminLoggedIn && (
+              <button
+                onClick={() => onEdit(student)}
+                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-lg"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>تعديل البيانات (إدارة)</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -132,6 +134,18 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
                   {student.studentCode && (
                     <span className="px-3.5 py-1.5 rounded-xl bg-[#fbbf24]/20 border border-[#fbbf24]/40 text-[#fbbf24] text-xs font-black">
                       🏷️ {student.studentCode}
+                    </span>
+                  )}
+
+                  {student.awardTier && (
+                    <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 border border-[#fbbf24]/40 text-[#fbbf24] text-xs font-black">
+                      {student.awardTier}
+                    </span>
+                  )}
+
+                  {student.examScore !== undefined && student.examScore !== '' && (
+                    <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
+                      🏆 الدرجة: {student.examScore}%
                     </span>
                   )}
                 </div>
@@ -199,6 +213,21 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
                 </div>
               </div>
             </div>
+
+            {student.gift && (
+              <div className="col-span-1 sm:col-span-2 bg-[#041915]/80 p-4 rounded-2xl border border-amber-500/40 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-[#fbbf24] flex items-center justify-center shrink-0">
+                    <Gift className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-400 font-bold block">التكريم والجائزة المعتمدة:</span>
+                    <span className="text-xs sm:text-sm font-black text-amber-200">{student.gift}</span>
+                  </div>
+                </div>
+                <span className="text-emerald-400 text-xs font-bold shrink-0">✓ معتمد بالختام</span>
+              </div>
+            )}
           </div>
 
           {/* Bottom Footer Details */}
@@ -208,12 +237,18 @@ export default function StudentProfileView({ student, onEdit, onGoHome, showToas
               <span>بطاقة رسمية معتمدة من إدارة كُتّاب 2026</span>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => onEdit(student)}
-                className="text-[#fbbf24] hover:underline font-bold cursor-pointer print:hidden"
-              >
-                ✏️ هل ترغب في تحديث أي بيانات؟ اضغط هنا للتعديل
-              </button>
+              {isAdminLoggedIn ? (
+                <button
+                  onClick={() => onEdit(student)}
+                  className="text-[#fbbf24] hover:underline font-bold cursor-pointer print:hidden"
+                >
+                  ✏️ هل ترغب في تحديث أي بيانات؟ اضغط هنا للتعديل
+                </button>
+              ) : (
+                <span className="text-slate-400 text-[11px] print:hidden">
+                  🔒 لأي تعديل رسمي يرجى التواصل مع إدارة الكُتّاب
+                </span>
+              )}
             </div>
           </div>
 

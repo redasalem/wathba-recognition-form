@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Award,
@@ -25,11 +25,20 @@ import { isStudentFullyRegistered } from './AdminDashboard';
 
 export default function StudentVerificationGate({
   records = [],
+  initialQuery = '',
   onStudentVerified,
   onGoHome,
+  isAdminLoggedIn = false,
   showToast
 }) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery || '');
+
+  // Synchronize query when initialQuery prop changes (e.g. from QR scan)
+  useEffect(() => {
+    if (initialQuery) {
+      setQuery(initialQuery);
+    }
+  }, [initialQuery]);
 
   // 1. Merge catalog students (146 students) with active Firestore records
   const allVerifiedStudents = useMemo(() => {
@@ -131,11 +140,11 @@ export default function StudentVerificationGate({
           </div>
 
           <h2 className="text-xl sm:text-2xl font-black text-white leading-snug">
-            ابحث عن اسمك واستكمل بيانات التكريم 🏆
+            ابحث عن اسمك واستعرض بطاقة التكريم 🏆
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
-            الاستمارة مخصصة حصرياً لأبنائنا الطلاب المعتمدين في حفل تكريم الدورة الصيفية 2026. اكتب اسمك أو كودك للانتقال فوراً لاستكمال بياناتك.
+            البوابة مخصصة حصرياً لأبنائنا الطلاب المعتمدين في حفل تكريم الدورة الصيفية 2026. اكتب اسمك أو كودك للانتقال فوراً لاستعراض بطاقة تكريمك الرسمية.
           </p>
         </div>
 
@@ -187,7 +196,7 @@ export default function StudentVerificationGate({
                 نتائج البحث المعتمدة ({filteredStudents.length} طالب):
               </span>
               <span className="text-[11px] text-slate-400 font-normal">
-                اضغط على اسمك للمتابعة
+                اضغط على اسمك لعرض بطاقة التكريم
               </span>
             </div>
 
@@ -230,13 +239,13 @@ export default function StudentVerificationGate({
                       <div>
                         {isCompleted ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold">
-                            <CheckCircle2 className="w-3 h-3" />
-                            بيانات مكتملة
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            بيانات مسجلة ومعتمدة
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-[#fbbf24] text-[11px] font-bold">
-                            <Clock className="w-3 h-3" />
-                            جاهز للاستكمال
+                            <Award className="w-3.5 h-3.5" />
+                            طالب معتمد بالتكريم
                           </span>
                         )}
                       </div>
@@ -244,34 +253,25 @@ export default function StudentVerificationGate({
 
                     {/* Action Buttons */}
                     <div className="pt-2 border-t border-emerald-900/50 flex flex-wrap items-center gap-2">
-                      {isCompleted ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleSelectStudent(stu, false)}
-                            className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
-                          >
-                            <Award className="w-3.5 h-3.5" />
-                            <span>عرض كارت وبروفايل التكريم 🏆</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSelectStudent(stu, true)}
-                            className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 border border-emerald-700/50 text-slate-200 hover:text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5 text-[#fbbf24]" />
-                            <span>تعديل البيانات</span>
-                          </button>
-                        </>
-                      ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectStudent(stu, false)}
+                        className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Award className="w-4 h-4" />
+                        <span>عرض كارت وبروفايل التكريم 🏆</span>
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+
+                      {isAdminLoggedIn && (
                         <button
                           type="button"
-                          onClick={() => handleSelectStudent(stu, false)}
-                          className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                          onClick={() => handleSelectStudent(stu, true)}
+                          className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 border border-emerald-700/50 text-slate-200 hover:text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                          title="تعديل بيانات الطالب (إدارة)"
                         >
-                          <Award className="w-4 h-4" />
-                          <span>متابعة واستكمال بيانات الطالب المُكَرَّم 🌟</span>
-                          <ChevronLeft className="w-4 h-4" />
+                          <Edit3 className="w-3.5 h-3.5 text-[#fbbf24]" />
+                          <span>تعديل (إدارة)</span>
                         </button>
                       )}
                     </div>
@@ -296,7 +296,7 @@ export default function StudentVerificationGate({
             </div>
 
             <div className="pt-2 border-t border-rose-500/20 text-[11px] text-slate-300 space-y-1">
-              <p>🔒 <strong>قواعد التسجيل:</strong> الاستمارة مخصصة حصرياً للطلاب المقيدين في قاعدة بيانات الحفل الرسمية ولا يمكن التسجيل دون اعتماد مسبق.</p>
+              <p>🔒 <strong>قواعد التحقق:</strong> الاستعراض مخصص حصرياً للطلاب المقيدين في قاعدة بيانات حفل التكريم الرسمية.</p>
               <p>💡 <strong>نصيحة:</strong> يرجى التأكد من كتابة الاسم بدون أخطاء إملائية، أو كتابة كود الطالب المطبوع على كارت الدعوة بدقة.</p>
             </div>
           </div>
@@ -307,16 +307,16 @@ export default function StudentVerificationGate({
           <div className="p-5 rounded-2xl bg-[#041915]/80 border border-emerald-800/40 space-y-3 text-xs text-slate-300">
             <h4 className="text-sm font-black text-[#fbbf24] flex items-center gap-2">
               <QrCode className="w-4 h-4" />
-              <span>طرق الوصول السريع للاستمارة:</span>
+              <span>طرق الوصول السريع لبطاقة التكريم:</span>
             </h4>
             <ul className="space-y-2 text-slate-300">
               <li className="flex items-start gap-2">
                 <span className="text-emerald-400 font-bold mt-0.5">1.</span>
-                <span><strong>كارت الـ QR المطبوع:</strong> إذا كنت قد استلمت كارت الدعوة المطبوع، يمكنك مسح كود الـ QR بكاميرا هاتفك مباشرة لفتح استمارتك تلقائياً.</span>
+                <span><strong>كارت الـ QR المطبوع:</strong> مسح كود الـ QR المطبوع على كارت الدعوة ينقلك مباشرة لبوابة البحث لعرض بطاقتك وتكريمك فوراً.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-emerald-400 font-bold mt-0.5">2.</span>
-                <span><strong>البحث الفوري بالاسم أو الكود:</strong> اكتب اسم ابنك/ابنتك في صندوق البحث أعلاه للتحقق وتعبئة البيانات المطلوبة.</span>
+                <span><strong>البحث الفوري بالاسم أو الكود:</strong> اكتب اسم ابنك/ابنتك أو الكود في صندوق البحث أعلاه للتحقق وعرض بطاقة التكريم.</span>
               </li>
             </ul>
           </div>
