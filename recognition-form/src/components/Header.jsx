@@ -5,7 +5,7 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNav = (view) => {
-    if ((view === 'permanent-form' || view === 'student-gate') && !isAdminLoggedIn) {
+    if (view === 'student-gate' && !isAdminLoggedIn) {
       onOpenLoginModal();
       setMobileMenuOpen(false);
       return;
@@ -52,18 +52,6 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
           >
             <Home className="w-4 h-4" />
             الرئيسية
-          </button>
-
-          <button
-            onClick={() => handleNav('permanent-form')}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeView === 'permanent-form'
-                ? 'bg-gradient-to-r from-emerald-400 to-[#fbbf24] text-slate-950 shadow-md font-black scale-105'
-                : 'text-amber-300 hover:text-white hover:bg-emerald-800/30 font-extrabold'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-[#fbbf24]" />
-            استمارة الكُتّاب الدائم
           </button>
 
           <button
@@ -121,18 +109,6 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
           >
             <Home className="w-4 h-4" />
             الرئيسية
-          </button>
-
-          <button
-            onClick={() => handleNav('permanent-form')}
-            className={`w-full p-3 rounded-xl text-right text-xs font-bold flex items-center gap-3 ${
-              activeView === 'permanent-form'
-                ? 'bg-gradient-to-r from-emerald-400 to-[#fbbf24] text-slate-950 font-black'
-                : 'text-amber-300 bg-emerald-950/40 border border-amber-400/20'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-[#fbbf24]" />
-            استمارة الكُتّاب الدائم
           </button>
 
           <button
