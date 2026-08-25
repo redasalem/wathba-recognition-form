@@ -223,6 +223,100 @@ export function normalizeArabic(text) {
     .replace(/\s+/g, ' '); // توحيد المسافات
 }
 
+// دالة لتنظيف وتوحيد أسماء الطلاب العربية مع معالجة الأسماء المركبة (مثل عبد الرحمن / عبدالرحمن)
+export function normalizeStudentName(text) {
+  if (!text) return '';
+  return normalizeArabic(text)
+    .replace(/عبد\s+/g, 'عبد')
+    .replace(/ابو\s+/g, 'ابو')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// دالة التحقق والمطابقة بالاسم الثلاثي كحد أدنى (Strict Triple-Name Matching)
+export function matchStudentByTripleName(student, rawQuery) {
+  if (!student || !rawQuery) return false;
+  const cleanQuery = rawQuery.trim();
+  if (!cleanQuery) return false;
+
+  // 1. مطابقة بالكود التكريمي المعتمد أو المعرف الرقمي إذا تم إدخاله
+  const isCodeFormat = /^#?\d{1,4}$/.test(cleanQuery) || /^STU-/i.test(cleanQuery);
+  if (isCodeFormat) {
+    const cleanQueryCode = cleanQuery.replace(/^#/, '');
+    const stuCode = String(student.studentCode || student.code || '').replace(/^#/, '');
+    const stuId = String(student.studentId || student.id || '').toUpperCase();
+    if (stuCode && (stuCode === cleanQueryCode || parseInt(stuCode, 10) === parseInt(cleanQueryCode, 10))) {
+      return true;
+    }
+    if (stuId && stuId === cleanQuery.toUpperCase()) {
+      return true;
+    }
+  }
+
+  // 2. التحقق من أن الاسم المدخل يحتوي على 3 أجزاء على الأقل (الاسم الثلاثي)
+  const queryWords = cleanQuery.split(/\s+/).filter(Boolean);
+  if (queryWords.length < 3) return false;
+
+  const stuName = student.studentName || student.name || '';
+  if (!stuName) return false;
+
+  const normQuery = normalizeStudentName(cleanQuery);
+  const normStuName = normalizeStudentName(stuName);
+
+  // مطابقة تامة أو متضمنة مباشرة
+  if (normStuName.includes(normQuery) || normQuery.includes(normStuName)) {
+    return true;
+  }
+
+  // مطابقة تفصيلية لكلمات الاسم الثلاثي مع مراعاة أل التعريف والتشابه
+  const qNormWords = normalizeArabic(cleanQuery).split(/\s+/).filter(Boolean);
+  const sNormWords = normalizeArabic(stuName).split(/\s+/).filter(Boolean);
+
+  const stripAl = (w) => (w.startsWith('ال') && w.length > 3 ? w.slice(2) : w);
+
+  const isWordMatch = (w1, w2) => {
+    if (w1 === w2) return true;
+    if (w1.includes(w2) || w2.includes(w1)) return true;
+    if (stripAl(w1) === stripAl(w2)) return true;
+    return false;
+  };
+
+  // مطابقة تسلسلية لكلمات البحث
+  let sIdx = 0;
+  let matchCount = 0;
+  for (const qw of qNormWords) {
+    while (sIdx < sNormWords.length) {
+      if (isWordMatch(sNormWords[sIdx], qw)) {
+        matchCount++;
+        sIdx++;
+        break;
+      }
+      sIdx++;
+    }
+  }
+
+  if (matchCount === qNormWords.length) {
+    return true;
+  }
+
+  // مطابقة تواجد جميع كلمات البحث في اسم الطالب
+  const allWordsPresent = qNormWords.every(qw => sNormWords.some(sw => isWordMatch(sw, qw)));
+  if (allWordsPresent) {
+    return true;
+  }
+
+  // مطابقة الاسم الأول واللقب الأخير (في حال كان اسم الطالب المسجل بكلمتين فقط في الكتالوج)
+  if (sNormWords.length >= 2 && qNormWords.length >= 3) {
+    const firstMatches = isWordMatch(sNormWords[0], qNormWords[0]);
+    const lastMatches = isWordMatch(sNormWords[sNormWords.length - 1], qNormWords[qNormWords.length - 1]);
+    if (firstMatches && lastMatches) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // دالة الفحص والبحث الشامل للطلاب (اسم، كود، معرف، جزء، هاتف، شيخ، مدرسة)
 export function matchesStudentSearch(student, searchStr) {
   if (!searchStr || !searchStr.trim()) return true;

@@ -13,12 +13,14 @@ import {
   Edit3,
   QrCode,
   X,
-  ChevronLeft
+  ChevronLeft,
+  Info
 } from 'lucide-react';
 import {
   STUDENTS_CATALOG,
   normalizeArabic,
-  matchesStudentSearch,
+  normalizeStudentName,
+  matchStudentByTripleName,
   isStudentMatch
 } from '../data/studentsCatalog';
 import { isStudentFullyRegistered } from './AdminDashboard';
@@ -31,12 +33,23 @@ export default function StudentVerificationGate({
   isAdminLoggedIn = false,
   showToast
 }) {
-  const [query, setQuery] = useState(initialQuery || '');
+  const [inputQuery, setInputQuery] = useState(initialQuery || '');
+  const [searchedQuery, setSearchedQuery] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   // Synchronize query when initialQuery prop changes (e.g. from QR scan)
   useEffect(() => {
     if (initialQuery) {
-      setQuery(initialQuery);
+      const clean = initialQuery.trim();
+      setInputQuery(clean);
+      const words = clean.split(/\s+/).filter(Boolean);
+      const isCode = /^#?\d{1,4}$/.test(clean) || /^STU-/i.test(clean);
+      if (words.length >= 3 || isCode) {
+        setSearchedQuery(clean);
+        setHasSearched(true);
+        setValidationError('');
+      }
     }
   }, [initialQuery]);
 
@@ -109,12 +122,48 @@ export default function StudentVerificationGate({
     return Array.from(map.values());
   }, [records]);
 
-  // 2. Filter students in real time as the user types
+  // 2. Filter students ONLY when the user explicitly triggers search with a valid 3-part name
   const filteredStudents = useMemo(() => {
-    const cleanQuery = query.trim();
-    if (!cleanQuery) return [];
-    return allVerifiedStudents.filter(stu => matchesStudentSearch(stu, cleanQuery));
-  }, [allVerifiedStudents, query]);
+    if (!hasSearched) return [];
+    const clean = searchedQuery.trim();
+    if (!clean) return [];
+    return allVerifiedStudents.filter(stu => matchStudentByTripleName(stu, clean));
+  }, [allVerifiedStudents, hasSearched, searchedQuery]);
+
+  // Handle Search Submission with strict 3-part name validation
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    const clean = inputQuery.trim();
+
+    if (!clean) {
+      setValidationError('أرجوك اكتب الاسم الثلاثي للطالب للبحث');
+      setHasSearched(false);
+      setSearchedQuery('');
+      return;
+    }
+
+    const words = clean.split(/\s+/).filter(Boolean);
+    const isCode = /^#?\d{1,4}$/.test(clean) || /^STU-/i.test(clean);
+
+    // Strict validation: must be at least 3 parts (الاسم الثلاثي)
+    if (words.length < 3 && !isCode) {
+      setValidationError('أرجوك اكتب الاسم الثلاثي للطالب على الأقل للبحث');
+      setHasSearched(false);
+      setSearchedQuery('');
+      return;
+    }
+
+    setValidationError('');
+    setSearchedQuery(clean);
+    setHasSearched(true);
+  };
+
+  const handleClearSearch = () => {
+    setInputQuery('');
+    setSearchedQuery('');
+    setHasSearched(false);
+    setValidationError('');
+  };
 
   const handleSelectStudent = (student, forceEdit = false) => {
     onStudentVerified(student, forceEdit);
@@ -140,55 +189,89 @@ export default function StudentVerificationGate({
           </div>
 
           <h2 className="text-xl sm:text-2xl font-black text-white leading-snug">
-            ابحث عن اسمك واستعرض بطاقة التكريم 🏆
+            ابحث عن اسمك بالاسم الثلاثي واستعرض بطاقة التكريم 🏆
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
-            البوابة مخصصة حصرياً لأبنائنا الطلاب المعتمدين في حفل تكريم الدورة الصيفية 2026. اكتب اسمك أو كودك للانتقال فوراً لاستعراض بطاقة تكريمك الرسمية.
+            البوابة مخصصة حصرياً لأبنائنا الطلاب المعتمدين في حفل تكريم الدورة الصيفية 2026. اكتب الاسم الثلاثي للطالب ثم اضغط على زر (بحث) للانتقال المباشر لبطاقة تكريمك الرسمية.
           </p>
         </div>
 
-        {/* Search Input Box */}
-        <div className="space-y-3">
-          <div className="relative">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="اكتب اسم الطالب أو كود الطالب المطبوع على كارت الدعوة..."
-              className="w-full px-4 py-4 pl-12 pr-12 rounded-2xl text-sm sm:text-base bg-slate-900/95 border-2 border-emerald-700/70 text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24] transition-all shadow-inner"
-              autoFocus
-            />
+        {/* Search Input Form */}
+        <form onSubmit={handleSearchSubmit} className="space-y-3">
+          <div className="flex flex-col sm:flex-row items-stretch gap-2.5">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={inputQuery}
+                onChange={(e) => {
+                  setInputQuery(e.target.value);
+                  if (validationError && e.target.value.trim().split(/\s+/).filter(Boolean).length >= 3) {
+                    setValidationError('');
+                  }
+                }}
+                placeholder="اكتب الاسم الثلاثي للطالب (مثال: تسنيم أحمد سويلم)..."
+                className={`w-full px-4 py-4 pl-10 pr-12 rounded-2xl text-sm sm:text-base bg-slate-900/95 border-2 text-white placeholder-slate-400 focus:outline-none transition-all shadow-inner ${
+                  validationError ? 'border-rose-500 focus:border-rose-400' : 'border-emerald-700/70 focus:border-[#fbbf24]'
+                }`}
+                autoFocus
+              />
 
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-              <Search className="w-5 h-5" />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <Search className="w-5 h-5" />
+              </div>
+
+              {inputQuery && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800/80 hover:bg-slate-700 transition-colors cursor-pointer"
+                  title="مسح البحث"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery('')}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800/80 hover:bg-slate-700 transition-colors cursor-pointer"
-                title="مسح البحث"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+            {/* Prominent Search Action Button */}
+            <button
+              type="submit"
+              className="px-7 py-4 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-sm sm:text-base rounded-2xl shadow-xl shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 border border-amber-300 active:scale-95"
+            >
+              <Search className="w-5 h-5 stroke-[2.5]" />
+              <span>بحث</span>
+            </button>
           </div>
 
           {/* Search Helper Info Bar */}
-          <div className="flex items-center justify-between text-xs text-slate-400 px-1 font-medium">
-            <span className="text-[11px] text-slate-400">
-              💡 اكتب الاسم ثلاثياً أو الكود المعتمد للبحث المباشر
+          <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 px-1 gap-2 font-medium">
+            <span className="text-[11px] text-amber-300/90 font-bold flex items-center gap-1">
+              <span>🔒</span>
+              <span>البحث بالاسم الثلاثي فقط كحد أدنى</span>
             </span>
             <span className="text-emerald-400 font-bold text-[11px]">
               ✓ كشوفات الطلاب معتمدة ومؤمنة
             </span>
           </div>
-        </div>
+        </form>
 
-        {/* ─── CASE 1: SEARCH HAS MATCHES (SHOW RESULT CARDS) ─── */}
-        {query.trim().length > 0 && filteredStudents.length > 0 && (
+        {/* ─── CASE 1: VALIDATION ERROR (LESS THAN 3-PART NAME) ─── */}
+        {validationError && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/15 border-2 border-amber-500/50 text-amber-200 text-xs font-bold space-y-2 animate-fade-in shadow-lg">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[#fbbf24] shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <h4 className="text-sm font-black text-white">أرجوك اكتب الاسم الثلاثي!</h4>
+                <p className="leading-relaxed text-slate-200">
+                  {validationError} — يرجى كتابة الاسم الثلاثي للطالب كاملاً (الاسم الأول واسم الأب واسم الجد/العائلة) ثم الضغط على زر (بحث) للتحقق واستعراض بطاقة التكريم.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── CASE 2: SEARCH EXECUTED AND HAS MATCHES (SHOW RESULT CARDS) ─── */}
+        {!validationError && hasSearched && filteredStudents.length > 0 && (
           <div className="space-y-3 animate-fade-in">
             <div className="flex items-center justify-between text-xs font-black text-[#fbbf24] px-1 border-b border-emerald-800/40 pb-2">
               <span className="flex items-center gap-1.5">
@@ -282,41 +365,45 @@ export default function StudentVerificationGate({
           </div>
         )}
 
-        {/* ─── CASE 2: SEARCH HAS NO MATCHES (ERROR BANNER) ─── */}
-        {query.trim().length > 0 && filteredStudents.length === 0 && (
+        {/* ─── CASE 3: SEARCH EXECUTED AND NO MATCHES (ERROR BANNER) ─── */}
+        {!validationError && hasSearched && filteredStudents.length === 0 && (
           <div className="p-5 rounded-2xl bg-rose-500/15 border-2 border-rose-500/40 text-rose-200 text-xs font-bold space-y-3 animate-fade-in">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-6 h-6 text-rose-400 shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <h4 className="text-sm font-black text-white">لم يتم العثور على أي طالب بهذا الاسم أو الكود!</h4>
+                <h4 className="text-sm font-black text-white">لم يتم العثور على طالب بهذا الاسم الثلاثي!</h4>
                 <p className="leading-relaxed text-slate-200">
-                  عذراً، لم نتمكن من مطابقة "<span className="text-[#fbbf24] font-black">{query}</span>" ضمن كشوفات الطلاب المعتمدين لتكريم الدورة الصيفية 2026.
+                  عذراً، لم نتمكن من مطابقة الاسم الثلاثي "<span className="text-[#fbbf24] font-black">{searchedQuery}</span>" ضمن كشوفات الطلاب المعتمدين لتكريم الدورة الصيفية 2026.
                 </p>
               </div>
             </div>
 
             <div className="pt-2 border-t border-rose-500/20 text-[11px] text-slate-300 space-y-1">
               <p>🔒 <strong>قواعد التحقق:</strong> الاستعراض مخصص حصرياً للطلاب المقيدين في قاعدة بيانات حفل التكريم الرسمية.</p>
-              <p>💡 <strong>نصيحة:</strong> يرجى التأكد من كتابة الاسم بدون أخطاء إملائية، أو كتابة كود الطالب المطبوع على كارت الدعوة بدقة.</p>
+              <p>💡 <strong>نصيحة:</strong> يرجى التأكد من كتابة الاسم الثلاثي بدون أخطاء إملائية (مثال: تسنيم أحمد سويلم).</p>
             </div>
           </div>
         )}
 
-        {/* ─── CASE 3: INITIAL IDLE STATE (GUIDE BANNER) ─── */}
-        {query.trim().length === 0 && (
-          <div className="p-5 rounded-2xl bg-[#041915]/80 border border-emerald-800/40 space-y-3 text-xs text-slate-300">
+        {/* ─── CASE 4: INITIAL IDLE STATE BEFORE SEARCH (GUIDE BANNER) ─── */}
+        {!validationError && !hasSearched && (
+          <div className="p-5 rounded-2xl bg-[#041915]/80 border border-emerald-800/40 space-y-3 text-xs text-slate-300 animate-fade-in">
             <h4 className="text-sm font-black text-[#fbbf24] flex items-center gap-2">
-              <QrCode className="w-4 h-4" />
-              <span>طرق الوصول السريع لبطاقة التكريم:</span>
+              <Info className="w-4 h-4" />
+              <span>خطوات التحقق والوصول لبطاقة التكريم:</span>
             </h4>
             <ul className="space-y-2 text-slate-300">
               <li className="flex items-start gap-2">
                 <span className="text-emerald-400 font-bold mt-0.5">1.</span>
-                <span><strong>كارت الـ QR المطبوع:</strong> مسح كود الـ QR المطبوع على كارت الدعوة ينقلك مباشرة لبوابة البحث لعرض بطاقتك وتكريمك فوراً.</span>
+                <span><strong>كتابة الاسم الثلاثي:</strong> اكتب اسم الطالب ثلاثياً في مربع البحث أعلاه (الاسم الأول واسم الأب واسم الجد/العائلة).</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-emerald-400 font-bold mt-0.5">2.</span>
-                <span><strong>البحث الفوري بالاسم أو الكود:</strong> اكتب اسم ابنك/ابنتك أو الكود في صندوق البحث أعلاه للتحقق وعرض بطاقة التكريم.</span>
+                <span><strong>الضغط على زر (بحث):</strong> اضغط على زر البحث لإجراء المطابقة الآمنة في قاعدة بيانات كُتّاب 2026.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 font-bold mt-0.5">3.</span>
+                <span><strong>استعراض بطاقة التكريم:</strong> بعد ظهور اسم الطالب المعتمد، اضغط لعرض بطاقة التكريم وبيانات الاحتفال.</span>
               </li>
             </ul>
           </div>
@@ -342,3 +429,4 @@ export default function StudentVerificationGate({
     </div>
   );
 }
+
