@@ -779,8 +779,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     setSyncProgress({ processed: 0, total: STUDENTS_CATALOG.length, percentage: 0 });
 
     try {
-      const res = await batchSyncStudentsToFirestore(STUDENTS_CATALOG, (prog) => {
-        setSyncProgress(prog);
+      const res = await batchSyncStudentsToFirestore(STUDENTS_CATALOG, (processed, total) => {
+        setSyncProgress({ processed, total, percentage: Math.round((processed / total) * 100) });
       });
       setSyncResult(res);
       showToast?.(`تمت مزامنة ${res.count} طالباً بنجاح في Firebase 🎉`, 'success');
@@ -802,8 +802,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     setSyncProgress({ processed: 0, total: STUDENTS_CATALOG.length, percentage: 0 });
 
     try {
-      const res = await resetAndWipeStudentsFirestore(STUDENTS_CATALOG, (prog) => {
-        setSyncProgress(prog);
+      const res = await resetAndWipeStudentsFirestore(STUDENTS_CATALOG, (processed, total) => {
+        setSyncProgress({ processed, total, percentage: Math.round((processed / total) * 100) });
       });
       setSyncResult(res);
       showToast?.(`تم مسح السجلات وإعادة بناء وتثبيت ${res.count} طالباً بنجاح! 🚀`, 'success');
@@ -2779,7 +2779,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
             <div className="text-xs text-slate-300 leading-relaxed space-y-2">
               <p>
-                هل أنت متأكد تماماً من حذف {deleteConfirmModal.type === 'student' ? 'سجل الطالب' : 'سجل المحفظ'}:
+                هل أنت متأكد تماماً من حذف {deleteConfirmModal.type === 'student' ? 'سجل الطالب المُكرَّم' : deleteConfirmModal.type === 'permanent_student' ? 'سجل طالب الكُتّاب الدائم' : 'سجل المحفظ / الشيخ'}:
               </p>
               <div className="p-3 bg-slate-950 rounded-xl border border-rose-900/50 text-white font-bold text-sm">
                 {deleteConfirmModal.data?.studentName || deleteConfirmModal.data?.name}

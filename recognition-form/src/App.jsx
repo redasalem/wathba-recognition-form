@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ShieldCheck } from 'lucide-react';
 import Header from './components/Header';
 import LandingPage from './components/LandingPage';
 import StudentForm from './components/StudentForm';
 import StudentProfileView from './components/StudentProfileView';
 import SheikhForm from './components/SheikhForm';
 import SuccessView from './components/SuccessView';
-import AdminDashboard, { isStudentFullyRegistered } from './components/AdminDashboard';
+import AdminDashboard from './components/AdminDashboard';
 import LoginPortalModal from './components/LoginPortalModal';
 import StudentVerificationGate from './components/StudentVerificationGate';
 import PermanentKuttabForm from './components/PermanentKuttabForm';
