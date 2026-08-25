@@ -90,6 +90,11 @@ export default function StudentVerificationGate({
       }
 
       if (matchedKey) {
+        if (rec.isDeleted === true || rec.accountStatus === 'DELETED') {
+          map.delete(matchedKey);
+          return;
+        }
+
         const existing = map.get(matchedKey);
         map.set(matchedKey, {
           ...existing,
@@ -103,7 +108,7 @@ export default function StudentVerificationGate({
           gift: rec.gift || existing.gift,
           totalParts: rec.totalParts || existing.totalParts || 1
         });
-      } else if (rec.studentName || rec.name) {
+      } else if ((rec.studentName || rec.name) && rec.isDeleted !== true && rec.accountStatus !== 'DELETED') {
         const docId = rec.id || rec.studentId || `DOC-${Math.random().toString(36).substr(2, 9)}`;
         map.set(docId, {
           ...rec,

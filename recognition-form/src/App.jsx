@@ -137,6 +137,11 @@ export default function App() {
           return false;
         });
 
+        if (existingDoc?.isDeleted === true || existingDoc?.accountStatus === 'DELETED') {
+          setActiveView('student-gate');
+          return;
+        }
+
         if (catalogMatch || existingDoc) {
           setSelectedStudent({
             ...(catalogMatch || {}),

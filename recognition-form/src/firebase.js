@@ -97,7 +97,12 @@ export const updateStudentRecord = async (id, formData) => {
 export const deleteStudentRecord = async (id) => {
   if (!db) throw new Error("Firestore is not initialized");
   const docRef = doc(db, 'students', id);
-  await deleteDoc(docRef);
+  // Mark as deleted in Firestore so real-time listeners and offline merges reflect deletion immediately
+  await setDoc(docRef, {
+    isDeleted: true,
+    accountStatus: 'DELETED',
+    updatedAt: serverTimestamp()
+  }, { merge: true });
 };
 
 // ---------------------------------------------------

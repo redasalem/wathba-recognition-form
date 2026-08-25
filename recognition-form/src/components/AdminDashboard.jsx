@@ -261,22 +261,27 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     const list = STUDENTS_CATALOG.map((cat, index) => {
       const matchedRecord = records.find((rec) => isStudentMatch(rec, cat));
       
+      // If student document was explicitly marked as deleted in Firestore, exclude it
+      if (matchedRecord?.isDeleted === true || matchedRecord?.accountStatus === 'DELETED') {
+        return null;
+      }
+
       const merged = {
         // Base official catalog properties (Immutable baseline)
         ...cat,
         idx: cat.idx || index + 1,
         studentId: cat.studentId || `STU-2026-${String(index + 1).padStart(3, '0')}`,
-        studentCode: cat.code || `#${String(cat.idx || index + 1).padStart(3, '0')}`,
-        code: cat.code || `#${String(cat.idx || index + 1).padStart(3, '0')}`,
-        studentName: cat.name,
-        name: cat.name,
-        partName: cat.part,
-        part: cat.part,
-        examScore: cat.score !== undefined ? Number(cat.score) : 0,
-        score: cat.score !== undefined ? Number(cat.score) : 0,
-        awardTier: cat.tier || '✨ فئة التفوق',
-        gift: cat.gift || 'شهادة تقدير وتكريم الكُتّاب',
-        totalParts: cat.totalParts || getMemorizedPartsCount(cat.part),
+        studentCode: matchedRecord?.studentCode || cat.code || `#${String(cat.idx || index + 1).padStart(3, '0')}`,
+        code: matchedRecord?.studentCode || cat.code || `#${String(cat.idx || index + 1).padStart(3, '0')}`,
+        studentName: (matchedRecord?.studentName || matchedRecord?.name || cat.name).trim(),
+        name: (matchedRecord?.studentName || matchedRecord?.name || cat.name).trim(),
+        partName: (matchedRecord?.partName || matchedRecord?.part || cat.part).trim(),
+        part: (matchedRecord?.partName || matchedRecord?.part || cat.part).trim(),
+        examScore: matchedRecord?.examScore !== undefined && matchedRecord?.examScore !== '' ? Number(matchedRecord.examScore) : (cat.score !== undefined ? Number(cat.score) : 0),
+        score: matchedRecord?.examScore !== undefined && matchedRecord?.examScore !== '' ? Number(matchedRecord.examScore) : (cat.score !== undefined ? Number(cat.score) : 0),
+        awardTier: matchedRecord?.awardTier || matchedRecord?.tier || cat.tier || '✨ فئة التفوق',
+        gift: matchedRecord?.gift || cat.gift || 'شهادة تقدير وتكريم الكُتّاب',
+        totalParts: matchedRecord?.totalParts || cat.totalParts || getMemorizedPartsCount(matchedRecord?.partName || cat.part),
 
         // Live Registration fields from Firestore
         id: matchedRecord?.id || cat.studentId,
@@ -302,7 +307,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         completed: isComplete,
         missingFields: getMissingStudentFields(merged)
       };
-    });
+    }).filter(Boolean);
 
     return list;
   }, [records]);
@@ -314,6 +319,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     if (records.length === 0) return masterStudentsList;
 
     const standaloneRecords = records.filter(r => 
+      r.isDeleted !== true && r.accountStatus !== 'DELETED' &&
       !masterStudentsList.some(m => isStudentMatch(r, m))
     ).map((r, extraIdx) => {
       const isComplete = isStudentFullyRegistered(r);
