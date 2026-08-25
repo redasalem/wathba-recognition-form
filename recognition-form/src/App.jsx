@@ -8,11 +8,12 @@ import SuccessView from './components/SuccessView';
 import AdminDashboard, { isStudentFullyRegistered } from './components/AdminDashboard';
 import LoginPortalModal from './components/LoginPortalModal';
 import StudentVerificationGate from './components/StudentVerificationGate';
+import PermanentKuttabForm from './components/PermanentKuttabForm';
 import { subscribeStudents } from './firebase';
 import { STUDENTS_CATALOG, findStudentInCatalog, normalizeArabic, isStudentMatch } from './data/studentsCatalog';
 
 export default function App() {
-  // Views: 'landing' | 'form' | 'student-profile' | 'sheikh-form' | 'success' | 'admin'
+  // Views: 'landing' | 'permanent-form' | 'student-gate' | 'form' | 'student-profile' | 'sheikh-form' | 'success' | 'admin'
   const [activeView, setActiveView] = useState('landing');
   const [records, setRecords] = useState([]);
   const [isRecordsLoaded, setIsRecordsLoaded] = useState(false);
@@ -97,8 +98,19 @@ export default function App() {
       return;
     }
 
-    // 3. QR Code Scan / Student Verification Gate Route
-    // Any QR code scanned (or old printed card URLs with parameters) goes directly to the Student Verification Gate!
+    // 3. Permanent Kuttab Form Route (Default for QR scans and new registration)
+    if (
+      hash.includes('permanent-form') ||
+      hash.includes('kuttab-form') ||
+      hash.includes('permanent') ||
+      path.includes('permanent-form') ||
+      path.includes('kuttab-form')
+    ) {
+      setActiveView('permanent-form');
+      return;
+    }
+
+    // 4. Honored Students 2026 Verification Gate & Profile Route
     if (
       hash.includes('student-gate') ||
       path.includes('student-gate') ||
@@ -135,12 +147,12 @@ export default function App() {
         }
       }
 
-      // Always route student QR scans and public form attempts to the secure verification gate
+      // Route 2026 honored students search
       setActiveView('student-gate');
       return;
     }
 
-    // 4. Default Landing View
+    // 5. Default Landing View
     if (!hash || hash === '#' || hash === '#/' || hash === '#landing') {
       setActiveView('landing');
     }
@@ -173,7 +185,9 @@ export default function App() {
   // Sync hash when activeView changes
   const handleNavigate = (view) => {
     setActiveView(view);
-    if (view === 'sheikh-form') {
+    if (view === 'permanent-form') {
+      window.location.hash = '/permanent-form';
+    } else if (view === 'sheikh-form') {
       window.location.hash = '/sheikh-form';
     } else if (view === 'student-gate') {
       window.location.hash = '/student-gate';
@@ -259,6 +273,13 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
         {activeView === 'landing' && (
           <LandingPage onNavigate={handleNavigate} />
+        )}
+
+        {activeView === 'permanent-form' && (
+          <PermanentKuttabForm
+            onGoHome={() => handleNavigate('landing')}
+            showToast={showToast}
+          />
         )}
 
         {activeView === 'student-gate' && (

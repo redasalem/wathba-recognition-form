@@ -322,18 +322,65 @@ export const batchSyncSheikhsToFirestore = async (onProgress = null) => {
     }
   ];
 
-  const batch = writeBatch(db);
-  let count = 0;
-  for (const sheikh of DEFAULT_SHEIKHS) {
-    const docRef = doc(db, 'sheikhs', sheikh.sheikhId);
-    batch.set(docRef, {
-      ...sheikh,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-    count++;
-    if (onProgress) onProgress(count, DEFAULT_SHEIKHS.length);
+// ---------------------------------------------------
+// 📖 3. خدمة الكُتّاب الدائم (Permanent Kuttab Collection)
+// ---------------------------------------------------
+export const subscribePermanentKuttab = (onSuccess, onError) => {
+  if (!db) {
+    if (onError) onError(new Error("Firestore is not initialized"));
+    return () => {};
   }
 
-  await batch.commit();
-  return { success: true, count };
+  const colRef = collection(db, 'permanent_kuttab');
+
+  return onSnapshot(
+    colRef,
+    (snapshot) => {
+      const data = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+
+      // Sort by createdAt descending (newest registrations first)
+      data.sort((a, b) => {
+        const tA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt || 0);
+        const tB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt || 0);
+        return tB - tA;
+      });
+
+      onSuccess(data);
+    },
+    (err) => {
+      console.error("Firestore Permanent Kuttab Snapshot Error:", err);
+      if (onError) onError(err);
+    }
+  );
+};
+
+export const addPermanentKuttabRecord = async (formData) => {
+  if (!db) throw new Error("Firestore is not initialized");
+  const colRef = collection(db, 'permanent_kuttab');
+  const payload = {
+    ...formData,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  };
+  const docRef = await addDoc(colRef, payload);
+  return docRef.id;
+};
+
+export const updatePermanentKuttabRecord = async (id, formData) => {
+  if (!db) throw new Error("Firestore is not initialized");
+  const docRef = doc(db, 'permanent_kuttab', id);
+  const payload = {
+    ...formData,
+    updatedAt: serverTimestamp()
+  };
+  await updateDoc(docRef, payload);
+};
+
+export const deletePermanentKuttabRecord = async (id) => {
+  if (!db) throw new Error("Firestore is not initialized");
+  const docRef = doc(db, 'permanent_kuttab', id);
+  await deleteDoc(docRef);
 };

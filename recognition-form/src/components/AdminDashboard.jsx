@@ -50,6 +50,8 @@ import {
   addSheikhRecord,
   updateSheikhRecord,
   deleteSheikhRecord,
+  subscribePermanentKuttab,
+  deletePermanentKuttabRecord,
   batchSyncStudentsToFirestore,
   batchSyncSheikhsToFirestore,
   resetAndWipeStudentsFirestore
@@ -69,6 +71,7 @@ import { uploadToCloudinary } from '../services/cloudinary';
 import StudentEditModal from './StudentEditModal';
 import StudentBadgeModal from './StudentBadgeModal';
 import StagePrompterModal from './StagePrompterModal';
+import PermanentStudentModal from './PermanentStudentModal';
 
 // ─── Helper: Check if student has entered ALL required registration inputs ───
 export const isStudentFullyRegistered = (student) => {
@@ -167,6 +170,16 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   const [uploadingSheikhPhoto, setUploadingSheikhPhoto] = useState(false);
 
   // ══════════════════════════════════════════════════════════════
+  // 📖 PERMANENT KUTTAB (الكُتّاب الدائم) STATE & FILTERS
+  // ══════════════════════════════════════════════════════════════
+  const [permanentStudents, setPermanentStudents] = useState([]);
+  const [permanentSearch, setPermanentSearch] = useState('');
+  const [permanentStageFilter, setPermanentStageFilter] = useState('ALL');
+  const [permanentLevelFilter, setPermanentLevelFilter] = useState('ALL');
+  const [permanentStudentModalOpen, setPermanentStudentModalOpen] = useState(false);
+  const [editingPermanentStudent, setEditingPermanentStudent] = useState(null);
+
+  // ══════════════════════════════════════════════════════════════
   // 🎤 MODALS & SYNC STATES
   // ══════════════════════════════════════════════════════════════
   const [stagePrompterStudent, setStagePrompterStudent] = useState(null);
@@ -183,7 +196,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // Custom Delete Modal State
   const [deleteConfirmModal, setDeleteConfirmModal] = useState({
     isOpen: false,
-    type: null, // 'student' | 'sheikh'
+    type: null, // 'student' | 'sheikh' | 'permanent_student'
     data: null,
     isDeleting: false
   });
@@ -205,12 +218,15 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         } else if (studentModalOpen) {
           setStudentModalOpen(false);
           setEditingStudent(null);
+        } else if (permanentStudentModalOpen) {
+          setPermanentStudentModalOpen(false);
+          setEditingPermanentStudent(null);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [deleteConfirmModal.isOpen, syncModalOpen, isSyncing, stagePrompterStudent, sheikhModalOpen, badgeModalStudent, studentModalOpen]);
+  }, [deleteConfirmModal.isOpen, syncModalOpen, isSyncing, stagePrompterStudent, sheikhModalOpen, badgeModalStudent, studentModalOpen, permanentStudentModalOpen]);
 
   // Realtime Sheikhs subscription
   useEffect(() => {
@@ -220,6 +236,19 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       },
       (err) => {
         console.error('Error fetching sheikhs:', err);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Realtime Permanent Kuttab subscription
+  useEffect(() => {
+    const unsubscribe = subscribePermanentKuttab(
+      (data) => {
+        setPermanentStudents(data);
+      },
+      (err) => {
+        console.error('Error fetching permanent students:', err);
       }
     );
     return () => unsubscribe();
@@ -560,9 +589,39 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       excellentScorersCount,
       totalRegistered,
       totalUnregistered,
-      totalSheikhs: sheikhs.length
+      totalSheikhs: sheikhs.length,
+      totalPermanent: permanentStudents.length
     };
-  }, [masterStudentsList, allDisplayStudents, sheikhs]);
+  }, [masterStudentsList, allDisplayStudents, sheikhs, permanentStudents]);
+
+  // ══════════════════════════════════════════════════════════════
+  // 📖 FILTERED PERMANENT STUDENTS (الكُتّاب الدائم)
+  // ══════════════════════════════════════════════════════════════
+  const filteredPermanentStudents = useMemo(() => {
+    return permanentStudents.filter((stu) => {
+      // Search
+      if (permanentSearch.trim()) {
+        const q = normalizeArabic(permanentSearch.trim().toLowerCase());
+        const nameMatch = normalizeArabic(stu.studentName || '').toLowerCase().includes(q);
+        const codeMatch = (stu.registrationCode || '').toLowerCase().includes(q);
+        const phoneMatch = (stu.fatherPhone || '').includes(permanentSearch.trim()) || (stu.alternativePhone || '').includes(permanentSearch.trim());
+        const schoolMatch = normalizeArabic(stu.schoolName || '').toLowerCase().includes(q);
+        if (!nameMatch && !codeMatch && !phoneMatch && !schoolMatch) return false;
+      }
+
+      // Stage
+      if (permanentStageFilter !== 'ALL' && stu.studyStage !== permanentStageFilter) {
+        return false;
+      }
+
+      // Quran Level
+      if (permanentLevelFilter !== 'ALL' && stu.quranLevel !== permanentLevelFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [permanentStudents, permanentSearch, permanentStageFilter, permanentLevelFilter]);
 
   // ══════════════════════════════════════════════════════════════
   // 🔗 SMART URL & ACTIONS FOR STUDENTS
@@ -668,6 +727,42 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     showToast?.(`تم تصدير كشف الشيوخ (${filteredSheikhs.length} شيخ) بنجاح 📊`, 'success');
   };
 
+  const exportPermanentStudentsToCSV = () => {
+    let csvContent = '\uFEFF';
+    csvContent += 'م,كود القيد,اسم الطالب,تاريخ الميلاد,المرحلة الدراسية,المدرسة أو الروضة,هاتف ولي الأمر,هاتف إضافي,مستوى الحفظ,فترة الحضور,حالة الأب,العنوان,ملاحظات,تاريخ التسجيل\n';
+
+    filteredPermanentStudents.forEach((s, idx) => {
+      const regDate = s.createdAt?.toDate ? s.createdAt.toDate().toLocaleDateString('ar-EG') : (s.createdAt ? new Date(s.createdAt).toLocaleDateString('ar-EG') : '—');
+      const row = [
+        idx + 1,
+        `"${s.registrationCode || ''}"`,
+        `"${s.studentName || ''}"`,
+        `"${s.birthDate || ''}"`,
+        `"${s.studyStage || ''}"`,
+        `"${s.schoolName || ''}"`,
+        `"${s.fatherPhone || ''}"`,
+        `"${s.alternativePhone || ''}"`,
+        `"${s.quranLevel || ''}"`,
+        `"${s.preferredShift || ''}"`,
+        `"${s.fatherStatus || ''}"`,
+        `"${s.address || ''}"`,
+        `"${s.notes || ''}"`,
+        `"${regDate}"`
+      ];
+      csvContent += row.join(',') + '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `سجل_الكتاب_الدائم_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast?.(`تم تصدير كشف الكُتّاب الدائم (${filteredPermanentStudents.length} طالب) بنجاح 📊`, 'success');
+  };
+
   // ══════════════════════════════════════════════════════════════
   // ⚡ FIREBASE BATCH SYNC & RESET HANDLERS
   // ══════════════════════════════════════════════════════════════
@@ -737,6 +832,15 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
     });
   };
 
+  const handleRequestDeletePermanentStudent = (student) => {
+    setDeleteConfirmModal({
+      isOpen: true,
+      type: 'permanent_student',
+      data: student,
+      isDeleting: false
+    });
+  };
+
   const handleRequestDeleteSheikh = (sheikh) => {
     setDeleteConfirmModal({
       isOpen: true,
@@ -758,6 +862,11 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         if (docId) {
           await deleteStudentRecord(docId);
           showToast?.(`تم حذف الطالب: ${data.studentName || data.name} بنجاح`, 'success');
+        }
+      } else if (type === 'permanent_student') {
+        if (data.id) {
+          await deletePermanentKuttabRecord(data.id);
+          showToast?.(`تم حذف الطالب: ${data.studentName} من سجل الكُتّاب الدائم بنجاح`, 'success');
         }
       } else if (type === 'sheikh') {
         if (data.id) {
@@ -942,6 +1051,18 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
           </button>
 
           <button
+            onClick={() => setActiveTab('permanent')}
+            className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'permanent'
+                ? 'bg-gradient-to-r from-emerald-400 via-[#fbbf24] to-amber-500 text-slate-950 shadow-lg scale-105 font-black'
+                : 'bg-slate-900/80 text-emerald-300 hover:text-white border border-emerald-700/60'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>📖 الكُتّاب الدائم ({stats.totalPermanent || 0})</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('sheikhs')}
             className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'sheikhs'
@@ -958,38 +1079,45 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* 📊 REAL-TIME SUMMARY METRICS STRIP */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
         <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-3xl shadow-lg relative overflow-hidden">
-          <span className="text-[11px] font-bold text-slate-400 block">إجمالي الطلاب المكرمين بالدورة</span>
+          <span className="text-[11px] font-bold text-slate-400 block">إجمالي الطلاب المكرمين 2026</span>
           <div className="text-2xl font-black text-white mt-1">{stats.totalHonored} <span className="text-xs font-normal text-emerald-400">طالب</span></div>
-          <div className="text-[10px] text-amber-300 mt-1 font-semibold">معتمدون بالكامل بحفل التكريم</div>
+          <div className="text-[10px] text-amber-300 mt-1 font-semibold">معتمدون بحفل التكريم</div>
         </div>
 
         <div className="bg-[#062b24]/90 border border-emerald-500/50 p-4 rounded-3xl shadow-lg relative overflow-hidden">
           <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-          <span className="text-[11px] font-bold text-slate-400 block">✅ الطلاب المسجلون (بيانات كاملة)</span>
+          <span className="text-[11px] font-bold text-slate-400 block">✅ المسجلون (حفل التكريم)</span>
           <div className="text-2xl font-black text-emerald-400 mt-1">{stats.totalRegistered} <span className="text-xs font-normal text-emerald-300">طالب</span></div>
           <div className="text-[10px] text-emerald-300 mt-1 font-semibold">استمارة مكتملة بالكامل</div>
         </div>
 
         <div className="bg-[#062b24]/90 border border-amber-500/50 p-4 rounded-3xl shadow-lg relative overflow-hidden">
           <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
-          <span className="text-[11px] font-bold text-slate-400 block">⏳ لم يسجلوا بعد (بيانات ناقصة)</span>
+          <span className="text-[11px] font-bold text-slate-400 block">⏳ بانتظار استكمال QR</span>
           <div className="text-2xl font-black text-amber-400 mt-1">{stats.totalUnregistered} <span className="text-xs font-normal text-amber-300">طالب</span></div>
-          <div className="text-[10px] text-amber-200 mt-1 font-semibold">في انتظار استكمال البيانات عبر QR</div>
+          <div className="text-[10px] text-amber-200 mt-1 font-semibold">كشوفات التكريم</div>
         </div>
 
-        <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-3xl shadow-lg relative overflow-hidden">
-          <span className="text-[11px] font-bold text-slate-400 block">🌟 الطلاب المتفوقون</span>
-          <div className="text-2xl font-black text-amber-300 mt-1">{stats.topScorersCount} <span className="text-xs font-normal text-emerald-400">طلاب</span></div>
-          <div className="text-[10px] text-emerald-300 mt-1 font-semibold">درجات الامتياز والتفوق</div>
+        <div className="bg-[#062b24]/90 border border-[#fbbf24]/50 p-4 rounded-3xl shadow-lg relative overflow-hidden col-span-2 sm:col-span-1">
+          <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-[#fbbf24] animate-pulse"></div>
+          <span className="text-[11px] font-bold text-amber-300 block">📖 الكُتّاب الدائم (سجل جديد)</span>
+          <div className="text-2xl font-black text-[#fbbf24] mt-1">{stats.totalPermanent || 0} <span className="text-xs font-normal text-emerald-300">طالب</span></div>
+          <div className="text-[10px] text-emerald-300 mt-1 font-semibold">المسجلون بالاستمارة الجديدة</div>
+        </div>
+
+        <div className="bg-[#062b24]/90 border border-emerald-700/40 p-4 rounded-3xl shadow-lg relative overflow-hidden col-span-2 sm:col-span-1">
+          <span className="text-[11px] font-bold text-slate-400 block">👳‍♂️ طاقم المحفظين والشيوخ</span>
+          <div className="text-2xl font-black text-amber-300 mt-1">{stats.totalSheikhs} <span className="text-xs font-normal text-emerald-400">معلم</span></div>
+          <div className="text-[10px] text-emerald-300 mt-1 font-semibold">المعتمدون بالمنظومة</div>
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* 🎛️ ADVANCED UNIFIED FILTER CONTROL PANEL (For Student Tabs) */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      {activeTab !== 'sheikhs' && (
+      {activeTab !== 'sheikhs' && activeTab !== 'permanent' && (
         <div className="bg-[#062b24]/95 border border-emerald-700/50 p-4 sm:p-5 rounded-3xl space-y-4 shadow-2xl backdrop-blur-xl">
           
           {/* Main Top Filter Bar */}
@@ -2032,6 +2160,313 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             ))}
           </div>
         </div>
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* 📖 SECTION: PERMANENT KUTTAB (الكُتّاب الدائم) MANAGEMENT */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'permanent' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Header & Controls Box */}
+          <div className="bg-[#062b24]/95 border border-emerald-700/50 p-5 rounded-3xl space-y-4 shadow-2xl backdrop-blur-xl">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+              
+              {/* Title & Badge */}
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-[#fbbf24] p-0.5 shadow-lg flex items-center justify-center shrink-0">
+                  <div className="w-full h-full bg-[#041915] rounded-[14px] flex items-center justify-center text-[#fbbf24]">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-black text-white">سجل طلاب الكُتّاب الدائم</h2>
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#fbbf24]/20 border border-[#fbbf24]/40 text-[#fbbf24] text-xs font-bold font-mono">
+                      {filteredPermanentStudents.length} / {permanentStudents.length}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    قاعدة بيانات منفصلة للطلاب المسجلين عبر استمارة الكُتّاب الدائم الجديدة ورموز الـ QR Code المعتمدة.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  onClick={() => {
+                    setEditingPermanentStudent(null);
+                    setPermanentStudentModalOpen(true);
+                  }}
+                  className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-black text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all cursor-pointer active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>إضافة طالب جديد</span>
+                </button>
+
+                <button
+                  onClick={exportPermanentStudentsToCSV}
+                  className="px-4 py-2.5 bg-slate-900/90 hover:bg-slate-800 text-emerald-300 font-bold text-xs rounded-xl border border-emerald-700/60 shadow-md flex items-center gap-2 transition-all cursor-pointer"
+                  title="تصدير كشف الكُتّاب الدائم إلى Excel / CSV"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                  <span>تصدير إكسل ({filteredPermanentStudents.length})</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-emerald-800/40">
+              {/* Search */}
+              <div className="relative">
+                <Search className="w-4 h-4 text-emerald-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={permanentSearch}
+                  onChange={(e) => setPermanentSearch(e.target.value)}
+                  placeholder="ابحث بالاسم، الهاتف، المدرسة، كود القيد..."
+                  className="w-full pr-9 pl-4 py-2 bg-slate-950/80 border border-emerald-700/60 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#fbbf24]"
+                />
+              </div>
+
+              {/* Stage Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400 font-bold shrink-0">المرحلة:</span>
+                <select
+                  value={permanentStageFilter}
+                  onChange={(e) => setPermanentStageFilter(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-emerald-700/60 rounded-xl text-xs text-white focus:outline-none focus:border-[#fbbf24]"
+                >
+                  <option value="ALL">جميع المراحل الدراسية</option>
+                  <option value="حضانة تمهيدي (قبل المدرسة)">حضانة تمهيدي (قبل المدرسة)</option>
+                  <option value="المرحلة الابتدائية (صفوف أولى 1-3)">المرحلة الابتدائية (صفوف أولى 1-3)</option>
+                  <option value="المرحلة الابتدائية (صفوف عليا 4-6)">المرحلة الابتدائية (صفوف عليا 4-6)</option>
+                  <option value="المرحلة الإعدادية">المرحلة الإعدادية</option>
+                  <option value="المرحلة الثانوية">المرحلة الثانوية</option>
+                  <option value="المرحلة الجامعية">المرحلة الجامعية</option>
+                  <option value="خريج / تعليم عام">خريج / تعليم عام</option>
+                </select>
+              </div>
+
+              {/* Quran Level Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400 font-bold shrink-0">المستوى:</span>
+                <select
+                  value={permanentLevelFilter}
+                  onChange={(e) => setPermanentLevelFilter(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-emerald-700/60 rounded-xl text-xs text-white focus:outline-none focus:border-[#fbbf24]"
+                >
+                  <option value="ALL">جميع مستويات الحفظ</option>
+                  <option value="مبتدئ (تلقين وقاعدة نورانية)">مبتدئ (تلقين وقاعدة نورانية)</option>
+                  <option value="جزء عم (المستوى الأول)">جزء عم (المستوى الأول)</option>
+                  <option value="جزء تبارك (المستوى الثاني)">جزء تبارك (المستوى الثاني)</option>
+                  <option value="3 أجزاء (عم وتبارك وقد سمع)">3 أجزاء (عم وتبارك وقد سمع)</option>
+                  <option value="5 أجزاء">5 أجزاء قرآنية</option>
+                  <option value="10 أجزاء">10 أجزاء قرآنية</option>
+                  <option value="15 جزءاً (نصف القرآن)">15 جزءاً (نصف القرآن)</option>
+                  <option value="20 جزءاً فأكثر">20 جزءاً فأكثر</option>
+                  <option value="القرآن كاملاً">القرآن كاملاً</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Table Container */}
+          <div className="bg-[#062b24]/90 border border-emerald-700/40 rounded-3xl shadow-2xl overflow-hidden">
+            {filteredPermanentStudents.length === 0 ? (
+              <div className="text-center py-16 px-4 space-y-3">
+                <BookOpen className="w-12 h-12 text-emerald-500/40 mx-auto" />
+                <h3 className="text-base font-bold text-slate-300">لا يوجد طلاب مسجلون في الكُتّاب الدائم حتى الآن</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  {permanentSearch || permanentStageFilter !== 'ALL' || permanentLevelFilter !== 'ALL'
+                    ? 'لم يتم العثور على نتائج تطابق معايير البحث الحالية.'
+                    : 'يمكن للطلاب التسجيل عبر مسح كود الـ QR، أو يمكنك إضافة طالب يدوياً عبر زر الإضافة بالأعلى.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setEditingPermanentStudent(null);
+                    setPermanentStudentModalOpen(true);
+                  }}
+                  className="px-4 py-2 bg-[#fbbf24] text-slate-950 font-black rounded-xl text-xs inline-flex items-center gap-1.5 shadow-lg"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>تسجيل أول طالب الآن</span>
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-xs">
+                  <thead className="bg-[#041915] text-slate-400 font-bold border-b border-emerald-800/60 select-none">
+                    <tr>
+                      <th className="py-3.5 px-4 text-center w-12">#</th>
+                      <th className="py-3.5 px-4">الطالب وكود القيد</th>
+                      <th className="py-3.5 px-4">المرحلة والمدرسة</th>
+                      <th className="py-3.5 px-4">مستوى الحفظ والفترة</th>
+                      <th className="py-3.5 px-4">ولي الأمر والتواصل</th>
+                      <th className="py-3.5 px-4">العنوان والملاحظات</th>
+                      <th className="py-3.5 px-4 text-center">تاريخ التسجيل</th>
+                      <th className="py-3.5 px-4 text-center w-28">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-emerald-800/30">
+                    {filteredPermanentStudents.map((stu, index) => {
+                      const regDate = stu.createdAt?.toDate ? stu.createdAt.toDate().toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : (stu.createdAt ? new Date(stu.createdAt).toLocaleDateString('ar-EG') : '—');
+                      const phoneClean = (stu.fatherPhone || '').trim().replace(/^0/, '');
+                      const waUrl = phoneClean ? `https://wa.me/20${phoneClean}` : null;
+
+                      return (
+                        <tr key={stu.id || index} className="hover:bg-emerald-950/40 transition-colors group">
+                          
+                          {/* Index */}
+                          <td className="py-3 px-4 text-center font-mono text-slate-400">
+                            {index + 1}
+                          </td>
+
+                          {/* Student Photo & Name */}
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              {stu.photoUrl ? (
+                                <img
+                                  src={stu.photoUrl}
+                                  alt={stu.studentName}
+                                  className="w-10 h-10 rounded-xl object-cover border border-[#fbbf24]/60 shrink-0 shadow"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-xl bg-emerald-900/60 border border-emerald-700/60 flex items-center justify-center text-[#fbbf24] shrink-0 font-bold">
+                                  <User className="w-5 h-5" />
+                                </div>
+                              )}
+                              <div>
+                                <h4 className="font-bold text-white text-xs sm:text-sm group-hover:text-[#fbbf24] transition-colors">
+                                  {stu.studentName}
+                                </h4>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="font-mono text-[10px] text-amber-300 font-bold px-1.5 py-0.5 rounded bg-amber-400/10 border border-amber-400/20">
+                                    {stu.registrationCode || `#PKUT-${index + 1}`}
+                                  </span>
+                                  {stu.birthDate && (
+                                    <span className="text-[10px] text-slate-400">
+                                      {stu.birthDate}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Stage & School */}
+                          <td className="py-3 px-4">
+                            <div className="space-y-1">
+                              <span className="px-2 py-0.5 rounded-lg bg-emerald-900/50 border border-emerald-700/40 text-emerald-200 text-[11px] font-semibold inline-block">
+                                {stu.studyStage || '—'}
+                              </span>
+                              <p className="text-[11px] text-slate-300 truncate max-w-[180px]">
+                                {stu.schoolName || '—'}
+                              </p>
+                            </div>
+                          </td>
+
+                          {/* Level & Shift */}
+                          <td className="py-3 px-4">
+                            <div className="space-y-1">
+                              <span className="px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-[#fbbf24] text-[11px] font-bold inline-block">
+                                {stu.quranLevel || 'مبتدئ'}
+                              </span>
+                              <p className="text-[10px] text-slate-400">
+                                {stu.preferredShift || 'الفترة المسائية'}
+                              </p>
+                            </div>
+                          </td>
+
+                          {/* Guardian & WhatsApp */}
+                          <td className="py-3 px-4">
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono font-bold text-white text-xs" dir="ltr">
+                                  {stu.fatherPhone || '—'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                {waUrl && (
+                                  <a
+                                    href={waUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2 py-0.5 bg-emerald-600/80 hover:bg-emerald-500 text-white rounded text-[10px] font-bold inline-flex items-center gap-1 transition-all"
+                                    title="مراسلة واتساب مباشرة"
+                                  >
+                                    <MessageCircle className="w-3 h-3" />
+                                    <span>واتساب</span>
+                                  </a>
+                                )}
+                                {stu.fatherPhone && (
+                                  <a
+                                    href={`tel:${stu.fatherPhone}`}
+                                    className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] inline-flex items-center gap-1"
+                                    title="اتصال هاتفي"
+                                  >
+                                    <Phone className="w-3 h-3" />
+                                    <span>اتصال</span>
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Address & Notes */}
+                          <td className="py-3 px-4 max-w-[200px]">
+                            <div className="space-y-1 text-slate-300">
+                              {stu.address && (
+                                <p className="text-[11px] truncate flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                                  <span>{stu.address}</span>
+                                </p>
+                              )}
+                              {stu.notes && (
+                                <p className="text-[10px] text-slate-400 line-clamp-2" title={stu.notes}>
+                                  📝 {stu.notes}
+                                </p>
+                              )}
+                              {!stu.address && !stu.notes && <span className="text-slate-500">—</span>}
+                            </div>
+                          </td>
+
+                          {/* Registration Date */}
+                          <td className="py-3 px-4 text-center font-mono text-[11px] text-slate-400">
+                            {regDate}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setEditingPermanentStudent(stu);
+                                  setPermanentStudentModalOpen(true);
+                                }}
+                                className="p-1.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-all cursor-pointer border border-slate-700/60"
+                                title="تعديل بيانات الطالب"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                onClick={() => handleRequestDeletePermanentStudent(stu)}
+                                className="p-1.5 text-rose-400 hover:text-rose-200 bg-rose-950/40 hover:bg-rose-900/50 rounded-lg transition-all cursor-pointer border border-rose-800/40"
+                                title="حذف الطالب من السجل"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}
@@ -2394,6 +2829,19 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* 📖 MODAL: PERMANENT STUDENT ADD / EDIT */}
+      {permanentStudentModalOpen && (
+        <PermanentStudentModal
+          student={editingPermanentStudent}
+          isOpen={permanentStudentModalOpen}
+          onClose={() => {
+            setPermanentStudentModalOpen(false);
+            setEditingPermanentStudent(null);
+          }}
+          showToast={showToast}
+        />
       )}
     </div>
   );

@@ -35,7 +35,7 @@ export default function StudentProfileView({ student, onEdit, onGoHome, isAdminL
     window.open(url, '_blank');
   };
 
-  const qrPayload = student.smartUrl || studentSmartUrl;
+  const qrPayload = `${window.location.origin}/#/permanent-form`;
 
   return (
     <div className="w-full max-w-2xl mx-auto my-4 sm:my-8 animate-fade-in">

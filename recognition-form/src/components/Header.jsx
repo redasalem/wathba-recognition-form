@@ -39,26 +39,38 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
         <nav className="hidden md:flex items-center gap-2 bg-[#062b24]/60 p-1 rounded-xl border border-emerald-800/40">
           <button
             onClick={() => handleNav('landing')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeView === 'landing'
                 ? 'bg-[#fbbf24] text-slate-950 shadow-md font-black'
                 : 'text-slate-200 hover:text-white hover:bg-emerald-800/30'
             }`}
           >
             <Home className="w-4 h-4" />
-            الرئيسية والتعريف
+            الرئيسية
+          </button>
+
+          <button
+            onClick={() => handleNav('permanent-form')}
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeView === 'permanent-form'
+                ? 'bg-gradient-to-r from-emerald-400 to-[#fbbf24] text-slate-950 shadow-md font-black scale-105'
+                : 'text-amber-300 hover:text-white hover:bg-emerald-800/30 font-extrabold'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-[#fbbf24]" />
+            استمارة الكُتّاب الدائم
           </button>
 
           <button
             onClick={() => handleNav('student-gate')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeView === 'student-gate' || activeView === 'form' || activeView === 'student-profile' || activeView === 'success'
                 ? 'bg-[#fbbf24] text-slate-950 shadow-md font-black'
                 : 'text-slate-200 hover:text-white hover:bg-emerald-800/30'
             }`}
           >
             <Award className="w-4 h-4" />
-            بوابة الطلاب المُكَرَّمين
+            بوابة تكريم الطلاب 2026
           </button>
         </nav>
 
@@ -103,7 +115,19 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
             }`}
           >
             <Home className="w-4 h-4" />
-            الرئيسية والتعريف
+            الرئيسية
+          </button>
+
+          <button
+            onClick={() => handleNav('permanent-form')}
+            className={`w-full p-3 rounded-xl text-right text-xs font-bold flex items-center gap-3 ${
+              activeView === 'permanent-form'
+                ? 'bg-gradient-to-r from-emerald-400 to-[#fbbf24] text-slate-950 font-black'
+                : 'text-amber-300 bg-emerald-950/40 border border-amber-400/20'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-[#fbbf24]" />
+            استمارة الكُتّاب الدائم
           </button>
 
           <button
@@ -115,7 +139,7 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
             }`}
           >
             <Award className="w-4 h-4" />
-            بوابة الطلاب المُكَرَّمين
+            بوابة تكريم الطلاب 2026
           </button>
 
           <div className="pt-2 border-t border-emerald-900/60">

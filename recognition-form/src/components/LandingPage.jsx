@@ -45,21 +45,29 @@ export default function LandingPage({ onNavigate }) {
         {/* أزرار الإجراءات الرئيسية */}
         <div className="flex flex-wrap items-center justify-center gap-4">
           <button
-            onClick={() => onNavigate('student-gate')}
-            className="px-8 py-4 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black rounded-2xl shadow-xl shadow-amber-500/30 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center gap-3 text-sm sm:text-base cursor-pointer border border-amber-300/50 group"
+            onClick={() => onNavigate('permanent-form')}
+            className="px-8 py-4 bg-gradient-to-r from-emerald-400 via-[#fbbf24] to-amber-500 hover:brightness-110 text-slate-950 font-black rounded-2xl shadow-xl shadow-amber-500/30 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center gap-3 text-sm sm:text-base cursor-pointer border-2 border-amber-300 group"
           >
-            <Award className="w-5 h-5 sm:w-6 sm:h-6 text-slate-950 group-hover:rotate-12 transition-transform" />
-            <span>بوابة التحقق وبطاقات الطلاب المُكَرَّمين 🏆</span>
+            <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-slate-950 group-hover:scale-110 transition-transform" />
+            <span>استمارة تسجيل الكُتّاب الدائم 🌿</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate('student-gate')}
+            className="px-6 py-4 bg-emerald-950/90 hover:bg-emerald-900 text-white font-bold rounded-2xl border border-emerald-700/60 shadow-xl transition-all transform hover:scale-[1.02] active:scale-95 flex items-center gap-2.5 text-sm sm:text-base cursor-pointer"
+          >
+            <Award className="w-5 h-5 text-[#fbbf24]" />
+            <span>بوابة تكريم الطلاب 2026 🏆</span>
           </button>
 
           <a
             href="https://www.facebook.com/profile.php?id=61592682399138"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-4 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 hover:text-white font-bold rounded-2xl border border-emerald-700/60 transition-all flex items-center gap-2 text-sm shadow-lg"
+            className="px-6 py-4 bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white font-bold rounded-2xl border border-slate-700/60 transition-all flex items-center gap-2 text-sm shadow-lg"
           >
-            <ExternalLink className="w-5 h-5 text-[#fbbf24]" />
-            صفحة الفيسبوك الرسمية
+            <ExternalLink className="w-4 h-4 text-[#fbbf24]" />
+            صفحة الفيسبوك
           </a>
         </div>
       </div>

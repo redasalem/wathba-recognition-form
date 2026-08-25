@@ -48,7 +48,7 @@ export default function StudentBadgeModal({ student, onClose }) {
   };
 
   const origin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://wathba-kuttab.vercel.app';
-  const studentQrUrl = student.smartUrl || student.qrCodeUrl || `${origin}/#/student/form?name=${encodeURIComponent(student.studentName || student.name || '')}&id=${student.studentId || student.id || ''}`;
+  const studentQrUrl = `${origin}/#/permanent-form`;
 
   return createPortal(
     <div
