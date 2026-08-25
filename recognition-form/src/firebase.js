@@ -322,6 +322,22 @@ export const batchSyncSheikhsToFirestore = async (onProgress = null) => {
     }
   ];
 
+  const batch = writeBatch(db);
+  let count = 0;
+  for (const sheikh of DEFAULT_SHEIKHS) {
+    const docRef = doc(db, 'sheikhs', sheikh.sheikhId);
+    batch.set(docRef, {
+      ...sheikh,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    count++;
+    if (onProgress) onProgress(count, DEFAULT_SHEIKHS.length);
+  }
+
+  await batch.commit();
+  return { success: true, count };
+};
+
 // ---------------------------------------------------
 // 📖 3. خدمة الكُتّاب الدائم (Permanent Kuttab Collection)
 // ---------------------------------------------------
