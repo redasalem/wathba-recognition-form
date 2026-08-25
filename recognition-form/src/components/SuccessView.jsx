@@ -1,22 +1,12 @@
 import React, { useEffect } from 'react';
-import confetti from 'canvas-confetti';
 import { CheckCircle2, MessageSquare, PlusCircle, ArrowRight, Award } from 'lucide-react';
+import { launchStageCelebration } from '../services/celebration';
 
 export default function SuccessView({ studentData, submittedData, onReset, onRegisterAnother, onViewProfile, onViewDashboard, onGoHome, isAdminLoggedIn }) {
   const data = studentData || submittedData;
 
   useEffect(() => {
-    // Launch Confetti animation
-    try {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#14b8a6', '#f59e0b', '#6366f1', '#10b981']
-      });
-    } catch (e) {
-      console.log('Confetti failed to launch:', e);
-    }
+    launchStageCelebration();
   }, []);
 
   const studentName = data?.studentName || '';

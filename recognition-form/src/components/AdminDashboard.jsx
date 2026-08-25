@@ -1451,7 +1451,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                       <th className="p-3 text-center w-20">كود الطالب</th>
                       <th className="p-3">اسم الطالب المُكَرَّم</th>
                       <th className="p-3">مستوى الحفظ (الجزء)</th>
-                      <th className="p-3 text-center w-28">درجة الاختبار</th>
                       <th className="p-3">التكريم وشهادة التقدير</th>
                       <th className="p-3 text-center rounded-l-xl w-40">إجراءات المسرح</th>
                     </tr>
@@ -1490,16 +1489,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                           <span className="px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-[11px] inline-block">
                             {student.partName || 'القرآن الكريم'}
                           </span>
-                        </td>
-
-                        <td className="p-3 text-center">
-                          {student.examScore !== undefined && student.examScore !== '' ? (
-                            <span className="px-2.5 py-1 rounded-xl bg-slate-950 border border-amber-500/40 text-amber-400 font-mono font-black text-xs inline-block">
-                              {student.examScore}
-                            </span>
-                          ) : (
-                            <span className="text-slate-500 text-xs">—</span>
-                          )}
                         </td>
 
                         <td className="p-3">
@@ -1572,11 +1561,12 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                     </div>
 
                     <div className="flex items-center justify-between border-t border-emerald-800/40 pt-2 text-xs">
-                      <div className="text-amber-300 font-mono font-black">
-                        الدرجة: {student.examScore}
+                      <div className="text-amber-300 font-bold flex items-center gap-1">
+                        <Award className="w-3.5 h-3.5 text-[#fbbf24] shrink-0" />
+                        <span>{student.awardTier || 'فئة متميزة'}</span>
                       </div>
-                      <div className="text-[11px] text-slate-300 truncate max-w-[140px]">
-                        {student.gift || student.awardTier}
+                      <div className="text-[11px] text-emerald-300 truncate max-w-[140px]">
+                        {student.gift || 'شهادة وتكريم'}
                       </div>
                     </div>
 
@@ -1681,11 +1671,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                           <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold text-[11px]">
                             {r.partName || 'القرآن الكريم'}
                           </span>
-                          {r.examScore !== undefined && r.examScore !== '' && (
-                            <span className="text-amber-400 font-mono font-bold mr-2 text-[10px]">
-                              ({r.examScore})
-                            </span>
-                          )}
                         </td>
                         <td className="p-3">
                           <div className="text-slate-200 font-bold">{r.studyStage || 'ابتدائي'}</div>
@@ -1756,7 +1741,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
 
                     <div className="border-t border-emerald-800/40 pt-2 text-xs space-y-1 text-slate-300">
                       <div>الهاتف: <span className="font-mono text-emerald-400 font-bold">{r.fatherPhone || '—'}</span></div>
-                      <div>الدرجة: <span className="font-mono text-amber-300 font-bold">{r.examScore}</span></div>
+                      <div className="text-[11px] text-amber-200 font-semibold">{r.gift || r.awardTier || 'شهادة وتكريم'}</div>
                     </div>
 
                     <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-emerald-800/40">
@@ -1857,11 +1842,6 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                           <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold text-[11px]">
                             {r.partName || 'القرآن الكريم'}
                           </span>
-                          {r.examScore !== undefined && r.examScore !== '' && (
-                            <span className="text-amber-400 font-mono font-bold mr-2 text-[10px]">
-                              ({r.examScore})
-                            </span>
-                          )}
                         </td>
                         <td className="p-3">
                           <div className="flex flex-wrap gap-1">

@@ -89,6 +89,64 @@
 .delay-400 { animation-delay: 0.4s; }
 .delay-500 { animation-delay: 0.5s; }
 
+/* 🌟 Luxury Arabic Fonts & Typography */
+.font-amiri { font-family: 'Amiri', 'Traditional Arabic', serif; }
+.font-kufi { font-family: 'Reem Kufi', 'Cairo', sans-serif; }
+.font-scheherazade { font-family: 'Scheherazade New', 'Amiri', serif; }
+.font-ruqaa { font-family: 'Aref Ruqaa', 'Amiri', serif; }
+
+/* 🌟 Royal Golden Gradients & Glow Effects */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #fffbeb 0%, #fde047 30%, #f59e0b 60%, #d97706 85%, #fef08a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-silver-gold-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, #fef08a 40%, #fbbf24 70%, #e2e8f0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-glow-lg {
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.85), 0 0 35px rgba(245, 158, 11, 0.5), 0 4px 8px rgba(0, 0, 0, 0.95);
+}
+
+.gold-glow-md {
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.75), 0 2px 5px rgba(0, 0, 0, 0.9);
+}
+
+/* 🌟 Stage Frame Sheen and Animations */
+@keyframes stageSheen {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(250%) rotate(45deg); }
+}
+.animate-stage-sheen {
+  animation: stageSheen 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes stageCardIn {
+  0% { opacity: 0; transform: scale(0.92) translateY(16px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-stage-card-in {
+  animation: stageCardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes royalBorderGlow {
+  0%, 100% {
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.35), 0 20px 60px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(251, 191, 36, 0.2);
+    border-color: rgba(251, 191, 36, 0.85);
+  }
+  50% {
+    box-shadow: 0 0 55px rgba(251, 191, 36, 0.65), 0 25px 80px rgba(0, 0, 0, 0.95), inset 0 0 35px rgba(251, 191, 36, 0.4);
+    border-color: rgba(254, 240, 138, 1);
+  }
+}
+.animate-royal-glow {
+  animation: royalBorderGlow 3.5s ease-in-out infinite;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

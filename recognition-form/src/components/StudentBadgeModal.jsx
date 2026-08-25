@@ -1,13 +1,15 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Printer, Award, BookOpen, Sparkles, CheckCircle2, ShieldCheck, Gift, Share2 } from 'lucide-react';
+import { X, Printer, Award, BookOpen, Sparkles, CheckCircle2, ShieldCheck, Gift, Share2, PartyPopper } from 'lucide-react';
+import { launchStageCelebration } from '../services/celebration';
 
 export default function StudentBadgeModal({ student, onClose }) {
-  // 🔑 Close on Escape key and lock body scroll
-  // NOTE: Hooks must be called before any early return (Rules of Hooks)
+  // 🔑 Close on Escape key and lock body scroll + launch celebration
   useEffect(() => {
     if (!student) return;
+    launchStageCelebration();
+
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         onClose();
@@ -74,6 +76,13 @@ export default function StudentBadgeModal({ student, onClose }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => launchStageCelebration()}
+              className="p-2 bg-gradient-to-r from-amber-500 to-[#fbbf24] text-slate-950 rounded-xl transition-all cursor-pointer shadow active:scale-95 animate-pulse"
+              title="إطلاق احتفال وألعاب نارية"
+            >
+              <PartyPopper className="w-4 h-4" />
+            </button>
             <button
               onClick={handleShareWhatsApp}
               className="p-2 bg-emerald-700/40 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-200 rounded-xl transition-all cursor-pointer"
