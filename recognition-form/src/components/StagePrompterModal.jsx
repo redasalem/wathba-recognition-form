@@ -200,7 +200,7 @@ export default function StagePrompterModal({
   return createPortal(
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[99999] bg-[#020d0a]/98 backdrop-blur-xl flex flex-col items-center justify-between p-2 sm:p-4 md:p-6 overflow-y-auto text-slate-100 select-none print:bg-white print:p-0 print:static"
+      className="fixed inset-0 z-[99999] bg-[#020d0a]/98 backdrop-blur-xl flex flex-col items-center justify-between p-2 sm:p-3 md:p-4 overflow-hidden text-slate-100 select-none print:bg-white print:p-0 print:static"
     >
       {/* Background Animated Ambient Lights & Stardust */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden print:hidden">
@@ -307,12 +307,12 @@ export default function StagePrompterModal({
       </div>
 
       {/* ─── 2. MAIN PRESENTATION BODY (THE ORNATE LUXURY CERTIFICATE) ─── */}
-      <div className="w-full max-w-6xl 2xl:max-w-7xl flex-1 flex flex-col items-center justify-center my-auto print:max-w-none print:w-full print:m-0 relative z-20">
+      <div className="w-full max-w-6xl 2xl:max-w-7xl flex-1 flex flex-col items-center justify-center my-auto min-h-0 print:max-w-none print:w-full print:m-0 relative z-20">
         
         {/* Gilded Outer Halo Wrapper with Moving Sheen & Arabesque Corners */}
         <div
           key={animKey}
-          className="relative w-full max-w-5xl 2xl:max-w-6xl p-2 sm:p-3 md:p-4 rounded-3xl sm:rounded-[36px] bg-gradient-to-tr from-[#021813] via-[#083a30] to-[#041c16] border-2 sm:border-4 border-[#fbbf24] shadow-[0_30px_100px_rgba(0,0,0,0.95)] animate-stage-card-in animate-royal-glow overflow-hidden print:p-0 print:border-none print:shadow-none print:w-full"
+          className="relative w-full max-w-5xl 2xl:max-w-6xl max-h-[calc(100vh-11rem)] sm:max-h-[calc(100vh-12rem)] p-1.5 sm:p-2.5 md:p-3 rounded-3xl sm:rounded-[36px] bg-gradient-to-tr from-[#021813] via-[#083a30] to-[#041c16] border-2 sm:border-4 border-[#fbbf24] shadow-[0_30px_100px_rgba(0,0,0,0.95)] animate-stage-card-in animate-royal-glow overflow-hidden print:p-0 print:border-none print:shadow-none print:w-full print:max-h-none"
         >
           {/* Moving Light Beam Sheen across the entire certificate */}
           <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden print:hidden">
@@ -326,7 +326,7 @@ export default function StagePrompterModal({
           <OrnateCorner position="bottom-left" />
 
           {/* Inner Golden Filigree Border */}
-          <div className="relative w-full aspect-[1.414/1] rounded-2xl sm:rounded-[28px] overflow-hidden border border-[#fbbf24]/60 bg-[#062b24] shadow-2xl print:border-none print:w-full print:aspect-auto">
+          <div className="relative w-full aspect-[4/3] sm:aspect-[1.414/1] rounded-2xl sm:rounded-[28px] overflow-hidden border border-[#fbbf24]/60 bg-[#062b24] shadow-2xl print:border-none print:w-full print:aspect-[1.414/1]">
             
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* 🌟 MODE A: OFFICIAL TEMPLATE MODE (دار تاج الوقار) */}
@@ -392,78 +392,78 @@ export default function StagePrompterModal({
               /* ══════════════════════════════════════════════════════════════ */
               <div
                 id="stage-certificate-print"
-                className="relative w-full h-full bg-gradient-to-b from-[#062b24] via-[#031d17] to-[#02100d] p-6 sm:p-10 md:p-12 flex flex-col justify-between items-center text-center overflow-hidden"
+                className="relative w-full h-full bg-gradient-to-b from-[#062b24] via-[#031d17] to-[#02100d] p-4 sm:p-6 md:p-8 flex flex-col justify-between items-center text-center overflow-hidden"
               >
                 {/* Background Islamic Geometric Pattern Watermark */}
                 <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fbbf24_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
 
                 {/* Top Basmalah & Quranic Crest */}
-                <div className="relative z-10 space-y-1 sm:space-y-2">
-                  <p className="font-scheherazade text-base sm:text-xl md:text-2xl text-[#fef08a] gold-glow-md tracking-wider font-bold">
+                <div className="relative z-10 space-y-0.5 sm:space-y-1">
+                  <p className="font-scheherazade text-sm sm:text-lg md:text-xl text-[#fef08a] gold-glow-md tracking-wider font-bold">
                     بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
                   </p>
                   <div className="flex items-center justify-center gap-3">
-                    <span className="h-[1px] w-12 sm:w-24 bg-gradient-to-r from-transparent via-[#fbbf24] to-transparent"></span>
-                    <span className="font-kufi text-[10px] sm:text-xs text-amber-300 tracking-widest font-black uppercase">
+                    <span className="h-[1px] w-10 sm:w-20 bg-gradient-to-r from-transparent via-[#fbbf24] to-transparent"></span>
+                    <span className="font-kufi text-[9px] sm:text-[11px] text-amber-300 tracking-widest font-black uppercase">
                       كُتّاب | منظومة تحفيظ القرآن الكريم والتربية
                     </span>
-                    <span className="h-[1px] w-12 sm:w-24 bg-gradient-to-r from-transparent via-[#fbbf24] to-transparent"></span>
+                    <span className="h-[1px] w-10 sm:w-20 bg-gradient-to-r from-transparent via-[#fbbf24] to-transparent"></span>
                   </div>
-                  <h2 className="font-amiri text-2xl sm:text-4xl md:text-5xl font-black text-gold-gradient gold-glow-lg pt-1">
+                  <h2 className="font-amiri text-xl sm:text-3xl md:text-4xl font-black text-gold-gradient gold-glow-lg pt-0.5">
                     شَهَادَةُ تَقْدِيرٍ وَتَكْرِيمٍ
                   </h2>
                 </div>
 
                 {/* Quranic Verse */}
-                <div className="relative z-10 my-1 sm:my-2 px-4 py-1.5 bg-[#fbbf24]/10 rounded-2xl border border-[#fbbf24]/30 max-w-xl">
-                  <p className="font-amiri text-xs sm:text-sm md:text-base text-amber-200 font-bold">
+                <div className="relative z-10 my-0.5 sm:my-1 px-3 py-1 bg-[#fbbf24]/10 rounded-2xl border border-[#fbbf24]/30 max-w-xl">
+                  <p className="font-amiri text-[11px] sm:text-xs md:text-sm text-amber-200 font-bold">
                     ﴿ وَفِي ذَٰلِكَ فَلْيَتَنَافَسِ الْمُتَنَافِسُونَ ﴾
                   </p>
                 </div>
 
                 {/* Main Honored Student Name Showcase */}
-                <div className="relative z-10 my-auto py-2 sm:py-4 px-6 rounded-3xl bg-gradient-to-r from-transparent via-[#083a30]/80 to-transparent border-y border-[#fbbf24]/40 w-full max-w-3xl">
-                  <p className="text-xs sm:text-sm text-emerald-300 font-bold mb-1">
+                <div className="relative z-10 my-auto py-1.5 sm:py-3 px-4 rounded-3xl bg-gradient-to-r from-transparent via-[#083a30]/80 to-transparent border-y border-[#fbbf24]/40 w-full max-w-3xl">
+                  <p className="text-[11px] sm:text-xs text-emerald-300 font-bold mb-0.5">
                     تَتَشَرَّفُ إِدَارَةُ الكُتَّابِ بِمَنْحِ هَذِهِ الشَّهَادَةِ لِابْنِنَا البَارِّ المُكَرَّمِ:
                   </p>
-                  <h1 className="font-amiri text-3xl sm:text-5xl md:text-6xl font-black text-[#fef08a] gold-glow-lg tracking-wide my-1 sm:my-2">
+                  <h1 className="font-amiri text-2xl sm:text-4xl md:text-5xl font-black text-[#fef08a] gold-glow-lg tracking-wide my-0.5 sm:my-1">
                     {studentName}
                   </h1>
-                  <p className="text-xs sm:text-sm md:text-base text-slate-200 font-medium max-w-2xl mx-auto">
+                  <p className="text-[11px] sm:text-xs md:text-sm text-slate-200 font-medium max-w-2xl mx-auto">
                     تَقْدِيراً لِاجْتِهَادِهِ وَتَفَوُّقِهِ المُبَارَكِ فِي حِفْظِ وَإِتْقَانِ كِتَابِ اللَّهِ تَعَالَى ضِمْنَ حَفْلِ عَامِ 2026م
                   </p>
                 </div>
 
                 {/* Badges & Honor Level */}
-                <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4 my-2">
-                  <div className="px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-[#fbbf24]/60 text-[#fbbf24] text-xs sm:text-sm font-black flex items-center gap-2 shadow-lg">
-                    <BookOpen className="w-4 h-4 text-amber-400" />
+                <div className="relative z-10 flex flex-wrap items-center justify-center gap-2 sm:gap-3 my-1">
+                  <div className="px-3 py-1.5 rounded-2xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-[#fbbf24]/60 text-[#fbbf24] text-[11px] sm:text-xs font-black flex items-center gap-1.5 shadow-lg">
+                    <BookOpen className="w-3.5 h-3.5 text-amber-400" />
                     <span>مستوى الحفظ: {partName}</span>
                   </div>
-                  <div className="px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 border border-emerald-500/60 text-emerald-300 text-xs sm:text-sm font-black flex items-center gap-2 shadow-lg">
-                    <Award className="w-4 h-4 text-[#fbbf24]" />
+                  <div className="px-3 py-1.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 border border-emerald-500/60 text-emerald-300 text-[11px] sm:text-xs font-black flex items-center gap-1.5 shadow-lg">
+                    <Award className="w-3.5 h-3.5 text-[#fbbf24]" />
                     <span>{tier}</span>
                   </div>
                 </div>
 
                 {/* Bottom Signatures & Seal */}
-                <div className="relative z-10 w-full pt-3 sm:pt-4 border-t border-[#fbbf24]/30 flex items-center justify-between text-right px-4 sm:px-8 text-xs text-slate-300">
+                <div className="relative z-10 w-full pt-2 sm:pt-3 border-t border-[#fbbf24]/30 flex items-center justify-between text-right px-3 sm:px-6 text-xs text-slate-300">
                   <div>
-                    <span className="text-slate-400 text-[10px] sm:text-xs block">المحفظ المشرف:</span>
-                    <strong className="text-amber-300 font-amiri text-sm sm:text-base">{sheikhName}</strong>
+                    <span className="text-slate-400 text-[9px] sm:text-[11px] block">المحفظ المشرف:</span>
+                    <strong className="text-amber-300 font-amiri text-xs sm:text-sm">{sheikhName}</strong>
                   </div>
 
                   {/* Golden Seal of Excellence */}
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-amber-600 via-[#fbbf24] to-amber-300 p-0.5 shadow-xl flex items-center justify-center">
+                  <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-amber-600 via-[#fbbf24] to-amber-300 p-0.5 shadow-xl flex items-center justify-center">
                     <div className="w-full h-full rounded-full bg-[#041915] flex flex-col items-center justify-center text-[#fbbf24] border border-amber-300">
-                      <Sparkles className="w-4 h-4 text-[#fbbf24]" />
-                      <span className="text-[8px] font-black tracking-tighter">كُتّاب 2026</span>
+                      <Sparkles className="w-3.5 h-3.5 text-[#fbbf24]" />
+                      <span className="text-[7px] font-black tracking-tighter">كُتّاب 2026</span>
                     </div>
                   </div>
 
                   <div className="text-left">
-                    <span className="text-slate-400 text-[10px] sm:text-xs block">المشرف العام على المنظومة:</span>
-                    <strong className="text-[#fef08a] font-amiri text-sm sm:text-base">إدارة دار تاج الوقار</strong>
+                    <span className="text-slate-400 text-[9px] sm:text-[11px] block">المشرف العام على المنظومة:</span>
+                    <strong className="text-[#fef08a] font-amiri text-xs sm:text-sm">إدارة دار تاج الوقار</strong>
                   </div>
                 </div>
               </div>
