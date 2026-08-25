@@ -2160,6 +2160,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             ))}
           </div>
         </div>
+      )}
+
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* 📖 SECTION: PERMANENT KUTTAB (الكُتّاب الدائم) MANAGEMENT */}
       {/* ══════════════════════════════════════════════════════════════ */}
