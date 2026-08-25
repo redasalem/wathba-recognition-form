@@ -283,14 +283,32 @@ export default function App() {
         )}
 
         {activeView === 'student-gate' && (
-          <StudentVerificationGate
-            records={records}
-            initialQuery={initialSearchQuery}
-            onStudentVerified={handleStudentVerified}
-            onGoHome={() => handleNavigate('landing')}
-            isAdminLoggedIn={isAdminLoggedIn}
-            showToast={showToast}
-          />
+          (isAdminLoggedIn || initialSearchQuery) ? (
+            <StudentVerificationGate
+              records={records}
+              initialQuery={initialSearchQuery}
+              onStudentVerified={handleStudentVerified}
+              onGoHome={() => handleNavigate('landing')}
+              isAdminLoggedIn={isAdminLoggedIn}
+              showToast={showToast}
+            />
+          ) : (
+            <div className="text-center py-16 bg-[#062b24]/90 rounded-3xl border border-emerald-700/40 p-8 my-8 max-w-md mx-auto shadow-2xl backdrop-blur-xl animate-scaleIn">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500/20 text-[#fbbf24] flex items-center justify-center border border-amber-500/30">
+                <ShieldCheck className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-black text-white mb-2">بوابة تكريم الطلاب 2026</h3>
+              <p className="text-slate-300 text-xs mb-6 leading-relaxed">
+                هذه البوابة مخصصة للجنة المنظمة ولجنة التكريم ومحمية برقم سري.
+              </p>
+              <button
+                onClick={() => setIsLoginModalOpen(true)}
+                className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl text-xs cursor-pointer shadow-lg transition-all"
+              >
+                تسجيل الدخول كمسؤول 🔑
+              </button>
+            </div>
+          )
         )}
 
         {activeView === 'form' && (

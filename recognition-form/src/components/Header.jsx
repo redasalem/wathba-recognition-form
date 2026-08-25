@@ -5,6 +5,11 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNav = (view) => {
+    if ((view === 'permanent-form' || view === 'student-gate') && !isAdminLoggedIn) {
+      onOpenLoginModal();
+      setMobileMenuOpen(false);
+      return;
+    }
     onNavigate(view);
     setMobileMenuOpen(false);
   };

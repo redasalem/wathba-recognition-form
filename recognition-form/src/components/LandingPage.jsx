@@ -45,56 +45,11 @@ export default function LandingPage({ onNavigate }) {
         {/* أزرار الإجراءات الرئيسية */}
         <div className="flex flex-wrap items-center justify-center gap-4">
           <button
-            onClick={() => onNavigate('permanent-form')}
-            className="px-8 py-4 bg-gradient-to-r from-emerald-400 via-[#fbbf24] to-amber-500 hover:brightness-110 text-slate-950 font-black rounded-2xl shadow-xl shadow-amber-500/30 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center gap-3 text-sm sm:text-base cursor-pointer border-2 border-amber-300 group"
+            onClick={() => onNavigate('admin')}
+            className="px-8 py-4 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black rounded-2xl shadow-xl shadow-amber-500/30 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center gap-3 text-sm sm:text-base cursor-pointer border border-amber-300/50 group"
           >
-            <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-slate-950 group-hover:scale-110 transition-transform" />
-            <span>استمارة تسجيل الكُتّاب الدائم 🌿</span>
-          </button>
-
-          <button
-            onClick={() => onNavigate('student-gate')}
-            className="px-6 py-4 bg-emerald-950/90 hover:bg-emerald-900 text-white font-bold rounded-2xl border border-emerald-700/60 shadow-xl transition-all transform hover:scale-[1.02] active:scale-95 flex items-center gap-2.5 text-sm sm:text-base cursor-pointer"
-          >
-            <Award className="w-5 h-5 text-[#fbbf24]" />
-            <span>بوابة تكريم الطلاب 2026 🏆</span>
-          </button>
-
-          <a
-            href="https://www.facebook.com/profile.php?id=61592682399138"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-4 bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white font-bold rounded-2xl border border-slate-700/60 transition-all flex items-center gap-2 text-sm shadow-lg"
-          >
-            <ExternalLink className="w-4 h-4 text-[#fbbf24]" />
-            صفحة الفيسبوك
-          </a>
-        </div>
-      </div>
-
-      {/* 📝 1.5. FAST REGISTRATION GATEWAY BANNER (استعراض كروت التكريم) */}
-      <div className="rounded-3xl border-2 border-[#fbbf24]/50 bg-gradient-to-r from-[#0c3d34] via-[#062b24] to-[#041915] p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 -mt-10 -ml-10 w-48 h-48 bg-[#fbbf24]/15 rounded-full blur-2xl pointer-events-none"></div>
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-right">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fbbf24]/20 text-[#fbbf24] text-xs font-black">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>خدمة أولياء الأمور والطلاب المكرمين</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white">
-              لم يصلك كارت الـ QR المطبوع؟ ابحث عن اسمك واستعرض بطاقتك!
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              إذا لم يتوفر معك كارت الدعوة المطبوع أو لم تتمكن من مسح الـ QR Code، يمكنك البحث بالاسم أو كود الطالب للتحقق من اعتمادك في كشوفات حفل التكريم 2026 واستعراض بطاقة تكريمك الرسمية فوراً.
-            </p>
-          </div>
-
-          <button
-            onClick={() => onNavigate('student-gate')}
-            className="shrink-0 px-7 py-4 bg-[#fbbf24] hover:bg-amber-400 text-slate-950 font-black rounded-2xl shadow-xl shadow-amber-500/20 transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2.5 text-sm cursor-pointer border border-amber-300"
-          >
-            <Users className="w-5 h-5" />
-            <span>ابحث عن اسمك واستعرض بطاقتك 🔍</span>
+            <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-slate-950 group-hover:scale-110 transition-transform" />
+            <span>بوابة الإدارة ولوحة التحكم 🔑</span>
           </button>
         </div>
       </div>
