@@ -15,11 +15,19 @@ import {
   Calendar,
   School,
   Heart,
-  Award
+  Award,
+  Gift,
+  Sparkles,
+  Users
 } from 'lucide-react';
 import { updateStudentRecord, addStudentRecord } from '../firebase';
 import { uploadStudentPhoto } from '../services/cloudinary';
-import { QURAN_PARTS_ORDER } from '../data/studentsCatalog';
+import { 
+  QURAN_PARTS_ORDER, 
+  getStudentAwardDetails, 
+  getMemorizedPartsCount, 
+  normalizeArabic 
+} from '../data/studentsCatalog';
 
 // ─── Inline Field Hint Component ────────────────────────────
 function FieldHint({ show, type = 'error', message }) {
@@ -45,20 +53,23 @@ function FieldHint({ show, type = 'error', message }) {
   );
 }
 
-export default function StudentEditModal({ student, onClose, showToast }) {
+export default function StudentEditModal({ student, onClose, showToast, existingCount = 153 }) {
+  const initialNextIdx = (existingCount || 153) + 1;
+  const initialDefaultAward = getStudentAwardDetails('القرآن كاملاً', '');
+
   const [formData, setFormData] = useState({
-    studentId: student?.studentId || '',
-    studentCode: student?.studentCode || '',
-    studentName: student?.studentName || '',
+    studentId: student?.studentId || (student ? '' : `STU-2026-${String(initialNextIdx).padStart(3, '0')}`),
+    studentCode: student?.studentCode || student?.code || (student ? '' : `#${String(initialNextIdx).padStart(3, '0')}`),
+    studentName: student?.studentName || student?.name || '',
     birthDate: student?.birthDate || '',
     studyStage: student?.studyStage || 'ابتدائي',
-    schoolName: student?.schoolName || '',
+    schoolName: student?.schoolName || student?.school || '',
     partName: student?.partName || student?.part || 'القرآن كاملاً',
-    examScore: student?.examScore || student?.score || '',
-    awardTier: student?.awardTier || student?.tier || '',
-    gift: student?.gift || '',
-    sheikhName: student?.sheikhName || '',
-    fatherPhone: student?.fatherPhone || '',
+    examScore: student?.examScore ?? student?.score ?? '',
+    awardTier: student?.awardTier || student?.tier || (student ? '' : initialDefaultAward.tier),
+    gift: student?.gift || (student ? '' : initialDefaultAward.gift),
+    sheikhName: student?.sheikhName || 'شيوخ الكُتّاب',
+    fatherPhone: student?.fatherPhone || student?.phone || '',
     fatherStatus: student?.fatherStatus || 'نعم (على قيد الحياة)',
     photoUrl: student?.photoUrl || ''
   });
@@ -86,28 +97,70 @@ export default function StudentEditModal({ student, onClose, showToast }) {
 
   // 🔄 Sync state when student prop changes
   useEffect(() => {
-    setFormData({
-      studentId: student?.studentId || '',
-      studentCode: student?.studentCode || '',
-      studentName: student?.studentName || '',
-      birthDate: student?.birthDate || '',
-      studyStage: student?.studyStage || 'ابتدائي',
-      schoolName: student?.schoolName || '',
-      partName: student?.partName || student?.part || 'القرآن كاملاً',
-      examScore: student?.examScore ?? student?.score ?? '',
-      awardTier: student?.awardTier || student?.tier || '',
-      gift: student?.gift || '',
-      sheikhName: student?.sheikhName || '',
-      fatherPhone: student?.fatherPhone || '',
-      fatherStatus: student?.fatherStatus || 'نعم (على قيد الحياة)',
-      photoUrl: student?.photoUrl || ''
-    });
-    setPhotoPreview(student?.photoUrl || null);
+    if (student) {
+      setFormData({
+        studentId: student.studentId || student.id || '',
+        studentCode: student.studentCode || student.code || '',
+        studentName: student.studentName || student.name || '',
+        birthDate: student.birthDate || '',
+        studyStage: student.studyStage || 'ابتدائي',
+        schoolName: student.schoolName || student.school || '',
+        partName: student.partName || student.part || 'القرآن كاملاً',
+        examScore: student.examScore ?? student.score ?? '',
+        awardTier: student.awardTier || student.tier || '',
+        gift: student.gift || '',
+        sheikhName: student.sheikhName || 'شيوخ الكُتّاب',
+        fatherPhone: student.fatherPhone || student.phone || '',
+        fatherStatus: student.fatherStatus || 'نعم (على قيد الحياة)',
+        photoUrl: student.photoUrl || ''
+      });
+      setPhotoPreview(student.photoUrl || null);
+    } else {
+      const nextIdx = (existingCount || 153) + 1;
+      const defAward = getStudentAwardDetails('القرآن كاملاً', '');
+      setFormData({
+        studentId: `STU-2026-${String(nextIdx).padStart(3, '0')}`,
+        studentCode: `#${String(nextIdx).padStart(3, '0')}`,
+        studentName: '',
+        birthDate: '',
+        studyStage: 'ابتدائي',
+        schoolName: '',
+        partName: 'القرآن كاملاً',
+        examScore: '',
+        awardTier: defAward.tier,
+        gift: defAward.gift,
+        sheikhName: 'شيوخ الكُتّاب',
+        fatherPhone: '',
+        fatherStatus: 'نعم (على قيد الحياة)',
+        photoUrl: ''
+      });
+      setPhotoPreview(null);
+    }
     setTouched({});
-  }, [student]);
+  }, [student, existingCount]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (!touched[field]) {
+      setTouched(prev => ({ ...prev, [field]: true }));
+    }
+  };
+
+  // 🧠 الذكاء في تحديث فئة التكريم والهدية تلقائياً عند تغيير الجزء أو الدرجة
+  const handlePartOrScoreChange = (field, value) => {
+    const updated = { ...formData, [field]: value };
+    const autoAward = getStudentAwardDetails(
+      field === 'partName' ? value : updated.partName,
+      field === 'examScore' ? value : updated.examScore
+    );
+
+    // تحديث فئة التكريم والهدية إذا لم يقم المستخدم بكتابة فئة مخصصة
+    if (!student || !formData.awardTier || formData.awardTier.includes('فئة') || formData.awardTier.includes('تاج')) {
+      updated.awardTier = autoAward.tier;
+      updated.gift = autoAward.gift;
+    }
+
+    setFormData(updated);
     if (!touched[field]) {
       setTouched(prev => ({ ...prev, [field]: true }));
     }
@@ -131,21 +184,21 @@ export default function StudentEditModal({ student, onClose, showToast }) {
       },
 
       fatherPhone: {
-        valid: !formData.fatherPhone || phoneRegex.test(formData.fatherPhone),
-        message: !formData.fatherPhone || formData.fatherPhone.length === 0
+        valid: !formData.fatherPhone || phoneRegex.test(formData.fatherPhone.trim()),
+        message: !formData.fatherPhone || formData.fatherPhone.trim().length === 0
           ? null
-          : !formData.fatherPhone.startsWith('01')
+          : !formData.fatherPhone.trim().startsWith('01')
             ? '📱 رقم الهاتف يجب أن يبدأ بـ 01'
-            : formData.fatherPhone.length !== 11
-              ? `📱 يجب أن يتكون من 11 رقماً (كتبت ${formData.fatherPhone.length})`
+            : formData.fatherPhone.trim().length !== 11
+              ? `📱 يجب أن يتكون من 11 رقماً (كتبت ${formData.fatherPhone.trim().length})`
               : '✅ رقم الهاتف صحيح',
-        type: (!formData.fatherPhone || phoneRegex.test(formData.fatherPhone)) ? 'success' : 'error',
+        type: (!formData.fatherPhone || phoneRegex.test(formData.fatherPhone.trim())) ? 'success' : 'error',
       }
     };
   }, [formData]);
 
   const getInputClass = (field) => {
-    const base = 'w-full px-3 py-2 bg-slate-900 border rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none transition-all';
+    const base = 'w-full px-3 py-2 bg-slate-900 border rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none transition-all font-sans';
     if (!touched[field]) {
       return `${base} border-emerald-700/50 focus:border-[#fbbf24]`;
     }
@@ -188,21 +241,62 @@ export default function StudentEditModal({ student, onClose, showToast }) {
       return;
     }
 
+    if (formData.fatherPhone && !validation.fatherPhone.valid) {
+      showToast?.('يرجى التأكد من كتابة رقم هاتف مصري صحيح (11 رقماً يبدأ بـ 01)', 'error');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const isComplete = Boolean(
-        formData.studentName &&
-        formData.birthDate &&
-        formData.studyStage &&
-        formData.schoolName &&
-        formData.fatherPhone &&
+        formData.studentName?.trim() &&
+        formData.birthDate?.trim() &&
+        formData.studyStage?.trim() &&
+        formData.schoolName?.trim() &&
+        formData.fatherPhone?.trim() &&
         /^01[0-9]{9}$/.test(formData.fatherPhone.trim())
       );
 
+      const nextNum = (existingCount || 153) + 1;
+      const finalCode = (formData.studentCode || '').trim() || `#${String(nextNum).padStart(3, '0')}`;
+      const finalStudentId = (formData.studentId || '').trim() || `STU-2026-${String(nextNum).padStart(3, '0')}`;
+
+      const autoAward = getStudentAwardDetails(formData.partName, formData.examScore);
+      const finalAwardTier = (formData.awardTier || '').trim() || autoAward.tier;
+      const finalGift = (formData.gift || '').trim() || autoAward.gift;
+
+      const baseUrl = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://wathba-kuttab.vercel.app';
+      const finalSmartUrl = `${baseUrl}/#/student-gate?name=${encodeURIComponent(formData.studentName.trim())}&id=${finalStudentId}`;
+      const finalQrImg = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(finalSmartUrl)}&color=041915&bgcolor=ffffff`;
+
       const payload = {
-        ...formData,
-        examScore: formData.examScore !== '' ? Number(formData.examScore) : 0,
+        studentId: finalStudentId,
+        studentCode: finalCode,
+        code: finalCode,
+        studentName: formData.studentName.trim(),
+        name: formData.studentName.trim(),
+        birthDate: formData.birthDate || '',
+        studyStage: formData.studyStage || '',
+        schoolName: (formData.schoolName || '').trim(),
+        school: (formData.schoolName || '').trim(),
+        partName: (formData.partName || 'القرآن كاملاً').trim(),
+        part: (formData.partName || 'القرآن كاملاً').trim(),
+        examScore: formData.examScore !== '' && formData.examScore !== undefined ? Number(formData.examScore) : 0,
+        score: formData.examScore !== '' && formData.examScore !== undefined ? Number(formData.examScore) : 0,
+        awardTier: finalAwardTier,
+        gift: finalGift,
+        totalParts: getMemorizedPartsCount(formData.partName || ''),
+        sheikhName: (formData.sheikhName || 'شيوخ الكُتّاب').trim(),
+        fatherPhone: (formData.fatherPhone || '').trim(),
+        phone: (formData.fatherPhone || '').trim(),
+        fatherStatus: formData.fatherStatus || 'نعم (على قيد الحياة)',
+        photoUrl: formData.photoUrl || '',
+        smartUrl: finalSmartUrl,
+        qrCodeUrl: finalSmartUrl,
+        qrImgUrl: finalQrImg,
+        isSummerStudent: true,
+        accountStatus: "ACTIVE",
         completed: isComplete
       };
 
@@ -212,7 +306,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
         showToast?.('تم تحديث بيانات الطالب بنجاح 🎉', 'success');
       } else {
         await addStudentRecord(payload);
-        showToast?.('تمت إضافة الطالب الجديد بنجاح 🎉', 'success');
+        showToast?.('تمت إضافة الطالب الجديد لحفل التكريم والمسرح بنجاح 🌟', 'success');
       }
       onClose();
     } catch (err) {
@@ -230,7 +324,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
           onClose();
         }
       }}
-      className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in font-sans"
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -242,7 +336,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
           <div className="flex items-center gap-2">
             <User className="w-5 h-5 text-[#fbbf24]" />
             <h3 className="text-base sm:text-lg font-black text-white">
-              {student ? 'تعديل وتحديث بيانات الطالب المُكَرَّم' : 'تسجيل وإضافة طالب جديد في الكُتّاب 🌟'}
+              {student ? 'تعديل وتحديث بيانات الطالب المُكَرَّم' : 'إضافة طالب جديد للتكريم والمسرح 🌟'}
             </h3>
           </div>
           <button
@@ -289,14 +383,14 @@ export default function StudentEditModal({ student, onClose, showToast }) {
                 type="text"
                 value={formData.studentCode}
                 onChange={(e) => handleInputChange('studentCode', e.target.value)}
-                placeholder="مثال: #001"
+                placeholder="مثال: #154"
                 className={getInputClass('studentCode')}
               />
             </div>
 
             <div className="sm:col-span-2">
               <label className="block font-bold text-slate-200 mb-1">
-                اسم الطالب رباعي <span className="text-rose-400">*</span>
+                اسم الطالب ثلاثي / رباعي <span className="text-rose-400">*</span>
               </label>
               <input
                 type="text"
@@ -313,10 +407,94 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
           </div>
 
-          {/* Academic & Age Details */}
+          {/* Quranic Level, Score & Sheikh */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block font-bold text-slate-200 mb-1">تاريخ الميلاد</label>
+              <label className="block font-bold text-emerald-300 mb-1 flex items-center gap-1">
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>المستوى القرآني (الجزء)</span>
+              </label>
+              <select
+                value={formData.partName}
+                onChange={(e) => handlePartOrScoreChange('partName', e.target.value)}
+                className={getInputClass('partName')}
+              >
+                {QURAN_PARTS_ORDER.map((part) => (
+                  <option key={part} value={part}>{part}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-amber-300 mb-1 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>درجة الاختبار (من 100)</span>
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={formData.examScore}
+                onChange={(e) => handlePartOrScoreChange('examScore', e.target.value)}
+                placeholder="مثال: 95"
+                className={getInputClass('examScore')}
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-200 mb-1 flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-amber-400" />
+                <span>الشيخ المشرف</span>
+              </label>
+              <input
+                type="text"
+                value={formData.sheikhName}
+                onChange={(e) => handleInputChange('sheikhName', e.target.value)}
+                placeholder="شيوخ الكُتّاب"
+                className={getInputClass('sheikhName')}
+              />
+            </div>
+          </div>
+
+          {/* Award Tier & Gift */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-[#fbbf24] mb-1 flex items-center gap-1">
+                <Award className="w-3.5 h-3.5" />
+                <span>فئة التكريم والوسام</span>
+              </label>
+              <input
+                type="text"
+                value={formData.awardTier}
+                onChange={(e) => handleInputChange('awardTier', e.target.value)}
+                placeholder="مثال: ✨ فئة التفوق"
+                className={getInputClass('awardTier')}
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold text-emerald-300 mb-1 flex items-center gap-1">
+                <Gift className="w-3.5 h-3.5" />
+                <span>الهدية وشهادة التقدير</span>
+              </label>
+              <input
+                type="text"
+                value={formData.gift}
+                onChange={(e) => handleInputChange('gift', e.target.value)}
+                placeholder="مثال: شهادة تقدير وميدالية تكريم"
+                className={getInputClass('gift')}
+              />
+            </div>
+          </div>
+
+          {/* Academic & Age Details */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-emerald-800/40">
+            <div>
+              <label className="block font-bold text-slate-200 mb-1 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>تاريخ الميلاد</span>
+              </label>
               <input
                 type="date"
                 value={formData.birthDate}
@@ -326,7 +504,10 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-200 mb-1">المرحلة الدراسية</label>
+              <label className="block font-bold text-slate-200 mb-1 flex items-center gap-1">
+                <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
+                <span>المرحلة الدراسية</span>
+              </label>
               <select
                 value={formData.studyStage}
                 onChange={(e) => handleInputChange('studyStage', e.target.value)}
@@ -342,7 +523,10 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-200 mb-1">المدرسة / الحضانة</label>
+              <label className="block font-bold text-slate-200 mb-1 flex items-center gap-1">
+                <School className="w-3.5 h-3.5 text-slate-400" />
+                <span>المدرسة / الحضانة</span>
+              </label>
               <input
                 type="text"
                 value={formData.schoolName}
@@ -353,48 +537,13 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
           </div>
 
-          {/* Quranic Level & Score */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block font-bold text-emerald-300 mb-1">المستوى القرآني (الجزء)</label>
-              <select
-                value={formData.partName}
-                onChange={(e) => handleInputChange('partName', e.target.value)}
-                className={getInputClass('partName')}
-              >
-                {QURAN_PARTS_ORDER.map((part) => (
-                  <option key={part} value={part}>{part}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-bold text-amber-300 mb-1">درجة الاختبار</label>
-              <input
-                type="number"
-                value={formData.examScore}
-                onChange={(e) => handleInputChange('examScore', e.target.value)}
-                placeholder="درجة التقييم"
-                className={getInputClass('examScore')}
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-[#fbbf24] mb-1">فئة التكريم</label>
-              <input
-                type="text"
-                value={formData.awardTier}
-                onChange={(e) => handleInputChange('awardTier', e.target.value)}
-                placeholder="مثال: الفئة الأولى الذهبية"
-                className={getInputClass('awardTier')}
-              />
-            </div>
-          </div>
-
           {/* Parent & Contact Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-emerald-800/40">
             <div>
-              <label className="block font-bold text-slate-200 mb-1">هاتف ولي الأمر (واتساب)</label>
+              <label className="block font-bold text-slate-200 mb-1 flex items-center gap-1">
+                <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                <span>هاتف ولي الأمر (واتساب)</span>
+              </label>
               <input
                 type="tel"
                 value={formData.fatherPhone}
@@ -411,7 +560,10 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-200 mb-1">حالة الوالد</label>
+              <label className="block font-bold text-slate-200 mb-1 flex items-center gap-1">
+                <Heart className="w-3.5 h-3.5 text-rose-400" />
+                <span>حالة الوالد</span>
+              </label>
               <select
                 value={formData.fatherStatus}
                 onChange={(e) => handleInputChange('fatherStatus', e.target.value)}
@@ -436,7 +588,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs transition-all shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs transition-all shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
             >
               {isSubmitting ? (
                 <>
@@ -446,7 +598,7 @@ export default function StudentEditModal({ student, onClose, showToast }) {
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  <span>{student ? 'حفظ التعديلات' : 'إضافة الطالب'}</span>
+                  <span>{student ? 'حفظ التعديلات' : 'إضافة الطالب للتكريم'}</span>
                 </>
               )}
             </button>

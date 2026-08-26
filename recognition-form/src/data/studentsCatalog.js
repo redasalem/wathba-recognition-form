@@ -569,3 +569,39 @@ export function getPartOrderRank(partName) {
   return fallbackIdx !== -1 ? fallbackIdx : 999;
 }
 
+// دالة تحديد فئة التكريم والهدية تلقائياً وذكياً بحسب الجزء ودرجة الاختبار
+export function getStudentAwardDetails(partName, score) {
+  const normPart = normalizeArabic(partName || '');
+  const numScore = Number(score) || 0;
+
+  if (normPart.includes('كامل') || normPart.includes('30')) {
+    return {
+      tier: '👑 الفئة الأولى الذهبية (تاج الوقار)',
+      gift: 'شهادة تقدير + درع التكريم'
+    };
+  }
+  if (numScore >= 100) {
+    return {
+      tier: '🌟 فئة الأوائل والامتياز',
+      gift: 'شهادة تقدير وميدالية ذهبية'
+    };
+  }
+  if (numScore >= 90) {
+    return {
+      tier: '✨ فئة التفوق',
+      gift: 'شهادة تقدير وميدالية تكريم'
+    };
+  }
+  if (numScore >= 75) {
+    return {
+      tier: '📜 فئة الإجادة',
+      gift: 'شهادة تقدير وتكريم الكُتّاب'
+    };
+  }
+  return {
+    tier: '🎁 فئة التشجيع والمواظبة',
+    gift: 'شهادة تقدير ومصحف شريف'
+  };
+}
+
+

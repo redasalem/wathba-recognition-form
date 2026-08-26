@@ -323,17 +323,39 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       !masterStudentsList.some(m => isStudentMatch(r, m))
     ).map((r, extraIdx) => {
       const isComplete = isStudentFullyRegistered(r);
+      const assignedId = r.id || r.studentId || `STU-2026-${String(masterStudentsList.length + extraIdx + 1).padStart(3, '0')}`;
+      const assignedCode = r.studentCode || r.code || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#${String(masterStudentsList.length + extraIdx + 1).padStart(3, '0')}`);
+      const assignedName = (r.studentName || r.name || 'طالب جديد').trim();
+      const assignedPart = (r.partName || r.part || 'القرآن الكريم').trim();
+      const scoreVal = r.examScore !== undefined && r.examScore !== '' ? Number(r.examScore) : (r.score !== undefined && r.score !== '' ? Number(r.score) : 0);
+      const defaultUrl = `${typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://wathba-kuttab.vercel.app'}/#/student-gate?name=${encodeURIComponent(assignedName)}&id=${assignedId}`;
+
       return {
         ...r,
-        id: r.id || `STANDALONE-${extraIdx + 1}`,
-        studentCode: r.studentCode || (r.idx ? `#${String(r.idx).padStart(3, '0')}` : `#${String(masterStudentsList.length + extraIdx + 1).padStart(3, '0')}`),
-        studentName: (r.studentName || r.name || 'طالب جديد').trim(),
-        partName: (r.partName || r.part || 'القرآن الكريم').trim(),
-        examScore: r.examScore !== undefined && r.examScore !== '' ? Number(r.examScore) : 0,
-        awardTier: r.awardTier || '✨ فئة متميزة',
+        id: assignedId,
+        studentId: r.studentId || assignedId,
+        studentCode: assignedCode,
+        code: assignedCode,
+        studentName: assignedName,
+        name: assignedName,
+        partName: assignedPart,
+        part: assignedPart,
+        examScore: scoreVal,
+        score: scoreVal,
+        awardTier: r.awardTier || r.tier || '✨ فئة متميزة',
         gift: r.gift || 'شهادة تقدير وتكريم الكُتّاب',
-        totalParts: getMemorizedPartsCount(r.partName || ''),
+        totalParts: r.totalParts || getMemorizedPartsCount(assignedPart),
         sheikhName: r.sheikhName || 'شيوخ الكُتّاب',
+        fatherPhone: r.fatherPhone || r.phone || '',
+        phone: r.fatherPhone || r.phone || '',
+        studyStage: r.studyStage || '',
+        schoolName: r.schoolName || r.school || '',
+        birthDate: r.birthDate || '',
+        fatherStatus: r.fatherStatus || 'نعم (على قيد الحياة)',
+        photoUrl: r.photoUrl || '',
+        smartUrl: r.smartUrl || r.smart_url || defaultUrl,
+        qrCodeUrl: r.qrCodeUrl || r.qr_code_url || defaultUrl,
+        qrImgUrl: r.qrImgUrl || r.qr_img_url || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(defaultUrl)}&color=041915&bgcolor=ffffff`,
         idx: r.idx || masterStudentsList.length + extraIdx + 1,
         completed: isComplete,
         missingFields: getMissingStudentFields(r)
@@ -347,8 +369,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   const activeTabBaseList = useMemo(() => {
     if (activeTab === 'registered') return allDisplayStudents.filter(s => s.completed === true);
     if (activeTab === 'unregistered') return allDisplayStudents.filter(s => s.completed !== true);
-    return masterStudentsList;
-  }, [activeTab, allDisplayStudents, masterStudentsList]);
+    return allDisplayStudents;
+  }, [activeTab, allDisplayStudents]);
 
   // Live Counts for Score Dropdown
   const scoreFilterCounts = useMemo(() => {
@@ -461,20 +483,20 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         });
         break;
       case 'SCORE_DESC':
-        sorted.sort((a, b) => (b.examScore || 0) - (a.examScore || 0));
+        sorted.sort((a, b) => (Number(b.examScore ?? b.score ?? 0)) - (Number(a.examScore ?? a.score ?? 0)));
         break;
       case 'SCORE_ASC':
-        sorted.sort((a, b) => (a.examScore || 0) - (b.examScore || 0));
+        sorted.sort((a, b) => (Number(a.examScore ?? a.score ?? 0)) - (Number(b.examScore ?? b.score ?? 0)));
         break;
       case 'CODE_ASC':
         sorted.sort((a, b) => {
-          const numA = parseInt(String(a.studentCode || '').replace(/\D/g, ''), 10) || a.idx || 0;
-          const numB = parseInt(String(b.studentCode || '').replace(/\D/g, ''), 10) || b.idx || 0;
+          const numA = parseInt(String(a.studentCode || a.code || '').replace(/\D/g, ''), 10) || a.idx || 0;
+          const numB = parseInt(String(b.studentCode || b.code || '').replace(/\D/g, ''), 10) || b.idx || 0;
           return numA - numB;
         });
         break;
       case 'NAME_ASC':
-        sorted.sort((a, b) => (a.studentName || '').localeCompare(b.studentName || '', 'ar'));
+        sorted.sort((a, b) => (a.studentName || a.name || '').localeCompare(b.studentName || b.name || '', 'ar'));
         break;
       case 'RECENT':
         sorted.sort((a, b) => {
@@ -485,19 +507,19 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
         break;
       default:
         sorted.sort((a, b) => {
-          const rankA = getPartOrderRank(a.partName);
-          const rankB = getPartOrderRank(b.partName);
+          const rankA = getPartOrderRank(a.partName || a.part);
+          const rankB = getPartOrderRank(b.partName || b.part);
           if (rankA !== rankB) return rankA - rankB;
-          return (b.examScore || 0) - (a.examScore || 0);
+          return (Number(b.examScore ?? b.score ?? 0)) - (Number(a.examScore ?? a.score ?? 0));
         });
     }
     return sorted;
   }, [sortBy]);
 
-  // 🏆 1. Filtered Ceremony Students
+  // 🏆 1. Filtered Ceremony Students (153+ Students)
   const ceremonyStudents = useMemo(() => {
-    return sortStudents(filterStudents(masterStudentsList));
-  }, [masterStudentsList, filterStudents, sortStudents]);
+    return sortStudents(filterStudents(allDisplayStudents));
+  }, [allDisplayStudents, filterStudents, sortStudents]);
 
   // ✅ 2. Filtered Registered Students
   const registeredStudents = useMemo(() => {
@@ -583,9 +605,12 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   // 📊 COMPREHENSIVE SYSTEM STATS
   // ══════════════════════════════════════════════════════════════
   const stats = useMemo(() => {
-    const totalHonored = masterStudentsList.length;
-    const topScorersCount = masterStudentsList.filter(s => (Number(s.examScore) || 0) >= 90).length;
-    const excellentScorersCount = masterStudentsList.filter(s => (Number(s.examScore) || 0) >= 80 && (Number(s.examScore) || 0) < 90).length;
+    const totalHonored = allDisplayStudents.length;
+    const topScorersCount = allDisplayStudents.filter(s => (Number(s.examScore ?? s.score ?? 0)) >= 90).length;
+    const excellentScorersCount = allDisplayStudents.filter(s => {
+      const sc = Number(s.examScore ?? s.score ?? 0);
+      return sc >= 80 && sc < 90;
+    }).length;
     const totalRegistered = allDisplayStudents.filter(s => s.completed === true).length;
     const totalUnregistered = allDisplayStudents.filter(s => s.completed !== true).length;
 
@@ -598,7 +623,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       totalSheikhs: sheikhs.length,
       totalPermanent: permanentStudents.length
     };
-  }, [masterStudentsList, allDisplayStudents, sheikhs, permanentStudents]);
+  }, [allDisplayStudents, sheikhs, permanentStudents]);
 
   // ══════════════════════════════════════════════════════════════
   // 📖 FILTERED PERMANENT STUDENTS (الكُتّاب الدائم)
@@ -1004,7 +1029,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
               title="مزامنة وإدارة قاعدة بيانات الطلاب في Firebase"
             >
               <Database className="w-4 h-4" />
-              <span>⚡ إدارة ومزامنة الطلاب ({masterStudentsList.length} طالب)</span>
+              <span>⚡ إدارة ومزامنة الطلاب ({allDisplayStudents.length} طالب)</span>
             </button>
 
             <button
@@ -1203,19 +1228,18 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 <span>تصدير ({currentTabStudents.length})</span>
               </button>
 
-              {/* Add New Student Button (In Registered / Unregistered tabs) */}
-              {activeTab !== 'ceremony' && (
-                <button
-                  onClick={() => {
-                    setEditingStudent(null);
-                    setStudentModalOpen(true);
-                  }}
-                  className="px-3.5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all shadow-md active:scale-95"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>طالب جديد</span>
-                </button>
-              )}
+              {/* Add New Student Button (Available on ALL student tabs) */}
+              <button
+                onClick={() => {
+                  setEditingStudent(null);
+                  setStudentModalOpen(true);
+                }}
+                className="px-3.5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all shadow-md active:scale-95 whitespace-nowrap"
+                title="إضافة طالب جديد لحفل التكريم والمسرح"
+              >
+                <Plus className="w-4 h-4" />
+                <span>طالب جديد</span>
+              </button>
             </div>
           </div>
 
@@ -1240,14 +1264,14 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                     : 'bg-slate-900/80 text-slate-300 hover:text-white border border-emerald-800/40'
                 }`}
               >
-                جميع الأجزاء ({activeTab === 'ceremony' ? masterStudentsList.length : (activeTab === 'registered' ? stats.totalRegistered : stats.totalUnregistered)})
+                جميع الأجزاء ({activeTab === 'ceremony' ? allDisplayStudents.length : (activeTab === 'registered' ? stats.totalRegistered : stats.totalUnregistered)})
               </button>
 
               {QURAN_PARTS_ORDER.map((part) => {
                 const baseList = activeTab === 'ceremony'
-                  ? masterStudentsList
+                  ? allDisplayStudents
                   : (activeTab === 'registered' ? allDisplayStudents.filter(s => s.completed === true) : allDisplayStudents.filter(s => s.completed !== true));
-                const count = baseList.filter(s => matchesQuranPartCanonical(s.partName, part)).length;
+                const count = baseList.filter(s => matchesQuranPartCanonical(s.partName || s.part, part)).length;
                 return (
                   <button
                     key={part}
@@ -1350,7 +1374,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                   <option value="STAGE_ORDER">🏆 ترتيب الحفل الرسمي (الأجزاء فالدرجات)</option>
                   <option value="SCORE_DESC">📈 الدرجة: من الأعلى للأدنى</option>
                   <option value="SCORE_ASC">📉 الدرجة: من الأدنى للأعلى</option>
-                  <option value="CODE_ASC">🔢 كود الطالب (#001 إلى #146)</option>
+                  <option value="CODE_ASC">🔢 كود الطالب (#001 فصاعداً)</option>
                   <option value="NAME_ASC">🔤 اسم الطالب: أبجدياً (أ - ي)</option>
                   <option value="RECENT">⏱️ آخر تعديل وتحديث</option>
                 </select>
@@ -1432,21 +1456,45 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 <Award className="w-6 h-6 text-[#fbbf24]" />
                 <span>كشف صعود المسرح المعتمد ({ceremonyStudents.length} طالب معروض)</span>
               </div>
-              <span className="text-xs font-bold text-emerald-300 bg-emerald-950 px-3.5 py-1.5 rounded-full border border-emerald-700/40 shadow-inner">
-                مرتب بحسب الأجزاء والدرجات تنازلياً ⭐
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => {
+                    setEditingStudent(null);
+                    setStudentModalOpen(true);
+                  }}
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-amber-400 to-[#fbbf24] hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border border-amber-300"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>إضافة طالب جديد للتكريم</span>
+                </button>
+                <span className="text-xs font-bold text-emerald-300 bg-emerald-950 px-3.5 py-1.5 rounded-full border border-emerald-700/40 shadow-inner">
+                  مرتب بحسب الأجزاء والدرجات تنازلياً ⭐
+                </span>
+              </div>
             </div>
 
             {ceremonyStudents.length === 0 ? (
               <div className="text-center py-16 space-y-3">
                 <Award className="w-12 h-12 text-emerald-500/30 mx-auto" />
                 <p className="text-slate-300 text-sm font-bold">لا يوجد طلاب يطابقون خيارات التصفية الحالية</p>
-                <button
-                  onClick={handleResetFilters}
-                  className="px-4 py-2 bg-[#fbbf24] text-slate-950 font-black text-xs rounded-xl shadow cursor-pointer mt-2"
-                >
-                  إلغاء الفلاتر وعرض الجميع
-                </button>
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <button
+                    onClick={handleResetFilters}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black text-xs rounded-xl border border-emerald-700/60 shadow cursor-pointer"
+                  >
+                    إلغاء الفلاتر وعرض الجميع
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingStudent(null);
+                      setStudentModalOpen(true);
+                    }}
+                    className="px-4 py-2 bg-[#fbbf24] hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>إضافة طالب جديد</span>
+                  </button>
+                </div>
               </div>
             ) : viewMode === 'table' ? (
               <div className="overflow-x-auto">
@@ -1532,6 +1580,14 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
+
+                            <button
+                              onClick={() => handleRequestDeleteStudent(student)}
+                              className="p-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-xl transition-all cursor-pointer"
+                              title="حذف الطالب من السجل"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1585,10 +1641,27 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                       </button>
                       <button
                         onClick={() => setBadgeModalStudent(student)}
-                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl"
+                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl cursor-pointer"
                         title="كارت التكريم"
                       >
                         <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingStudent(student);
+                          setStudentModalOpen(true);
+                        }}
+                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-xl cursor-pointer"
+                        title="تعديل بيانات الطالب"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleRequestDeleteStudent(student)}
+                        className="p-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-xl cursor-pointer"
+                        title="حذف الطالب"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -2607,6 +2680,7 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
       {studentModalOpen && (
         <StudentEditModal
           student={editingStudent}
+          existingCount={allDisplayStudents.length}
           onClose={() => {
             setStudentModalOpen(false);
             setEditingStudent(null);
