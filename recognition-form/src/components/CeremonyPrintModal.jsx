@@ -85,14 +85,15 @@ export default function CeremonyPrintModal({
       });
 
       if (partStudents.length > 0) {
-        // Sort descending by score, then by code/idx
+        // Sort descending by score, then alphabetically by Arabic name when tied
         const sorted = [...partStudents].sort((a, b) => {
           const scA = Number(a.examScore !== undefined && a.examScore !== '' ? a.examScore : (a.score || 0));
           const scB = Number(b.examScore !== undefined && b.examScore !== '' ? b.examScore : (b.score || 0));
           if (scB !== scA) return scB - scA; // Descending
-          const numA = parseInt(String(a.studentCode || a.code || '').replace(/\D/g, ''), 10) || a.idx || 0;
-          const numB = parseInt(String(b.studentCode || b.code || '').replace(/\D/g, ''), 10) || b.idx || 0;
-          return numA - numB;
+          // Tiebreaker: Arabic alphabetical order by student name
+          const nameA = (a.studentName || a.name || '').trim();
+          const nameB = (b.studentName || b.name || '').trim();
+          return nameA.localeCompare(nameB, 'ar');
         });
 
         // Compute part metrics
@@ -137,7 +138,10 @@ export default function CeremonyPrintModal({
           const scA = Number(a.examScore !== undefined && a.examScore !== '' ? a.examScore : (a.score || 0));
           const scB = Number(b.examScore !== undefined && b.examScore !== '' ? b.examScore : (b.score || 0));
           if (scB !== scA) return scB - scA;
-          return (a.idx || 0) - (b.idx || 0);
+          // Tiebreaker: Arabic alphabetical order by student name
+          const nameA = (a.studentName || a.name || '').trim();
+          const nameB = (b.studentName || b.name || '').trim();
+          return nameA.localeCompare(nameB, 'ar');
         });
 
         const maxScore = sorted.reduce((max, s) => {
