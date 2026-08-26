@@ -208,6 +208,33 @@ export default function StagePrompterModal({
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse delay-300"></div>
       </div>
 
+      {/* ─── INVISIBLE CLICK ZONES FOR PROJECTOR NAVIGATION ─── */}
+      {isFullscreen && (
+        <>
+          {/* Right Side -> Previous Student */}
+          <div 
+            className="absolute top-0 right-0 w-[20vw] h-full z-40 cursor-w-resize group"
+            onClick={currentIndex > 0 ? onPrev : undefined}
+            title="الطالب السابق"
+          >
+            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end pr-4">
+              <ChevronRight className="w-12 h-12 text-white/50" />
+            </div>
+          </div>
+          
+          {/* Left Side -> Next Student */}
+          <div 
+            className="absolute top-0 left-0 w-[20vw] h-full z-40 cursor-e-resize group"
+            onClick={currentIndex < totalStudents - 1 ? onNext : undefined}
+            title="الطالب التالي"
+          >
+            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-start pl-4">
+              <ChevronLeft className="w-12 h-12 text-white/50" />
+            </div>
+          </div>
+        </>
+      )}
+
       {/* ─── 1. TOP STAGE CONTROLS HEADER (Hidden in Print) ─── */}
       <div className={`w-full max-w-6xl 2xl:max-w-7xl flex flex-wrap items-center justify-between gap-3 bg-[#062b24]/95 border-2 border-[#fbbf24]/50 rounded-2xl p-2.5 sm:p-3.5 shadow-2xl backdrop-blur-2xl shrink-0 print:hidden relative z-50 transition-all duration-500 ${
         isFullscreen ? 'absolute top-4 left-1/2 -translate-x-1/2 w-[95%] opacity-0 hover:opacity-100' : 'mb-3'

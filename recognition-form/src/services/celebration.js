@@ -60,134 +60,89 @@ export const playCelebrationSound = () => {
 };
 
 /**
- * 🎆 Multi-Rocket High Altitude Fireworks Show (Google Celebration Style)
- * Fires spectacular rockets that burst across the stage screen.
+ * 🎆 Refactored Light & Elegant Rocket Celebration
  */
 export const launchRocketFireworks = () => {
-  const duration = 2.4 * 1000;
+  const duration = 1.5 * 1000;
   const end = Date.now() + duration;
+  const colors = ['#fbbf24', '#fef08a', '#10b981', '#34d399', '#ffffff'];
 
-  // Colors: Luxury Gold, Emerald, Ruby, Electric Amber, Bright Silver
-  const colors = ['#fbbf24', '#fef08a', '#10b981', '#34d399', '#f59e0b', '#ffffff', '#ec4899', '#38bdf8'];
-
-  // Interval launcher
   const interval = setInterval(() => {
     if (Date.now() > end) {
       clearInterval(interval);
       return;
     }
-
-    // Rocket 1: Left launch
+    // Single coordinated burst from alternating sides
+    const isLeft = Math.random() > 0.5;
     confetti({
-      startVelocity: 45,
-      spread: 70,
-      ticks: 100,
-      origin: { x: Math.random() * 0.3 + 0.05, y: Math.random() * 0.4 + 0.4 },
+      particleCount: 20,
+      startVelocity: 35,
+      spread: 60,
+      origin: { x: isLeft ? 0.1 : 0.9, y: 0.6 },
       colors: colors,
-      shapes: ['square', 'circle'],
-      scalar: 1.15,
+      shapes: ['star', 'circle'],
+      scalar: 1.2,
       zIndex: 999999
     });
-
-    // Rocket 2: Right launch
-    confetti({
-      startVelocity: 45,
-      spread: 70,
-      ticks: 100,
-      origin: { x: Math.random() * 0.3 + 0.65, y: Math.random() * 0.4 + 0.4 },
-      colors: colors,
-      shapes: ['square', 'circle'],
-      scalar: 1.15,
-      zIndex: 999999
-    });
-
-    // Star sparkle bursts in the center
-    if (Math.random() > 0.4) {
-      confetti({
-        particleCount: 25,
-        startVelocity: 30,
-        spread: 120,
-        origin: { x: 0.5, y: 0.35 },
-        colors: ['#fbbf24', '#fef08a', '#f59e0b', '#ffffff'],
-        shapes: ['star'],
-        scalar: 1.3,
-        zIndex: 999999
-      });
-    }
-  }, 220);
+  }, 400); // Much slower interval (400ms instead of 220ms)
 };
 
 /**
- * 🌟 Golden Star & Emerald Glitter Cascading Rain
+ * 🌟 Golden Rain (Lighter version without requestAnimationFrame spam)
  */
 export const launchGoldenRain = () => {
-  const duration = 2.0 * 1000;
+  const duration = 1.5 * 1000;
   const end = Date.now() + duration;
 
-  const frame = () => {
-    confetti({
-      particleCount: 3,
-      angle: 60,
-      spread: 55,
-      origin: { x: 0, y: 0.1 },
-      colors: ['#fbbf24', '#fef08a', '#10b981', '#ffffff'],
-      shapes: ['star', 'circle'],
-      zIndex: 999999
-    });
-    confetti({
-      particleCount: 3,
-      angle: 120,
-      spread: 55,
-      origin: { x: 1, y: 0.1 },
-      colors: ['#fbbf24', '#fef08a', '#10b981', '#ffffff'],
-      shapes: ['star', 'circle'],
-      zIndex: 999999
-    });
-
-    if (Date.now() < end) {
-      requestAnimationFrame(frame);
+  const interval = setInterval(() => {
+    if (Date.now() > end) {
+      clearInterval(interval);
+      return;
     }
-  };
-
-  frame();
+    confetti({
+      particleCount: 15,
+      angle: 90,
+      spread: 80,
+      origin: { x: 0.5, y: 0 },
+      colors: ['#fbbf24', '#fef08a', '#ffffff'],
+      shapes: ['star'],
+      gravity: 0.8,
+      scalar: 1.2,
+      zIndex: 999999
+    });
+  }, 300);
 };
 
 /**
- * 🎉 Full Stage Grand Celebration (The Ultimate Wow Moment for Student Call)
- * Fires side cannons, star rain, rockets, and sound chime!
+ * 🎉 Light & Elegant Full Stage Celebration
  */
 export const launchStageCelebration = () => {
-  // 1. Play royal fanfare sound
   playCelebrationSound();
 
-  // 2. Immediate massive side cannon bursts
+  // One elegant grand burst
   confetti({
-    particleCount: 60,
+    particleCount: 50,
     angle: 60,
-    spread: 75,
-    origin: { x: 0.05, y: 0.75 },
-    colors: ['#fbbf24', '#10b981', '#f59e0b', '#fef08a', '#ffffff'],
+    spread: 60,
+    origin: { x: 0, y: 0.8 },
+    colors: ['#fbbf24', '#10b981', '#ffffff'],
     shapes: ['star', 'circle'],
     scalar: 1.2,
     zIndex: 999999
   });
 
   confetti({
-    particleCount: 60,
+    particleCount: 50,
     angle: 120,
-    spread: 75,
-    origin: { x: 0.95, y: 0.75 },
-    colors: ['#fbbf24', '#10b981', '#f59e0b', '#fef08a', '#ffffff'],
+    spread: 60,
+    origin: { x: 1, y: 0.8 },
+    colors: ['#fbbf24', '#10b981', '#ffffff'],
     shapes: ['star', 'circle'],
     scalar: 1.2,
     zIndex: 999999
   });
 
-  // 3. Sequential rocket fireworks show
-  launchRocketFireworks();
-
-  // 4. Golden starry rain from top
-  setTimeout(() => {
-    launchGoldenRain();
-  }, 400);
+  // Followed by a light rocket & rain sequence
+  setTimeout(() => launchRocketFireworks(), 200);
+  setTimeout(() => launchGoldenRain(), 600);
 };
