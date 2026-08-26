@@ -72,6 +72,7 @@ import StudentEditModal from './StudentEditModal';
 import StudentBadgeModal from './StudentBadgeModal';
 import StagePrompterModal from './StagePrompterModal';
 import PermanentStudentModal from './PermanentStudentModal';
+import CeremonyPrintModal from './CeremonyPrintModal';
 
 // ─── Helper: Check if student has entered ALL required registration inputs ───
 export const isStudentFullyRegistered = (student) => {
@@ -192,6 +193,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
   const [badgeModalStudent, setBadgeModalStudent] = useState(null);
   const [studentModalOpen, setStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [printInitialPart, setPrintInitialPart] = useState('ALL');
 
   // Custom Delete Modal State
   const [deleteConfirmModal, setDeleteConfirmModal] = useState({
@@ -215,6 +218,8 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
           setSheikhModalOpen(false);
         } else if (badgeModalStudent) {
           setBadgeModalStudent(null);
+        } else if (printModalOpen) {
+          setPrintModalOpen(false);
         } else if (studentModalOpen) {
           setStudentModalOpen(false);
           setEditingStudent(null);
@@ -1228,6 +1233,19 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 <span>تصدير ({currentTabStudents.length})</span>
               </button>
 
+              {/* Print Ceremony Sheets Button (Grouped by Parts Descending) */}
+              <button
+                onClick={() => {
+                  setPrintInitialPart(partFilter !== 'ALL' ? partFilter : 'ALL');
+                  setPrintModalOpen(true);
+                }}
+                className="px-3.5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all shadow-md active:scale-95 whitespace-nowrap border border-emerald-400/40"
+                title="طباعة كشوفات التكريم الرسمية مفرقة لكل جزء بترتيب تنازلي"
+              >
+                <Printer className="w-3.5 h-3.5 text-amber-300" />
+                <span>🖨️ طباعة الكشوفات (تنازلي)</span>
+              </button>
+
               {/* Add New Student Button (Available on ALL student tabs) */}
               <button
                 onClick={() => {
@@ -1457,6 +1475,18 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
                 <span>كشف صعود المسرح المعتمد ({ceremonyStudents.length} طالب معروض)</span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => {
+                    setPrintInitialPart(partFilter !== 'ALL' ? partFilter : 'ALL');
+                    setPrintModalOpen(true);
+                  }}
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border border-emerald-400/50"
+                  title="طباعة كشوفات صعود المسرح الرسمية لكل جزء بترتيب تنازلي"
+                >
+                  <Printer className="w-4 h-4 text-amber-300" />
+                  <span>🖨️ طباعة كشف المسرح (تنازلي)</span>
+                </button>
+
                 <button
                   onClick={() => {
                     setEditingStudent(null);
@@ -2902,6 +2932,17 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
             setPermanentStudentModalOpen(false);
             setEditingPermanentStudent(null);
           }}
+          showToast={showToast}
+        />
+      )}
+
+      {/* 🖨️ MODAL 6: CEREMONY PRINT SHEETS (BY PARTS DESCENDING) */}
+      {printModalOpen && (
+        <CeremonyPrintModal
+          students={allDisplayStudents}
+          isOpen={printModalOpen}
+          onClose={() => setPrintModalOpen(false)}
+          initialPart={printInitialPart}
           showToast={showToast}
         />
       )}
