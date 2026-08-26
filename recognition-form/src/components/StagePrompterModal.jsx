@@ -93,8 +93,8 @@ export default function StagePrompterModal({
   // 🔑 Fullscreen toggle
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      if (containerRef.current?.requestFullscreen) {
-        containerRef.current.requestFullscreen();
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen();
       }
       setIsFullscreen(true);
     } else {
@@ -208,28 +208,28 @@ export default function StagePrompterModal({
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse delay-300"></div>
       </div>
 
-      {/* ─── INVISIBLE CLICK ZONES FOR PROJECTOR NAVIGATION ─── */}
+      {/* ─── CLICK ZONES FOR PROJECTOR NAVIGATION ─── */}
       {isFullscreen && (
         <>
           {/* Right Side -> Previous Student */}
           <div 
-            className="absolute top-0 right-0 w-[20vw] h-full z-40 cursor-w-resize group"
+            className="absolute top-0 right-0 w-[15vw] h-full z-40 cursor-pointer group flex items-center justify-end pr-6 sm:pr-10"
             onClick={currentIndex > 0 ? onPrev : undefined}
             title="الطالب السابق"
           >
-            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end pr-4">
-              <ChevronRight className="w-12 h-12 text-white/50" />
+            <div className="w-16 h-24 sm:w-20 sm:h-32 bg-black/40 hover:bg-black/70 border-l-4 border-[#fbbf24] rounded-l-2xl flex items-center justify-center backdrop-blur-sm transition-all shadow-2xl opacity-60 group-hover:opacity-100 group-active:scale-95">
+              <ChevronRight className="w-12 h-12 sm:w-16 sm:h-16 text-white drop-shadow-lg" />
             </div>
           </div>
           
           {/* Left Side -> Next Student */}
           <div 
-            className="absolute top-0 left-0 w-[20vw] h-full z-40 cursor-e-resize group"
+            className="absolute top-0 left-0 w-[15vw] h-full z-40 cursor-pointer group flex items-center justify-start pl-6 sm:pl-10"
             onClick={currentIndex < totalStudents - 1 ? onNext : undefined}
             title="الطالب التالي"
           >
-            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-start pl-4">
-              <ChevronLeft className="w-12 h-12 text-white/50" />
+            <div className="w-16 h-24 sm:w-20 sm:h-32 bg-black/40 hover:bg-black/70 border-r-4 border-[#fbbf24] rounded-r-2xl flex items-center justify-center backdrop-blur-sm transition-all shadow-2xl opacity-80 group-hover:opacity-100 group-hover:scale-105 group-active:scale-95">
+              <ChevronLeft className="w-12 h-12 sm:w-16 sm:h-16 text-[#fbbf24] drop-shadow-lg" />
             </div>
           </div>
         </>
