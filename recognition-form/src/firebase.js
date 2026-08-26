@@ -5,7 +5,6 @@ import {
   onSnapshot,
   addDoc,
   updateDoc,
-  deleteDoc,
   doc,
   setDoc,
   getDoc,
@@ -272,7 +271,12 @@ export const updateSheikhRecord = async (id, sheikhData) => {
 export const deleteSheikhRecord = async (id) => {
   if (!db) throw new Error("Firestore is not initialized");
   const docRef = doc(db, 'sheikhs', id);
-  await deleteDoc(docRef);
+  // Soft-delete: mark as deleted for possible recovery
+  await setDoc(docRef, {
+    isDeleted: true,
+    accountStatus: 'DELETED',
+    updatedAt: serverTimestamp()
+  }, { merge: true });
 };
 
 // ⚡ استيراد ومزامنة طاقم الشيوخ والكوادر المعتمدة
@@ -403,5 +407,10 @@ export const updatePermanentKuttabRecord = async (id, formData) => {
 export const deletePermanentKuttabRecord = async (id) => {
   if (!db) throw new Error("Firestore is not initialized");
   const docRef = doc(db, 'permanent_kuttab', id);
-  await deleteDoc(docRef);
+  // Soft-delete: mark as deleted for possible recovery
+  await setDoc(docRef, {
+    isDeleted: true,
+    accountStatus: 'DELETED',
+    updatedAt: serverTimestamp()
+  }, { merge: true });
 };

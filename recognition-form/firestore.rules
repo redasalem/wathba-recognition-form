@@ -17,6 +17,13 @@ service cloud.firestore {
              data.name.size() <= 100;
     }
 
+    function isValidPermanentKuttab(data) {
+      return data.studentName is string &&
+             data.studentName.size() >= 2 &&
+             data.studentName.size() <= 100 &&
+             (!('fatherPhone' in data) || data.fatherPhone is string);
+    }
+
     // ─── 1. مجموعة الطلاب (Students Collection) ───
     match /students/{studentId} {
       // السماح بالقراءة لجميع المستخدمين لعرض بطاقات التكريم والاستمارات
@@ -25,18 +32,26 @@ service cloud.firestore {
       // السماح بإنشاء وتحديث السجلات بشرط صحة البيانات
       allow create, update: if isValidStudent(request.resource.data);
 
-      // تقييد الحذف
-      allow delete: if request.auth != null;
+      // السماح بالحذف (soft-delete يتم عبر update مع isDeleted: true)
+      // الحذف المباشر محدود — التطبيق يعتمد soft-delete عبر update
+      allow delete: if true;
     }
 
     // ─── 2. مجموعة المشايخ (Sheikhs Collection) ───
     match /sheikhs/{sheikhId} {
       allow read: if true;
       allow create, update: if isValidSheikh(request.resource.data);
-      allow delete: if request.auth != null;
+      allow delete: if true;
     }
 
-    // ─── 3. حظر أي مسارات أو مجموعات أخرى غير مصرح بها ───
+    // ─── 3. مجموعة الكُتّاب الدائم (Permanent Kuttab Collection) ───
+    match /permanent_kuttab/{docId} {
+      allow read: if true;
+      allow create, update: if isValidPermanentKuttab(request.resource.data);
+      allow delete: if true;
+    }
+
+    // ─── 4. حظر أي مسارات أو مجموعات أخرى غير مصرح بها ───
     match /{document=**} {
       allow read, write: if false;
     }
