@@ -22,7 +22,7 @@ export default function LandingPage({ onNavigate }) {
     <div className="max-w-6xl mx-auto space-y-10 animate-fade-in text-slate-100 px-4 py-6">
       
       {/* 🌟 1. HERO SECTION — خرافي ومميز */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#0c3d34] via-[#062b24] to-[#041915] border border-[#fbbf24]/30 p-8 sm:p-12 shadow-2xl text-center">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#0c3d34] via-[#062b24] to-[#041915] border border-[#fbbf24]/30 p-8 sm:p-12 shadow-2xl text-center flex flex-col items-center">
         
         {/* Animated decorative glows */}
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-80 h-80 bg-[#fbbf24]/8 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
@@ -37,13 +37,8 @@ export default function LandingPage({ onNavigate }) {
           <div className="absolute top-24 left-1/3 w-1 h-1 bg-emerald-300/60 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#fbbf24]/15 border border-[#fbbf24]/40 text-[#fbbf24] text-xs font-black mb-6 backdrop-blur-sm shadow-lg shadow-amber-900/10">
-          <Sparkles className="w-4 h-4 animate-pulse" />
-          المنظومة الذكية لتحفيظ القرآن الكريم والتربية
-        </div>
-
         {/* Logo — Centerpiece */}
-        <div className="relative inline-block mb-4">
+        <div className="relative inline-block mb-6">
           <div className="absolute -inset-4 bg-gradient-to-br from-[#fbbf24]/20 via-emerald-400/10 to-[#fbbf24]/20 rounded-full blur-xl opacity-70 animate-pulse"></div>
           <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-gradient-to-tr from-emerald-500 via-[#fbbf24] to-emerald-400 p-1 shadow-2xl shadow-amber-500/30 mx-auto hover:scale-105 transition-transform">
             <img
@@ -52,6 +47,11 @@ export default function LandingPage({ onNavigate }) {
               className="w-full h-full rounded-full object-cover"
             />
           </div>
+        </div>
+
+        <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#fbbf24]/15 border border-[#fbbf24]/40 text-[#fbbf24] text-xs font-black mb-6 backdrop-blur-sm shadow-lg shadow-amber-900/10">
+          <Sparkles className="w-4 h-4 animate-pulse" />
+          المنظومة الذكية لتحفيظ القرآن الكريم والتربية
         </div>
 
         <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white mb-3 leading-tight tracking-tight">
