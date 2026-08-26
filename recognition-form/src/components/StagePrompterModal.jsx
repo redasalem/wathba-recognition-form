@@ -209,7 +209,9 @@ export default function StagePrompterModal({
       </div>
 
       {/* ─── 1. TOP STAGE CONTROLS HEADER (Hidden in Print) ─── */}
-      <div className="w-full max-w-6xl 2xl:max-w-7xl flex flex-wrap items-center justify-between gap-3 bg-[#062b24]/95 border-2 border-[#fbbf24]/50 rounded-2xl p-2.5 sm:p-3.5 shadow-2xl backdrop-blur-2xl mb-3 shrink-0 print:hidden relative z-30">
+      <div className={`w-full max-w-6xl 2xl:max-w-7xl flex flex-wrap items-center justify-between gap-3 bg-[#062b24]/95 border-2 border-[#fbbf24]/50 rounded-2xl p-2.5 sm:p-3.5 shadow-2xl backdrop-blur-2xl shrink-0 print:hidden relative z-50 transition-all duration-500 ${
+        isFullscreen ? 'absolute top-4 left-1/2 -translate-x-1/2 w-[95%] opacity-0 hover:opacity-100' : 'mb-3'
+      }`}>
         
         {/* Left: Ceremony Badge & Order Info */}
         <div className="flex items-center gap-3">
@@ -307,12 +309,18 @@ export default function StagePrompterModal({
       </div>
 
       {/* ─── 2. MAIN PRESENTATION BODY (THE ORNATE LUXURY CERTIFICATE) ─── */}
-      <div className="w-full max-w-6xl 2xl:max-w-7xl flex-1 flex flex-col items-center justify-center my-auto min-h-0 print:max-w-none print:w-full print:m-0 relative z-20">
+      <div className={`flex-1 flex flex-col items-center justify-center my-auto min-h-0 print:max-w-none print:w-full print:m-0 relative z-20 ${
+        isFullscreen ? 'w-full' : 'w-full max-w-6xl 2xl:max-w-7xl'
+      }`}>
         
         {/* Gilded Outer Halo Wrapper with Moving Sheen & Arabesque Corners */}
         <div
           key={animKey}
-          className="relative w-full max-w-5xl 2xl:max-w-6xl max-h-[calc(100vh-11rem)] sm:max-h-[calc(100vh-12rem)] p-1.5 sm:p-2.5 md:p-3 rounded-3xl sm:rounded-[36px] bg-gradient-to-tr from-[#021813] via-[#083a30] to-[#041c16] border-2 sm:border-4 border-[#fbbf24] shadow-[0_30px_100px_rgba(0,0,0,0.95)] animate-stage-card-in animate-royal-glow overflow-hidden print:p-0 print:border-none print:shadow-none print:w-full print:max-h-none"
+          className={`relative p-1.5 sm:p-2.5 md:p-3 rounded-3xl sm:rounded-[36px] bg-gradient-to-tr from-[#021813] via-[#083a30] to-[#041c16] border-2 sm:border-4 border-[#fbbf24] shadow-[0_30px_100px_rgba(0,0,0,0.95)] animate-stage-card-in animate-royal-glow overflow-hidden print:p-0 print:border-none print:shadow-none print:w-full print:max-h-none flex items-center justify-center transition-all duration-700 ${
+            isFullscreen 
+              ? 'h-[94vh] w-auto max-w-[98vw]' 
+              : 'w-full max-w-5xl 2xl:max-w-6xl max-h-[calc(100vh-11rem)] sm:max-h-[calc(100vh-12rem)]'
+          }`}
         >
           {/* Moving Light Beam Sheen across the entire certificate */}
           <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden print:hidden">
@@ -326,7 +334,9 @@ export default function StagePrompterModal({
           <OrnateCorner position="bottom-left" />
 
           {/* Inner Golden Filigree Border */}
-          <div className="relative w-full aspect-[4/3] sm:aspect-[1.414/1] rounded-2xl sm:rounded-[28px] overflow-hidden border border-[#fbbf24]/60 bg-[#062b24] shadow-2xl print:border-none print:w-full print:aspect-[1.414/1]">
+          <div className={`relative aspect-[4/3] sm:aspect-[1.414/1] rounded-2xl sm:rounded-[28px] overflow-hidden border border-[#fbbf24]/60 bg-[#062b24] shadow-2xl print:border-none print:w-full print:aspect-[1.414/1] ${
+            isFullscreen ? 'h-full w-auto' : 'w-full'
+          }`}>
             
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* 🌟 MODE A: OFFICIAL TEMPLATE MODE (دار تاج الوقار) */}
@@ -426,7 +436,7 @@ export default function StagePrompterModal({
                   <p className="text-[11px] sm:text-xs text-emerald-300 font-bold mb-0.5">
                     تَتَشَرَّفُ إِدَارَةُ الكُتَّابِ بِمَنْحِ هَذِهِ الشَّهَادَةِ لِابْنِنَا البَارِّ المُكَرَّمِ:
                   </p>
-                  <h1 className="font-amiri text-2xl sm:text-4xl md:text-5xl font-black text-[#fef08a] gold-glow-lg tracking-wide my-0.5 sm:my-1">
+                  <h1 className="font-amiri text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-[#fef08a] gold-glow-lg tracking-wide my-0.5 sm:my-1">
                     {studentName}
                   </h1>
                   <p className="text-[11px] sm:text-xs md:text-sm text-slate-200 font-medium max-w-2xl mx-auto">
@@ -473,7 +483,9 @@ export default function StagePrompterModal({
       </div>
 
       {/* ─── 3. BOTTOM NAVIGATION BAR (Hidden in Print) ─── */}
-      <div className="w-full max-w-6xl 2xl:max-w-7xl flex items-center justify-between gap-3 bg-[#062b24]/95 border-2 border-[#fbbf24]/40 rounded-2xl p-2.5 sm:p-3 shadow-2xl backdrop-blur-2xl shrink-0 mt-3 print:hidden relative z-30">
+      <div className={`w-full max-w-6xl 2xl:max-w-7xl flex items-center justify-between gap-3 bg-[#062b24]/95 border-2 border-[#fbbf24]/40 rounded-2xl p-2.5 sm:p-3 shadow-2xl backdrop-blur-2xl shrink-0 print:hidden relative z-50 transition-all duration-500 ${
+        isFullscreen ? 'absolute bottom-4 left-1/2 -translate-x-1/2 w-[95%] opacity-0 hover:opacity-100' : 'mt-3'
+      }`}>
         <button
           type="button"
           onClick={onPrev}
