@@ -80,10 +80,10 @@ export default function StudentProfileView({ student, onEdit, onGoHome, isAdminL
         </div>
 
         {/* Printable Profile Card */}
-        <div id="printable-badge" className="p-6 sm:p-8 space-y-6">
+        <div className="p-6 sm:p-8 space-y-6 print:color-adjust-exact">
 
           {/* Banner Header with Logo & Status */}
-          <div className="relative overflow-hidden bg-gradient-to-r from-[#0c3d34] via-[#062b24] to-[#041915] rounded-3xl p-6 border border-[#fbbf24]/30 text-center shadow-xl">
+          <div className="relative overflow-hidden bg-gradient-to-r from-[#0c3d34] via-[#062b24] to-[#041915] rounded-3xl p-6 border border-[#fbbf24]/30 text-center shadow-xl print:shadow-none print:border-2">
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#fbbf24]/10 rounded-full blur-2xl pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
