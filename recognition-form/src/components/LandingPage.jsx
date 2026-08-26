@@ -14,10 +14,15 @@ import {
   QrCode,
   Heart
 } from 'lucide-react';
+import { STUDENTS_CATALOG, QURAN_PARTS_ORDER } from '../data/studentsCatalog';
 
 const FACEBOOK_PAGE_URL = 'https://www.facebook.com/share/1LpQGaqNUP/';
 
 export default function LandingPage({ onNavigate }) {
+  const totalStudents = STUDENTS_CATALOG.length;
+  const totalLevels = QURAN_PARTS_ORDER.length;
+  const fullQuran = STUDENTS_CATALOG.filter(s => s.part === "القرآن كاملاً").length;
+
   return (
     <div className="max-w-6xl mx-auto space-y-10 animate-fade-in text-slate-100 px-4 py-6">
       
@@ -306,11 +311,11 @@ export default function LandingPage({ onNavigate }) {
       <div className="rounded-2xl border border-emerald-700/40 bg-[#062b24]/60 backdrop-blur-xl p-4 sm:p-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
           <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-black text-[#fbbf24]">146</div>
+            <div className="text-2xl sm:text-3xl font-black text-[#fbbf24]">{totalStudents}</div>
             <div className="text-[11px] text-slate-400 font-bold">طالب وطالبة مُكرَّمين</div>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-black text-emerald-400">14</div>
+            <div className="text-2xl sm:text-3xl font-black text-emerald-400">{totalLevels}</div>
             <div className="text-[11px] text-slate-400 font-bold">مستوى قرآني</div>
           </div>
           <div className="space-y-1">
@@ -318,7 +323,7 @@ export default function LandingPage({ onNavigate }) {
             <div className="text-[11px] text-slate-400 font-bold">شيوخ ومحفظين</div>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-black text-rose-400">8</div>
+            <div className="text-2xl sm:text-3xl font-black text-rose-400">{fullQuran}</div>
             <div className="text-[11px] text-slate-400 font-bold">حفظة القرآن كاملاً</div>
           </div>
         </div>
