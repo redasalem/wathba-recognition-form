@@ -470,10 +470,18 @@ export default function CeremonyPrintModal({
                   
                   {/* Top Bismillah & Logos */}
                   <div className="flex items-center justify-between text-xs text-slate-700 mb-2">
-                    <div className="text-right">
-                      <div className="font-black text-sm text-emerald-950">الكُتّاب لتحفيظ القرآن الكريم</div>
-                      <div className="text-[11px] text-slate-600">الدورة الصيفية لحفظ كتاب الله 2026</div>
+                    <div className="flex items-center gap-2 text-right">
+                      <img
+                        src="/logo.jpg"
+                        alt="كُتّاب"
+                        className="w-10 h-10 rounded-full object-cover border border-emerald-800 shadow-sm print:w-8 print:h-8"
+                      />
+                      <div>
+                        <div className="font-black text-sm text-emerald-950">دار تاج الوقار - الكُتّاب</div>
+                        <div className="text-[11px] text-slate-600">الدورة الصيفية لحفظ كتاب الله 2026</div>
+                      </div>
                     </div>
+
 
                     <div className="text-center font-serif text-sm font-bold text-emerald-900">
                       بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ

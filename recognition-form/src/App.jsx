@@ -396,12 +396,20 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-emerald-900/40 bg-[#02100d] py-6 text-center text-xs text-slate-400 space-y-2">
-        <p className="font-bold">الكُتّاب - المنظومة الذكية لتحفيظ القرآن الكريم والتربية</p>
+      <footer className="border-t border-emerald-900/40 bg-[#02100d] py-6 text-center text-xs text-slate-400 space-y-3">
+        <div className="flex items-center justify-center gap-2">
+          <img
+            src="/logo.jpg"
+            alt="كُتّاب"
+            className="w-8 h-8 rounded-full object-cover border border-emerald-700/50 shadow"
+          />
+          <p className="font-bold text-slate-300">دار تاج الوقار - الكُتّاب لتحفيظ القرآن الكريم والتربية</p>
+        </div>
         <p className="text-[11px] text-emerald-400/80">
           Powered by <span className="font-black text-[#fbbf24]">Wathba | وثبة</span>
         </p>
       </footer>
+
 
       {/* Unified Login Portal Modal */}
       {isLoginModalOpen && (

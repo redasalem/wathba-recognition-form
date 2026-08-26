@@ -105,12 +105,17 @@ export default function LoginPortalModal({ onClose, onAdminSuccess, showToast })
 
         {/* Icon & Title */}
         <div className="text-center mb-5">
-          <div className="w-12 h-12 rounded-2xl bg-[#fbbf24]/20 border border-[#fbbf24]/40 flex items-center justify-center text-[#fbbf24] mx-auto mb-2 shadow-lg">
-            <Lock className="w-6 h-6" />
+          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-[#fbbf24] p-0.5 mx-auto mb-3 shadow-xl shadow-amber-500/20">
+            <img
+              src="/logo.jpg"
+              alt="كُتّاب - دار تاج الوقار"
+              className="w-full h-full rounded-full object-cover"
+            />
           </div>
           <h3 className="text-lg font-black text-white">تسجيل الدخول للمنظومة 🔐</h3>
           <p className="text-xs text-slate-300">أدخل كلمة المرور للوصول إلى لوحة التحكم الإدارية</p>
         </div>
+
 
         {/* Admin Badge */}
         <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2.5 rounded-2xl bg-[#fbbf24]/10 border border-[#fbbf24]/30 text-[#fbbf24] text-xs font-black">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, ShieldCheck, Home, Menu, X, LogIn, Sparkles, Award } from 'lucide-react';
+import { ShieldCheck, Home, Menu, X, LogIn, Award } from 'lucide-react';
 
 export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpenLoginModal }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -23,10 +23,12 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
           onClick={() => handleNav('landing')}
           className="flex items-center gap-3 cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-[#fbbf24] p-0.5 shadow-lg shadow-emerald-950/50 group-hover:scale-105 transition-transform">
-            <div className="w-full h-full bg-[#062b24] rounded-[10px] flex items-center justify-center text-[#fbbf24]">
-              <BookOpen className="w-5 h-5" />
-            </div>
+          <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-emerald-600 to-[#fbbf24] p-0.5 shadow-lg shadow-emerald-950/50 group-hover:scale-110 transition-transform">
+            <img
+              src="/logo.jpg"
+              alt="كُتّاب - دار تاج الوقار"
+              className="w-full h-full rounded-full object-cover"
+            />
           </div>
 
           <div>
@@ -36,9 +38,10 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
                 KUTTAB
               </span>
             </div>
-            <p className="text-[10px] text-emerald-300/80 font-medium">المنظومة الذكية لتحفيظ القرآن الكريم والتربية</p>
+            <p className="text-[10px] text-emerald-300/80 font-medium">دار تاج الوقار لتحفيظ القرآن الكريم والتربية</p>
           </div>
         </div>
+
 
         {/* DESKTOP NAVIGATION */}
         <nav className="hidden md:flex items-center gap-2 bg-[#062b24]/60 p-1 rounded-xl border border-emerald-800/40">

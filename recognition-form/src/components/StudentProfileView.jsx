@@ -89,8 +89,12 @@ export default function StudentProfileView({ student, onEdit, onGoHome, isAdminL
 
             <div className="flex items-center justify-between border-b border-[#fbbf24]/20 pb-3 mb-4 text-xs font-bold text-slate-300">
               <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-[#fbbf24]" />
-                <span className="text-[#fbbf24] font-black">كُتّاب | KUTTAB 2026</span>
+                <img
+                  src="/logo.jpg"
+                  alt="كُتّاب"
+                  className="w-7 h-7 rounded-full object-cover border border-[#fbbf24]/50 shadow"
+                />
+                <span className="text-[#fbbf24] font-black">دار تاج الوقار | كُتّاب 2026</span>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-black">
                 <CheckCircle2 className="w-3.5 h-3.5" />

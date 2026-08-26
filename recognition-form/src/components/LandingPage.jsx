@@ -42,9 +42,23 @@ export default function LandingPage({ onNavigate }) {
           المنظومة الذكية لتحفيظ القرآن الكريم والتربية
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black text-white mb-5 leading-tight tracking-tight">
+        {/* Logo — Centerpiece */}
+        <div className="relative inline-block mb-4">
+          <div className="absolute -inset-4 bg-gradient-to-br from-[#fbbf24]/20 via-emerald-400/10 to-[#fbbf24]/20 rounded-full blur-xl opacity-70 animate-pulse"></div>
+          <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-gradient-to-tr from-emerald-500 via-[#fbbf24] to-emerald-400 p-1 shadow-2xl shadow-amber-500/30 mx-auto hover:scale-105 transition-transform">
+            <img
+              src="/logo.jpg"
+              alt="كُتّاب - دار تاج الوقار"
+              className="w-full h-full rounded-full object-cover"
+            />
+          </div>
+        </div>
+
+        <h1 className="text-4xl sm:text-6xl font-black text-white mb-3 leading-tight tracking-tight">
           كُتّاب | <span className="bg-gradient-to-r from-[#fbbf24] via-amber-300 to-[#fbbf24] bg-clip-text text-transparent">KUTTAB</span>
         </h1>
+
+        <p className="text-xs font-black text-emerald-300 mb-2">دار تاج الوقار لتحفيظ القرآن الكريم</p>
 
         <p className="text-base sm:text-xl font-bold text-emerald-200 mb-4 max-w-3xl mx-auto leading-relaxed">
           "الأصالة في التحفيظ والتربية .. والسهولة والذكاء في المتابعة والتكريم"
@@ -53,6 +67,7 @@ export default function LandingPage({ onNavigate }) {
         <p className="text-xs sm:text-sm text-slate-300/90 max-w-2xl mx-auto mb-8 leading-relaxed">
           نرحب بأولياء الأمور الكرام وضيوفنا الأفاضل في المنظومة الرقمية لخدمة كتاب الله وتكريم أهل القرآن
         </p>
+
 
         {/* أزرار الإجراءات الرئيسية — فيسبوك + إدارة */}
         <div className="flex flex-wrap items-center justify-center gap-4">
