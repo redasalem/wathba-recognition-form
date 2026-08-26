@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   BookOpen,
@@ -15,13 +15,50 @@ import {
   Heart
 } from 'lucide-react';
 import { STUDENTS_CATALOG, QURAN_PARTS_ORDER } from '../data/studentsCatalog';
+import { subscribeStudents, subscribeSheikhs } from '../firebase';
 
 const FACEBOOK_PAGE_URL = 'https://www.facebook.com/share/1LpQGaqNUP/';
 
 export default function LandingPage({ onNavigate }) {
-  const totalStudents = STUDENTS_CATALOG.length;
+  // Initial fallback data from static catalog
+  const initialStudentsCount = STUDENTS_CATALOG.length;
+  const initialFullQuranCount = STUDENTS_CATALOG.filter(s => s.part === "القرآن كاملاً").length;
   const totalLevels = QURAN_PARTS_ORDER.length;
-  const fullQuran = STUDENTS_CATALOG.filter(s => s.part === "القرآن كاملاً").length;
+
+  const [studentsCount, setStudentsCount] = useState(initialStudentsCount);
+  const [sheikhsCount, setSheikhsCount] = useState(3);
+  const [fullQuranCount, setFullQuranCount] = useState(initialFullQuranCount);
+
+  useEffect(() => {
+    // Realtime listener for students
+    const unsubStudents = subscribeStudents(
+      (data) => {
+        // Filter out soft-deleted records if any
+        const activeStudents = data.filter(s => s.isDeleted !== true && s.accountStatus !== 'DELETED');
+        if (activeStudents.length > 0) {
+          setStudentsCount(activeStudents.length);
+          setFullQuranCount(activeStudents.filter(s => s.partName === "القرآن كاملاً" || s.part === "القرآن كاملاً").length);
+        }
+      },
+      (err) => console.error('Failed to sync students for LandingPage:', err)
+    );
+
+    // Realtime listener for sheikhs
+    const unsubSheikhs = subscribeSheikhs(
+      (data) => {
+        const activeSheikhs = data.filter(s => s.isDeleted !== true && s.accountStatus !== 'DELETED');
+        if (activeSheikhs.length > 0) {
+          setSheikhsCount(activeSheikhs.length);
+        }
+      },
+      (err) => console.error('Failed to sync sheikhs for LandingPage:', err)
+    );
+
+    return () => {
+      unsubStudents();
+      unsubSheikhs();
+    };
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto space-y-10 animate-fade-in text-slate-100 px-4 py-6">
@@ -311,7 +348,7 @@ export default function LandingPage({ onNavigate }) {
       <div className="rounded-2xl border border-emerald-700/40 bg-[#062b24]/60 backdrop-blur-xl p-4 sm:p-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
           <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-black text-[#fbbf24]">{totalStudents}</div>
+            <div className="text-2xl sm:text-3xl font-black text-[#fbbf24]">{studentsCount}</div>
             <div className="text-[11px] text-slate-400 font-bold">طالب وطالبة مُكرَّمين</div>
           </div>
           <div className="space-y-1">
@@ -319,11 +356,11 @@ export default function LandingPage({ onNavigate }) {
             <div className="text-[11px] text-slate-400 font-bold">مستوى قرآني</div>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-black text-blue-400">3</div>
+            <div className="text-2xl sm:text-3xl font-black text-blue-400">{sheikhsCount}</div>
             <div className="text-[11px] text-slate-400 font-bold">شيوخ ومحفظين</div>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-black text-rose-400">{fullQuran}</div>
+            <div className="text-2xl sm:text-3xl font-black text-rose-400">{fullQuranCount}</div>
             <div className="text-[11px] text-slate-400 font-bold">حفظة القرآن كاملاً</div>
           </div>
         </div>
