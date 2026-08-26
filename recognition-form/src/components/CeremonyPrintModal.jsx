@@ -477,7 +477,7 @@ export default function CeremonyPrintModal({
                         className="w-10 h-10 rounded-full object-cover border border-emerald-800 shadow-sm print:w-8 print:h-8"
                       />
                       <div>
-                        <div className="font-black text-sm text-emerald-950">دار تاج الوقار - الكُتّاب</div>
+                        <div className="font-black text-sm text-emerald-950">كُتّاب دار تاج الوقار</div>
                         <div className="text-[11px] text-slate-600">الدورة الصيفية لحفظ كتاب الله 2026</div>
                       </div>
                     </div>
@@ -614,7 +614,7 @@ export default function CeremonyPrintModal({
                             {/* Sheikh Name */}
                             {showSheikh && (
                               <td className="p-2 text-slate-700 border border-slate-300">
-                                {student.sheikhName || 'شيوخ الكُتّاب'}
+                                {student.sheikhName || 'شيوخ دار تاج الوقار'}
                               </td>
                             )}
 
@@ -646,7 +646,7 @@ export default function CeremonyPrintModal({
                       </div>
 
                       <div className="space-y-6">
-                        <div>إدارة كُتّاب 2026</div>
+                        <div>إدارة دار تاج الوقار 2026</div>
                         <div className="border-b border-dotted border-slate-400 w-32 mx-auto"></div>
                       </div>
                     </div>

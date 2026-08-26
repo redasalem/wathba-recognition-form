@@ -33,12 +33,12 @@ export default function Header({ activeView, onNavigate, isAdminLoggedIn, onOpen
 
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-lg font-black text-white tracking-wide">كُتّاب</span>
-              <span className="text-xs font-bold text-[#fbbf24] px-1.5 py-0.5 rounded bg-[#fbbf24]/10 border border-[#fbbf24]/30">
-                KUTTAB
+              <span className="text-base sm:text-lg font-black text-white tracking-wide">كُتّاب دار تاج الوقار</span>
+              <span className="text-[10px] font-bold text-[#fbbf24] px-1.5 py-0.5 rounded bg-[#fbbf24]/10 border border-[#fbbf24]/30 hidden sm:inline-block">
+                TAJ AL-WAQAR
               </span>
             </div>
-            <p className="text-[10px] text-emerald-300/80 font-medium">دار تاج الوقار لتحفيظ القرآن الكريم والتربية</p>
+            <p className="text-[10px] text-emerald-300/80 font-medium">المنظومة الذكية لتحفيظ القرآن الكريم والتربية</p>
           </div>
         </div>
 

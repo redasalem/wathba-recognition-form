@@ -30,7 +30,7 @@ export default function StudentProfileView({ student, onEdit, onGoHome, isAdminL
     : window.location.href);
 
   const handleShareWhatsApp = () => {
-    const text = `🎉 كارت تكريم الطالب المُكَرَّم في كُتّاب: ${student.studentName}\nكود التكريم: ${student.studentCode || ''}\nالمستوى القرآني: ${student.partName || student.part || 'القرآن الكريم'}\n\nرابط بطاقة وكارت التكريم الرسمي:\n${studentSmartUrl}`;
+    const text = `🎉 كارت تكريم الطالب المُكَرَّم في كُتّاب دار تاج الوقار: ${student.studentName}\nكود التكريم: ${student.studentCode || ''}\nالمستوى القرآني: ${student.partName || student.part || 'القرآن الكريم'}\n\nرابط بطاقة وكارت التكريم الرسمي:\n${studentSmartUrl}`;
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -91,10 +91,10 @@ export default function StudentProfileView({ student, onEdit, onGoHome, isAdminL
               <div className="flex items-center gap-2">
                 <img
                   src="/logo.jpg"
-                  alt="كُتّاب"
+                  alt="كُتّاب دار تاج الوقار"
                   className="w-7 h-7 rounded-full object-cover border border-[#fbbf24]/50 shadow"
                 />
-                <span className="text-[#fbbf24] font-black">دار تاج الوقار | كُتّاب 2026</span>
+                <span className="text-[#fbbf24] font-black">كُتّاب دار تاج الوقار 2026</span>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-black">
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -232,7 +232,7 @@ export default function StudentProfileView({ student, onEdit, onGoHome, isAdminL
           <div className="pt-4 border-t border-[#fbbf24]/20 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
             <div className="flex items-center gap-1.5 font-bold text-emerald-400">
               <ShieldCheck className="w-4 h-4 text-[#fbbf24]" />
-              <span>بطاقة رسمية معتمدة من إدارة كُتّاب 2026</span>
+              <span>بطاقة رسمية معتمدة من إدارة كُتّاب دار تاج الوقار 2026</span>
             </div>
             <div className="flex items-center gap-2">
               {isAdminLoggedIn ? (
@@ -244,7 +244,7 @@ export default function StudentProfileView({ student, onEdit, onGoHome, isAdminL
                 </button>
               ) : (
                 <span className="text-slate-400 text-[11px] print:hidden">
-                  🔒 لأي تعديل رسمي يرجى التواصل مع إدارة الكُتّاب
+                  🔒 لأي تعديل رسمي يرجى التواصل مع إدارة دار تاج الوقار
                 </span>
               )}
             </div>

@@ -404,7 +404,7 @@ export default function StudentVerificationGate({
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-emerald-400 font-bold mt-0.5">2.</span>
-                <span><strong>الضغط على زر (بحث):</strong> اضغط على زر البحث لإجراء المطابقة الآمنة في قاعدة بيانات كُتّاب 2026.</span>
+                <span><strong>الضغط على زر (بحث):</strong> اضغط على زر البحث لإجراء المطابقة الآمنة في قاعدة بيانات كُتّاب دار تاج الوقار 2026.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-emerald-400 font-bold mt-0.5">3.</span>
@@ -426,7 +426,7 @@ export default function StudentVerificationGate({
           </button>
 
           <span className="text-[#fbbf24] font-bold text-[11px] sm:text-xs">
-            كُتّاب 2026 | حفل التكريم والختام 🏆
+            كُتّاب دار تاج الوقار 2026 | حفل التكريم والختام 🏆
           </span>
         </div>
 

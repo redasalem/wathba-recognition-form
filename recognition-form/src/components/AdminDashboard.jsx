@@ -1016,10 +1016,10 @@ export default function AdminDashboard({ records = [], onLogout, showToast }) {
           <div className="text-center lg:text-right space-y-1.5">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#fbbf24]/15 border border-[#fbbf24]/30 text-[#fbbf24] text-xs font-black">
               <ShieldCheck className="w-4 h-4" />
-              <span>لوحة الإدارة المركزية والربط السحابي | كُتّاب 2026</span>
+              <span>لوحة الإدارة المركزية والربط السحابي | كُتّاب دار تاج الوقار 2026</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-wide">
-              منظومة كُتّاب <span className="text-[#fbbf24]">| قاعدة البيانات وحفل التكريم</span>
+              منظومة كُتّاب دار تاج الوقار <span className="text-[#fbbf24]">| قاعدة البيانات وحفل التكريم</span>
             </h1>
             <p className="text-xs text-emerald-200/80 font-medium max-w-xl">
               إدارة بروتوكول التكريم المباشر، ترتيب صعود الطلاب على المسرح حسب الأجزاء والدرجات، ومزامنة البيانات في Firebase.

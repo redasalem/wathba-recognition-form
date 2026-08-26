@@ -48,17 +48,17 @@ export default function LandingPage({ onNavigate }) {
           <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-gradient-to-tr from-emerald-500 via-[#fbbf24] to-emerald-400 p-1 shadow-2xl shadow-amber-500/30 mx-auto hover:scale-105 transition-transform">
             <img
               src="/logo.jpg"
-              alt="كُتّاب - دار تاج الوقار"
+              alt="كُتّاب دار تاج الوقار"
               className="w-full h-full rounded-full object-cover"
             />
           </div>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black text-white mb-3 leading-tight tracking-tight">
-          كُتّاب | <span className="bg-gradient-to-r from-[#fbbf24] via-amber-300 to-[#fbbf24] bg-clip-text text-transparent">KUTTAB</span>
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white mb-3 leading-tight tracking-tight">
+          كُتّاب <span className="bg-gradient-to-r from-[#fbbf24] via-amber-300 to-[#fbbf24] bg-clip-text text-transparent">دار تاج الوقار</span>
         </h1>
 
-        <p className="text-xs font-black text-emerald-300 mb-2">دار تاج الوقار لتحفيظ القرآن الكريم</p>
+        <p className="text-xs sm:text-sm font-black text-emerald-300 mb-3">المنظومة الذكية لتحفيظ القرآن الكريم والتربية</p>
 
         <p className="text-base sm:text-xl font-bold text-emerald-200 mb-4 max-w-3xl mx-auto leading-relaxed">
           "الأصالة في التحفيظ والتربية .. والسهولة والذكاء في المتابعة والتكريم"
@@ -91,7 +91,7 @@ export default function LandingPage({ onNavigate }) {
             <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
             </svg>
-            <span>صفحة الكُتّاب على فيسبوك</span>
+            <span>صفحة دار تاج الوقار على فيسبوك</span>
             <ExternalLink className="w-3.5 h-3.5 opacity-70" />
           </a>
         </div>
@@ -166,7 +166,7 @@ export default function LandingPage({ onNavigate }) {
             </li>
             <li className="flex items-center gap-2">
               <span className="text-emerald-400 font-bold">✦</span>
-              تكريم شيوخ ومحفظي الكُتّاب تقديراً لجهدهم المبارك طوال الدورة.
+              تكريم شيوخ ومحفظي دار تاج الوقار تقديراً لجهدهم المبارك طوال الدورة.
             </li>
             <li className="flex items-center gap-2">
               <span className="text-emerald-400 font-bold">✦</span>
@@ -195,11 +195,11 @@ export default function LandingPage({ onNavigate }) {
             </div>
 
             <h3 className="text-xl sm:text-2xl font-black text-white leading-snug">
-              صفحة <span className="text-[#4599FF]">الكُتّاب</span> الرسمية على فيسبوك
+              صفحة <span className="text-[#4599FF]">كُتّاب دار تاج الوقار</span> الرسمية على فيسبوك
             </h3>
 
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-lg lg:mx-0 mx-auto">
-              تابعونا على صفحتنا الرسمية لمتابعة آخر الأخبار والفعاليات والمسابقات القرآنية، والصور الحصرية لأنشطة الكُتّاب والحفل الختامي. 
+              تابعونا على صفحتنا الرسمية لمتابعة آخر الأخبار والفعاليات والمسابقات القرآنية، والصور الحصرية لأنشطة دار تاج الوقار والحفل الختامي. 
               امسح رمز الـ QR بكاميرا الهاتف للوصول المباشر!
             </p>
 
@@ -213,7 +213,7 @@ export default function LandingPage({ onNavigate }) {
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                 </svg>
-                <span>زيارة صفحة الكُتّاب</span>
+                <span>زيارة صفحة دار تاج الوقار</span>
                 <ExternalLink className="w-3 h-3 opacity-70" />
               </a>
 
@@ -237,7 +237,7 @@ export default function LandingPage({ onNavigate }) {
                   <svg className="w-5 h-5 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                   </svg>
-                  <span className="text-xs font-black text-[#1877F2]">الكُتّاب | Kuttab</span>
+                  <span className="text-xs font-black text-[#1877F2]">دار تاج الوقار</span>
                 </div>
 
                 {/* QR Code */}
